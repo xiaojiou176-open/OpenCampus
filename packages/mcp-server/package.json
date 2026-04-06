@@ -1,0 +1,40 @@
+{
+  "name": "@campus-copilot/mcp-server",
+  "version": "0.1.0",
+  "private": false,
+  "description": "Unified read-only MCP stdio server for Campus Copilot builder workflows.",
+  "license": "MIT",
+  "keywords": ["campus-copilot", "mcp", "server", "read-only", "stdio"],
+  "homepage": "https://github.com/xiaojiou176-open/campus-copilot/tree/main/packages/mcp-server",
+  "bugs": {
+    "url": "https://github.com/xiaojiou176-open/campus-copilot/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xiaojiou176-open/campus-copilot.git",
+    "directory": "packages/mcp-server"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "mcpName": "io.github.xiaojiou176-open/campus-copilot-mcp",
+  "type": "module",
+  "files": ["README.md", "dist"],
+  "bin": {
+    "campus-copilot-mcp": "./dist/bin.mjs"
+  },
+  "scripts": {
+    "build": "pnpm exec esbuild ./src/bin.ts --bundle --platform=node --format=esm --target=node20 --legal-comments=none --banner:js='#!/usr/bin/env node' --outfile=dist/bin.mjs",
+    "prepack": "pnpm build",
+    "start": "pnpm build && node ./dist/bin.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "node --experimental-strip-types --test ./src/server.test.ts ./src/bin.test.ts"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@campus-copilot/sdk": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.18.0",
+    "esbuild": "^0.28.0",
+    "zod": "^4.1.5"
+  }
+}

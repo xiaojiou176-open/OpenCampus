@@ -1,0 +1,36 @@
+{
+  "name": "@campus-copilot/cli",
+  "version": "0.1.0",
+  "private": false,
+  "description": "Read-only CLI for Campus Copilot snapshot and local BFF workflows.",
+  "license": "MIT",
+  "keywords": ["campus-copilot", "cli", "local-first", "read-only", "mcp"],
+  "homepage": "https://github.com/xiaojiou176-open/campus-copilot/tree/main/packages/cli",
+  "bugs": {
+    "url": "https://github.com/xiaojiou176-open/campus-copilot/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xiaojiou176-open/campus-copilot.git",
+    "directory": "packages/cli"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "files": ["README.md", "dist"],
+  "bin": {
+    "campus-copilot": "./dist/campus-copilot.mjs"
+  },
+  "scripts": {
+    "build": "pnpm exec esbuild ./src/bin-entry.mjs --bundle --platform=node --format=esm --target=node20 --legal-comments=none --outfile=dist/campus-copilot.mjs",
+    "prepack": "pnpm build",
+    "start": "pnpm build && node ./dist/campus-copilot.mjs",
+    "test": "node --test ./bin/campus-copilot.test.mjs"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@campus-copilot/sdk": "workspace:*",
+    "esbuild": "^0.28.0"
+  }
+}
