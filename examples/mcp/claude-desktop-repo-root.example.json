@@ -1,0 +1,24 @@
+{
+  "mcpServers": {
+    "campus-copilot-gradescope": {
+      "command": "bash",
+      "args": [
+        "/absolute/path/to/campus-copilot/scripts/consumer/campus-copilot-site-sidecar.sh",
+        "gradescope"
+      ],
+      "env": {
+        "CAMPUS_COPILOT_SNAPSHOT": "/absolute/path/to/workspace-snapshot.json"
+      }
+    },
+    "campus-copilot-myuw": {
+      "command": "bash",
+      "args": [
+        "/absolute/path/to/campus-copilot/scripts/consumer/campus-copilot-site-sidecar.sh",
+        "myuw"
+      ],
+      "env": {
+        "CAMPUS_COPILOT_SNAPSHOT": "/absolute/path/to/workspace-snapshot.json"
+      }
+    }
+  }
+}
