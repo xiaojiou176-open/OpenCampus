@@ -1,0 +1,38 @@
+{
+  "threads": [
+    {
+      "id": 7681100,
+      "user_id": 44896,
+      "course_id": 855,
+      "type": "announcement",
+      "title": "<redacted-title>",
+      "category": "Career-related events",
+      "subcategory": "",
+      "updated_at": "2026-03-29T13:27:51.622544+11:00",
+      "is_seen": true
+    },
+    {
+      "id": 6946835,
+      "user_id": 54907,
+      "course_id": 855,
+      "type": "announcement",
+      "title": "<redacted-title>",
+      "category": "Career-related events",
+      "subcategory": "",
+      "updated_at": "2026-03-29T12:46:21.147037+11:00",
+      "is_seen": true
+    }
+  ],
+  "users": [
+    {
+      "id": 44896,
+      "role": "user",
+      "course_role": "staff"
+    },
+    {
+      "id": 54907,
+      "role": "user",
+      "course_role": "admin"
+    }
+  ]
+}

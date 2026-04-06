@@ -1,0 +1,152 @@
+{
+  "assignment": {
+    "id": 7244652,
+    "title": "redacted-annotation-assignment",
+    "total_points": "15.0"
+  },
+  "assignment_submission": {
+    "id": 375869113,
+    "score": "7.5"
+  },
+  "questions": [
+    {
+      "id": 61925561,
+      "index": 1,
+      "full_index": "2.1",
+      "numbered_title": "redacted-numbered-title",
+      "title": "redacted-question-title",
+      "weight": "9.0"
+    },
+    {
+      "id": 61925565,
+      "index": 2,
+      "full_index": "3.2",
+      "numbered_title": "redacted-numbered-title",
+      "title": "redacted-question-title",
+      "weight": "3.0"
+    },
+    {
+      "id": 61925566,
+      "index": 3,
+      "full_index": "3.3",
+      "numbered_title": "redacted-numbered-title",
+      "title": "redacted-question-title",
+      "weight": "3.0"
+    }
+  ],
+  "question_submissions": [
+    {
+      "question_id": 61925561,
+      "score": "3.0",
+      "active": true,
+      "evaluations": [],
+      "annotations": [
+        {
+          "id": 257856977,
+          "page_number": 3,
+          "geometry_type": "text",
+          "content": "redacted-annotation-1",
+          "coordinates": [
+            [1892.761048771887, 2654.065673416958],
+            [1958.386048771887, 2757.190673416958]
+          ],
+          "question_submission_id": 3493570125,
+          "annotatable_id": 1695676780,
+          "annotatable_type": "Page",
+          "style": {},
+          "links": []
+        },
+        {
+          "id": 257857091,
+          "page_number": 3,
+          "geometry_type": "text",
+          "content": "redacted-annotation-2",
+          "coordinates": [
+            [587.5125357837546, 2228.503247956932],
+            [653.1375357837546, 2331.628247956932]
+          ],
+          "question_submission_id": 3493570125,
+          "annotatable_id": 1695676780,
+          "annotatable_type": "Page",
+          "style": {},
+          "links": []
+        },
+        {
+          "id": 257857023,
+          "page_number": 3,
+          "geometry_type": "text",
+          "content": "redacted-annotation-3",
+          "coordinates": [
+            [596.0809067661716, 2268.488979208209],
+            [661.7059067661716, 2371.613979208209]
+          ],
+          "question_submission_id": 3493570125,
+          "annotatable_id": 1695676780,
+          "annotatable_type": "Page",
+          "style": {},
+          "links": []
+        }
+      ]
+    },
+    {
+      "question_id": 61925565,
+      "score": "1.5",
+      "active": true,
+      "evaluations": [],
+      "annotations": [
+        {
+          "id": 258194484,
+          "page_number": 5,
+          "geometry_type": "text",
+          "content": null,
+          "coordinates": [
+            [2091.483155364765, 2471.212376641011],
+            [2157.108155364765, 2471.212376641011]
+          ],
+          "question_submission_id": 3493570127,
+          "annotatable_id": 1695676782,
+          "annotatable_type": "Page",
+          "style": {},
+          "links": [
+            {
+              "annotation_comments": {
+                "redacted-annotation-link": [
+                  "redacted-annotation-link",
+                  238919553,
+                  "RubricItem"
+                ]
+              },
+              "rubric_item": {
+                "description": "redacted-linked-rubric"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "question_id": 61925566,
+      "score": "3.0",
+      "active": true,
+      "evaluations": [],
+      "annotations": [
+        {
+          "id": 257434442,
+          "page_number": 5,
+          "geometry_type": "text",
+          "content": "redacted-annotation-5",
+          "coordinates": [
+            [1134.245015406201, 2126.389262855471],
+            [1461.69706900612, 2681.434930712868]
+          ],
+          "question_submission_id": 3493570129,
+          "annotatable_id": 1695676782,
+          "annotatable_type": "Page",
+          "style": {},
+          "links": []
+        }
+      ]
+    }
+  ],
+  "rubric_items": []
+}
