@@ -95,8 +95,11 @@ It is not the same thing as official listing, marketplace publication, or owner-
 
 If you need publication truth later, use:
 
+- [`DISTRIBUTION.md`](DISTRIBUTION.md) for the shortest truthful current-state router
+- [`INTEGRATIONS.md`](INTEGRATIONS.md) for the shortest truthful local bundle/router map
 - [`docs/14-public-distribution-scoreboard.md`](docs/14-public-distribution-scoreboard.md) for the bundle-vs-listing ledger
 - [`docs/15-publication-submission-packet.md`](docs/15-publication-submission-packet.md) for owner-only submission order
+- [`docs/chrome-web-store-submission-packet.md`](docs/chrome-web-store-submission-packet.md) for the extension-store last mile
 
 ## Student Questions This Repo Tries To Answer
 

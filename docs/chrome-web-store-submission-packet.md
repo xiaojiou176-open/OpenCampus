@@ -21,6 +21,12 @@ The repository already has these extension-side prerequisites in place:
 - current extension identity:
   - name: `Campus Copilot`
   - description: local-first academic decision workspace with cited AI
+  - version source: [`../apps/extension/package.json`](../apps/extension/package.json) now aligned to `0.1.0`
+  - icon set:
+    - [`../apps/extension/public/icon-16.png`](../apps/extension/public/icon-16.png)
+    - [`../apps/extension/public/icon-32.png`](../apps/extension/public/icon-32.png)
+    - [`../apps/extension/public/icon-48.png`](../apps/extension/public/icon-48.png)
+    - [`../apps/extension/public/icon-128.png`](../apps/extension/public/icon-128.png)
 - current formal permissions:
   - `sidePanel`
   - `activeTab`
@@ -38,6 +44,8 @@ The repository already has these extension-side prerequisites in place:
   - [`SECURITY.md`](../SECURITY.md)
 - support / issue surface:
   - GitHub issues and discussions are enabled
+- browser-store privacy page:
+  - [`../PRIVACY.md`](../PRIVACY.md)
 - visual assets already exist:
   - [`docs/assets/sidepanel-overview.png`](assets/sidepanel-overview.png)
   - [`docs/assets/social-preview.png`](assets/social-preview.png)

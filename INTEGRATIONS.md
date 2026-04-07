@@ -14,6 +14,7 @@ Use this page when the question is:
 | Plugin-grade bundle overview | [`examples/integrations/plugin-bundles.md`](examples/integrations/plugin-bundles.md) |
 | Read-only public skills | [`skills/README.md`](skills/README.md) |
 | OpenClaw-style local runtime route | [`examples/openclaw-readonly.md`](examples/openclaw-readonly.md) |
+| Browser extension store last mile | [`docs/chrome-web-store-submission-packet.md`](docs/chrome-web-store-submission-packet.md) |
 | Package/public publication truth | [`docs/14-public-distribution-scoreboard.md`](docs/14-public-distribution-scoreboard.md) |
 
 ## Truthful Claims Only

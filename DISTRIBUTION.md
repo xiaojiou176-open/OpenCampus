@@ -28,8 +28,9 @@ It is the shipping counter:
 1. [`README.md`](README.md)
 2. [`docs/14-public-distribution-scoreboard.md`](docs/14-public-distribution-scoreboard.md)
 3. [`docs/15-publication-submission-packet.md`](docs/15-publication-submission-packet.md)
-4. [`INTEGRATIONS.md`](INTEGRATIONS.md)
-5. [`PRIVACY.md`](PRIVACY.md)
+4. [`docs/chrome-web-store-submission-packet.md`](docs/chrome-web-store-submission-packet.md)
+5. [`INTEGRATIONS.md`](INTEGRATIONS.md)
+6. [`PRIVACY.md`](PRIVACY.md)
 
 ## Owner-Only Later Bucket
 

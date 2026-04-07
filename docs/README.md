@@ -23,6 +23,7 @@ If you are new, pick one route and ignore the rest for now:
 - **I want builder-facing examples and public skills**: start with [`../examples/README.md`](../examples/README.md), then [`../skills/README.md`](../skills/README.md), then [`10-builder-api-and-ecosystem-fit.md`](10-builder-api-and-ecosystem-fit.md)
 - **I want exact public distribution blockers or publish order**: start with [`14-public-distribution-scoreboard.md`](14-public-distribution-scoreboard.md), then [`15-publication-submission-packet.md`](15-publication-submission-packet.md)
 - **I want the shortest public-ready distribution or integration router**: start with [`../DISTRIBUTION.md`](../DISTRIBUTION.md), [`../INTEGRATIONS.md`](../INTEGRATIONS.md), and [`../PRIVACY.md`](../PRIVACY.md)
+- **I want the browser-extension store last mile**: start with [`chrome-web-store-submission-packet.md`](chrome-web-store-submission-packet.md), then [`../PRIVACY.md`](../PRIVACY.md)
 - **I want the live/manual validation lane**: start with [`verification-matrix.md`](verification-matrix.md), then [`live-validation-runbook.md`](live-validation-runbook.md), then [`site-capability-matrix.md`](site-capability-matrix.md)
 
 ## Default Newcomer Route
