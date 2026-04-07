@@ -46,12 +46,13 @@ The repo-local preview packaging story is also stricter now:
 
 ### Verification
 
-Fresh repository gates passed:
+Release-candidate proof should include:
 
 - `pnpm typecheck`
 - `pnpm test`
 - `pnpm verify`
-- `pnpm verify:hosted`
+- latest GitHub-hosted `Verify` lane green, which now runs `pnpm verify:hosted`
+- latest GitHub-hosted `Nightly` lane green when you want hosted coverage/public-distribution/web-interaction proof
 - `pnpm smoke:provider`
 - `pnpm smoke:sidepanel`
 - `pnpm test:coverage`
