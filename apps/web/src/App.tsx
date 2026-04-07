@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   resolveAiAnswer,
   type AiStructuredAnswer,
@@ -27,9 +27,12 @@ import {
   useWeeklyLoad,
   useWorkbenchView,
   type WorkbenchFilter,
-  type WeeklyLoadEntry,
 } from '@campus-copilot/storage';
 import { DEMO_IMPORTED_SNAPSHOT, snapshotFromImportedJson } from './import-export-snapshot';
+import { WebAiPanel } from './web-ai-panel';
+import { WebToolbar } from './web-toolbar';
+import { WebWorkbenchPanels } from './web-workbench-panels';
+import { formatRelativeTime } from './web-view-helpers';
 
 const SITE_ORDER: Site[] = ['canvas', 'gradescope', 'edstem', 'myuw'];
 
@@ -47,105 +50,6 @@ const PROVIDERS: Array<{ value: ProviderId; label: string; model: string }> = [
 ];
 
 const EXPORT_FORMATS: ExportFormat[] = ['markdown', 'json', 'csv', 'ics'];
-
-function formatDateTime(value: string | undefined) {
-  if (!value) {
-    return 'No time provided';
-  }
-
-  return new Intl.DateTimeFormat('en-US', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(new Date(value));
-}
-
-function formatRelativeTime(value: string | undefined) {
-  if (!value) {
-    return 'Not synced yet';
-  }
-
-  const deltaMinutes = Math.round((new Date(value).getTime() - Date.now()) / 60000);
-  const formatter = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
-  if (Math.abs(deltaMinutes) < 60) {
-    return formatter.format(deltaMinutes, 'minute');
-  }
-  const deltaHours = Math.round(deltaMinutes / 60);
-  if (Math.abs(deltaHours) < 48) {
-    return formatter.format(deltaHours, 'hour');
-  }
-  return formatter.format(Math.round(deltaHours / 24), 'day');
-}
-
-function formatCountLabel(value: number, singular: string, plural: string) {
-  return `${value} ${value === 1 ? singular : plural}`;
-}
-
-function getResourceActionLabel(resourceKind: 'file' | 'link' | 'embed' | 'other') {
-  switch (resourceKind) {
-    case 'link':
-      return 'Open link';
-    case 'embed':
-      return 'Open material';
-    default:
-      return 'Open download';
-  }
-}
-
-function formatWeeklyLoadSummary(entry: WeeklyLoadEntry) {
-  const highlights: string[] = [];
-  if (entry.overdueCount > 0) {
-    highlights.push(formatCountLabel(entry.overdueCount, 'overdue item', 'overdue items'));
-  }
-  if (entry.dueSoonCount > 0) {
-    highlights.push(formatCountLabel(entry.dueSoonCount, 'item due within 48 hours', 'items due within 48 hours'));
-  }
-  if (entry.pinnedCount > 0) {
-    highlights.push(formatCountLabel(entry.pinnedCount, 'pinned item', 'pinned items'));
-  }
-  if ((entry.eventCount ?? 0) > 0) {
-    highlights.push(formatCountLabel(entry.eventCount ?? 0, 'calendar item', 'calendar items'));
-  }
-
-  const loadBand =
-    entry.totalScore >= 200 ? 'High load' : entry.totalScore >= 120 ? 'Moderate load' : entry.totalScore > 0 ? 'Light load' : 'Clear lane';
-
-  return highlights.length > 0 ? `${loadBand}: ${highlights.join(' · ')}.` : `${loadBand}: no new scheduling pressure right now.`;
-}
-
-const LOADING_INLINE_COPY = 'Loading shared workbench data...';
-
-function LoadingInlineState() {
-  return <p>{LOADING_INLINE_COPY}</p>;
-}
-
-function ReadyStateBlock({
-  ready,
-  hasItems,
-  children,
-  emptyState,
-}: {
-  ready: boolean;
-  hasItems: boolean;
-  children: ReactNode;
-  emptyState: ReactNode;
-}) {
-  if (!ready) {
-    return <LoadingInlineState />;
-  }
-
-  return hasItems ? <>{children}</> : <>{emptyState}</>;
-}
-
-function LoadingStatValue({ ready, value }: { ready: boolean; value: ReactNode }) {
-  return ready ? (
-    <strong>{value}</strong>
-  ) : (
-    <strong aria-busy="true">
-      <span aria-hidden="true">—</span>
-      <span className="sr-only">Loading</span>
-    </strong>
-  );
-}
 
 function downloadArtifact(artifact: ExportArtifact) {
   const blob = new Blob([artifact.content], {
@@ -430,494 +334,77 @@ export function App() {
 
   return (
     <main className="web-shell">
-      <section className="hero">
-        <div>
-          <p className="eyebrow">Campus Copilot Web Workbench</p>
-          <h1>Academic workbench</h1>
-          <p className="lede">
-            This standalone second surface stays on the same local-first, read-only contract as the
-            extension workbench: one schema, one read-model, one exporter, and one cited-AI seam.
-          </p>
-        </div>
-        <div className="hero-card">
-          <p>State source</p>
-          <strong>{ready ? 'Shared storage/read-model loaded' : 'Bootstrapping local workspace'}</strong>
-          <span>Last refresh {formatRelativeTime(now)}</span>
-        </div>
-      </section>
+      <WebToolbar
+        ready={ready}
+        now={now}
+        feedback={feedback}
+        exportFormat={exportFormat}
+        exportFormats={EXPORT_FORMATS}
+        filters={filters}
+        siteOrder={SITE_ORDER}
+        siteLabels={SITE_LABELS}
+        onLoadDemo={handleResetDemo}
+        onImportFile={handleImportFile}
+        onExportFormatChange={setExportFormat}
+        onSiteFilterChange={(site) =>
+          setFilters((current) => ({
+            ...current,
+            site,
+          }))
+        }
+        onOnlyUnseenChange={(onlyUnseenUpdates) =>
+          setFilters((current) => ({
+            ...current,
+            onlyUnseenUpdates,
+          }))
+        }
+        onExportCurrentView={() => handleExport('current_view')}
+        onExportFocusQueue={() => handleExport('focus_queue')}
+        onExportWeeklyLoad={() => handleExport('weekly_load')}
+        onExportChangeJournal={() => handleExport('change_journal')}
+      />
 
-      <section className="toolbar-card">
-        <div className="toolbar-row">
-          <button type="button" onClick={handleResetDemo}>
-            Load demo workspace
-          </button>
-          <label className="file-button">
-            Import current-view JSON
-            <input
-              type="file"
-              accept="application/json"
-              onChange={(event) => {
-                const file = event.target.files?.[0];
-                if (file) {
-                  void handleImportFile(file);
-                }
-              }}
-            />
-          </label>
-          <label>
-            Export format
-            <select value={exportFormat} onChange={(event) => setExportFormat(event.target.value as ExportFormat)}>
-              {EXPORT_FORMATS.map((format) => (
-                <option key={format} value={format}>
-                  {format.toUpperCase()}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Site filter
-            <select
-              value={filters.site}
-              onChange={(event) =>
-                setFilters((current) => ({
-                  ...current,
-                  site: event.target.value as WorkbenchFilter['site'],
-                }))
-              }
-            >
-              <option value="all">All sites</option>
-              {SITE_ORDER.map((site) => (
-                <option key={site} value={site}>
-                  {SITE_LABELS[site]}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="toggle">
-            <input
-              type="checkbox"
-              checked={filters.onlyUnseenUpdates}
-              onChange={(event) =>
-                setFilters((current) => ({
-                  ...current,
-                  onlyUnseenUpdates: event.target.checked,
-                }))
-              }
-            />
-            <span className="toggle-label">Only unseen updates</span>
-          </label>
-        </div>
-        <div className="toolbar-row">
-          <button type="button" onClick={() => handleExport('current_view')}>
-            Export current view
-          </button>
-          <button type="button" onClick={() => handleExport('focus_queue')}>
-            Export focus queue
-          </button>
-          <button type="button" onClick={() => handleExport('weekly_load')}>
-            Export weekly load
-          </button>
-          <button type="button" onClick={() => handleExport('change_journal')}>
-            Export change journal
-          </button>
-        </div>
-        <p className="feedback" role="status">
-          {feedback}
-        </p>
-      </section>
+      <WebWorkbenchPanels
+        workbenchReady={workbenchReady}
+        todaySnapshot={todaySnapshot ?? undefined}
+        recentUpdates={recentUpdates ?? undefined}
+        focusQueue={focusQueue}
+        weeklyLoad={weeklyLoad}
+        currentAssignments={currentAssignments}
+        currentMessages={currentMessages}
+        currentResources={currentResources}
+        currentAnnouncements={currentAnnouncements}
+        currentEvents={currentEvents}
+        recentChangeEvents={recentChangeEvents}
+        countsBySite={countsBySite}
+        topSyncRun={topSyncRun}
+        siteLabels={SITE_LABELS}
+      />
 
-      {!workbenchReady ? (
-        <section className="panel loading-panel" role="status" aria-live="polite" aria-atomic="true">
-          <h2>Loading shared workbench</h2>
-          <p>
-            Preparing the shared schema, read-model, and imported snapshot so the sections below render
-            real values instead of temporary zero states.
-          </p>
-        </section>
-      ) : null}
-
-        <section className="stats-grid">
-          <article className="stat-card">
-            <span>Open assignments</span>
-            <LoadingStatValue ready={workbenchReady} value={todaySnapshot?.totalAssignments ?? 0} />
-          </article>
-          <article className="stat-card">
-            <span>Due soon</span>
-            <LoadingStatValue ready={workbenchReady} value={todaySnapshot?.dueSoonAssignments ?? 0} />
-          </article>
-          <article className="stat-card">
-            <span>Unseen updates</span>
-            <LoadingStatValue ready={workbenchReady} value={recentUpdates?.unseenCount ?? 0} />
-          </article>
-          <article className="stat-card">
-            <span>New grades</span>
-            <LoadingStatValue ready={workbenchReady} value={todaySnapshot?.newGrades ?? 0} />
-          </article>
-        </section>
-
-      <section className="split-grid">
-        <article className="panel">
-          <h2>Focus Queue</h2>
-          <p>Decision-first ranking on the shared read-model.</p>
-          <div className="stack">
-            <ReadyStateBlock
-              ready={workbenchReady}
-              hasItems={focusQueue.length > 0}
-              emptyState={<p>No focus items are active yet.</p>}
-            >
-              {focusQueue.slice(0, 6).map((item) => (
-                <article className="item" key={item.id}>
-                  <div className="item-header">
-                    <strong>{item.title}</strong>
-                    <span className="badge">score {item.score}</span>
-                  </div>
-                  {item.summary ? <p>{item.summary}</p> : null}
-                  <p className="meta">
-                    {SITE_LABELS[item.site]}
-                    {item.dueAt ? ` · due ${formatDateTime(item.dueAt)}` : ''}
-                  </p>
-                </article>
-              ))}
-            </ReadyStateBlock>
-          </div>
-        </article>
-
-        <article className="panel">
-          <h2>Weekly Load</h2>
-          <p>Planning view computed from the same normalized entities.</p>
-          <div className="stack">
-            <ReadyStateBlock
-              ready={workbenchReady}
-              hasItems={weeklyLoad.length > 0}
-              emptyState={<p>No dated workload is visible yet.</p>}
-            >
-              {weeklyLoad.map((entry) => (
-                <article className="item" key={entry.dateKey}>
-                  <div className="item-header">
-                    <strong>{entry.dateKey}</strong>
-                    <span className="badge">score {entry.totalScore}</span>
-                  </div>
-                  <p>{formatWeeklyLoadSummary(entry)}</p>
-                  <p className="meta">
-                    assignments {entry.assignmentCount} · events {entry.eventCount ?? 0} · due soon {entry.dueSoonCount}
-                  </p>
-                </article>
-              ))}
-            </ReadyStateBlock>
-          </div>
-        </article>
-      </section>
-
-      <section className="split-grid">
-        <article className="panel">
-          <h2>Current Tasks</h2>
-          <p>Wave 2 assignment detail now stays visible in the shared contract.</p>
-          <div className="stack">
-            <ReadyStateBlock
-              ready={workbenchReady}
-              hasItems={currentAssignments.length > 0}
-              emptyState={<p>No structured tasks are visible in the current filter.</p>}
-            >
-              {currentAssignments.slice(0, 6).map((assignment) => (
-                <article className="item" key={assignment.id}>
-                  <div className="item-header">
-                    <strong>{assignment.title}</strong>
-                    <span className="badge">{assignment.status}</span>
-                  </div>
-                  {assignment.summary ? <p>{assignment.summary}</p> : null}
-                  {assignment.detail ? <p className="meta">{assignment.detail}</p> : null}
-                  <p className="meta">
-                    {SITE_LABELS[assignment.site]}
-                    {assignment.dueAt ? ` · due ${formatDateTime(assignment.dueAt)}` : ''}
-                  </p>
-                </article>
-              ))}
-            </ReadyStateBlock>
-          </div>
-        </article>
-
-        <article className="panel">
-          <h2>Discussion Highlights</h2>
-          <p>EdStem thread depth stays on the same message entity contract.</p>
-          <div className="stack">
-            <ReadyStateBlock
-              ready={workbenchReady}
-              hasItems={currentMessages.length > 0}
-              emptyState={<p>No discussion detail is visible in the current filter.</p>}
-            >
-              {currentMessages.slice(0, 6).map((message) => (
-                <article className="item" key={message.id}>
-                  <div className="item-header">
-                    <strong>{message.title ?? 'Untitled discussion update'}</strong>
-                    <div className="badge-row">
-                      {message.unread ? <span className="badge badge-warning">unread</span> : null}
-                      {message.instructorAuthored ? <span className="badge badge-success">staff</span> : null}
-                    </div>
-                  </div>
-                  {message.summary ? <p>{message.summary}</p> : null}
-                  <p className="meta">
-                    {SITE_LABELS[message.site]} · {formatDateTime(message.updatedAt ?? message.createdAt)}
-                  </p>
-                </article>
-              ))}
-            </ReadyStateBlock>
-          </div>
-        </article>
-      </section>
-
-      <section className="panel">
-        <h2>Study Materials</h2>
-        <p>EdStem resources now land as first-class study materials on the same read-only workspace contract.</p>
-        <div className="stack">
-          <ReadyStateBlock
-            ready={workbenchReady}
-            hasItems={currentResources.length > 0}
-            emptyState={<p>No study materials are visible in the current filter.</p>}
-          >
-            {currentResources.slice(0, 6).map((resource) => (
-              <article className="item" key={resource.id}>
-                <div className="item-header">
-                  <strong>{resource.title}</strong>
-                  <span className="badge">{resource.resourceKind}</span>
-                </div>
-                {resource.summary ? <p>{resource.summary}</p> : null}
-                {resource.detail ? <p className="meta">{resource.detail}</p> : null}
-                <p className="meta">
-                  {SITE_LABELS[resource.site]}
-                  {resource.releasedAt ? ` · released ${formatDateTime(resource.releasedAt)}` : ''}
-                </p>
-                {resource.downloadUrl ? (
-                  <p className="meta">
-                    <a className="resource-link" href={resource.downloadUrl} rel="noreferrer" target="_blank">
-                      {getResourceActionLabel(resource.resourceKind)}
-                    </a>
-                  </p>
-                ) : null}
-              </article>
-            ))}
-          </ReadyStateBlock>
-        </div>
-      </section>
-
-      <section className="panel">
-        <h2>Notice Signals</h2>
-        <p>
-          Existing announcement carriers stay visible here when they matter for planning, without inventing a standalone
-          tuition or registration domain.
-        </p>
-        <div className="stack">
-          <ReadyStateBlock
-            ready={workbenchReady}
-            hasItems={currentAnnouncements.length > 0}
-            emptyState={<p>No current notice signals are visible in the current filter.</p>}
-          >
-            {currentAnnouncements.slice(0, 6).map((announcement) => (
-              <article className="item" key={announcement.id}>
-                <div className="item-header">
-                  <strong>{announcement.title}</strong>
-                  <span className="badge">{announcement.site === 'myuw' ? 'MyUW notice' : 'announcement'}</span>
-                </div>
-                {announcement.summary ? <p>{announcement.summary}</p> : null}
-                <p className="meta">
-                  {SITE_LABELS[announcement.site]}
-                  {announcement.postedAt ? ` · ${formatDateTime(announcement.postedAt)}` : ''}
-                </p>
-              </article>
-            ))}
-          </ReadyStateBlock>
-        </div>
-      </section>
-
-      <section className="split-grid">
-        <article className="panel">
-          <h2>Schedule Outlook</h2>
-          <p>MyUW class and exam location context stays tied to the same event entities.</p>
-          <div className="stack">
-            <ReadyStateBlock
-              ready={workbenchReady}
-              hasItems={currentEvents.length > 0}
-              emptyState={<p>No upcoming class or exam detail is visible in the current filter.</p>}
-            >
-              {currentEvents.slice(0, 6).map((event) => (
-                <article className="item" key={event.id}>
-                  <div className="item-header">
-                    <strong>{event.title}</strong>
-                    <span className="badge">{event.eventKind}</span>
-                  </div>
-                  {event.detail ?? event.summary ? <p>{event.detail ?? event.summary}</p> : null}
-                  <p className="meta">
-                    {SITE_LABELS[event.site]}
-                    {event.location ? ` · ${event.location}` : ''}
-                    {event.startAt ? ` · ${formatDateTime(event.startAt)}` : ''}
-                  </p>
-                </article>
-              ))}
-            </ReadyStateBlock>
-          </div>
-        </article>
-
-        <article className="panel">
-          <h2>Change Journal</h2>
-          <p>Recent receipts stay derived from sync runs plus change events, not from raw site pages.</p>
-          {topSyncRun ? (
-            <p className="meta">
-              Latest sync {SITE_LABELS[topSyncRun.site]} · {formatDateTime(topSyncRun.completedAt)} · {topSyncRun.outcome}
-            </p>
-          ) : null}
-          <div className="stack">
-            <ReadyStateBlock
-              ready={workbenchReady}
-              hasItems={recentChangeEvents.length > 0}
-              emptyState={<p>No change events are stored yet.</p>}
-            >
-              {recentChangeEvents.map((event) => (
-                <article className="item" key={event.id}>
-                  <div className="item-header">
-                    <strong>{event.title}</strong>
-                    <span className="badge">{event.changeType}</span>
-                  </div>
-                  <p>{event.summary}</p>
-                  <p className="meta">
-                    {SITE_LABELS[event.site]} · {formatDateTime(event.occurredAt)}
-                  </p>
-                </article>
-              ))}
-            </ReadyStateBlock>
-          </div>
-        </article>
-      </section>
-
-      <section className="panel">
-        <h2>Imported site counts</h2>
-        <p>This surface stays honest about what the imported snapshot currently contains.</p>
-        {workbenchReady ? (
-          <div className="counts-grid">
-            {countsBySite.map((entry) => (
-              <article className="count-card" key={entry.site}>
-                <strong>{SITE_LABELS[entry.site]}</strong>
-                <p>Resources {entry.counts.resources}</p>
-                <p>Assignments {entry.counts.assignments}</p>
-                <p>Messages {entry.counts.messages}</p>
-                <p>Events {entry.counts.events}</p>
-                <p>Grades {entry.counts.grades}</p>
-              </article>
-            ))}
-          </div>
-        ) : (
-          <p>Loading site counts from the shared read-model...</p>
-        )}
-      </section>
-
-      <section className="panel ai-panel">
-        <div className="item-header">
-          <h2>Cited AI</h2>
-          <span className="badge">same thin BFF</span>
-        </div>
-        <p>
-          The web surface keeps the same AI-after-structure rule: export the current workbench, then
-          ask for an explanation over structured data.
-        </p>
-        <div className="ai-controls">
-          <label>
-            BFF base URL
-            <input value={aiBaseUrl} onChange={(event) => setAiBaseUrl(event.target.value)} />
-          </label>
-          <label>
-            Provider
-            <select
-              value={provider}
-              onChange={(event) => {
-                const nextProvider = event.target.value as ProviderId;
-                setProvider(nextProvider);
-                setModel(PROVIDERS.find((item) => item.value === nextProvider)?.model ?? model);
-              }}
-            >
-              {PROVIDERS.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Model
-            <input value={model} onChange={(event) => setModel(event.target.value)} />
-          </label>
-          {provider === 'switchyard' ? (
-            <>
-              <label>
-                Switchyard runtime provider
-                <select
-                  value={switchyardProvider}
-                  onChange={(event) => setSwitchyardProvider(event.target.value as SwitchyardRuntimeProvider)}
-                >
-                  <option value="chatgpt">ChatGPT</option>
-                  <option value="gemini">Gemini</option>
-                  <option value="claude">Claude</option>
-                  <option value="grok">Grok</option>
-                  <option value="qwen">Qwen</option>
-                </select>
-              </label>
-              <label>
-                Switchyard lane
-                <select
-                  value={switchyardLane}
-                  onChange={(event) => setSwitchyardLane(event.target.value as SwitchyardLane)}
-                >
-                  <option value="web">web</option>
-                  <option value="byok">byok</option>
-                </select>
-              </label>
-            </>
-          ) : null}
-        </div>
-        <label className="question-field">
-          Question
-          <textarea value={question} onChange={(event) => setQuestion(event.target.value)} rows={4} />
-        </label>
-        <div className="toolbar-row">
-          <button type="button" onClick={() => void handleAskAi()} disabled={aiPending}>
-            {aiPending ? 'Asking AI…' : 'Ask AI'}
-          </button>
-        </div>
-        {aiError ? <p className="error">{aiError}</p> : null}
-        {aiNotice ? <p className="feedback">{aiNotice}</p> : null}
-        {aiAnswer ? <p className="answer">{aiAnswer}</p> : null}
-        {aiStructured ? (
-          <div className="ai-structured">
-            <p className="meta-title">Summary</p>
-            <p>{aiStructured.summary}</p>
-            <p className="meta-title">Key points</p>
-            <ul>
-              {aiStructured.bullets.map((bullet) => (
-                <li key={bullet}>{bullet}</li>
-              ))}
-            </ul>
-            {aiStructured.nextActions.length ? (
-              <>
-                <p className="meta-title">Suggested next actions</p>
-                <ul>
-                  {aiStructured.nextActions.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              </>
-            ) : null}
-            {aiStructured.citations.length ? (
-              <>
-                <p className="meta-title">Citations</p>
-                <ul>
-                  {aiStructured.citations.map((citation) => (
-                    <li key={`${citation.entityId}:${citation.kind}`}>
-                      {citation.site} · {citation.title}
-                    </li>
-                  ))}
-                </ul>
-              </>
-            ) : null}
-          </div>
-        ) : null}
-      </section>
+      <WebAiPanel
+        provider={provider}
+        model={model}
+        switchyardProvider={switchyardProvider}
+        switchyardLane={switchyardLane}
+        providers={PROVIDERS}
+        aiBaseUrl={aiBaseUrl}
+        question={question}
+        aiPending={aiPending}
+        aiError={aiError}
+        aiNotice={aiNotice}
+        aiAnswer={aiAnswer}
+        aiStructured={aiStructured}
+        onAiBaseUrlChange={setAiBaseUrl}
+        onProviderChange={(nextProvider) => {
+          setProvider(nextProvider);
+          setModel(PROVIDERS.find((item) => item.value === nextProvider)?.model ?? model);
+        }}
+        onModelChange={setModel}
+        onSwitchyardProviderChange={setSwitchyardProvider}
+        onSwitchyardLaneChange={setSwitchyardLane}
+        onQuestionChange={setQuestion}
+        onAskAi={handleAskAi}
+      />
     </main>
   );
 }
