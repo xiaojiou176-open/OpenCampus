@@ -10,6 +10,7 @@ chmod +x \
   scripts/install-hooks.sh \
   scripts/run-pre-commit-hooks.sh \
   scripts/run-pre-push-hooks.sh \
+  scripts/verify-nightly.sh \
   scripts/scan-git-history-secrets.sh
 
 git config core.hooksPath .githooks
