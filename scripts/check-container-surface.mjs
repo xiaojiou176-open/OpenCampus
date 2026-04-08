@@ -34,6 +34,8 @@ export function validateContainerSurface() {
   const distribution = readFileSync(fromRepoRoot('DISTRIBUTION.md'), 'utf8');
   const readme = readFileSync(fromRepoRoot('README.md'), 'utf8');
   const scoreboard = readFileSync(fromRepoRoot('docs/14-public-distribution-scoreboard.md'), 'utf8');
+  const submissionPacket = readFileSync(fromRepoRoot('docs/container-publication.packet.json'), 'utf8');
+  const preflightDoc = readFileSync(fromRepoRoot('docs/16-distribution-preflight-packets.md'), 'utf8');
   const smokeScript = existsSync(fromRepoRoot('scripts/docker-api-smoke.sh'))
     ? readFileSync(fromRepoRoot('scripts/docker-api-smoke.sh'), 'utf8')
     : '';
@@ -42,6 +44,19 @@ export function validateContainerSurface() {
     'pnpm --filter @campus-copilot/api',
     'EXPOSE 8787',
     'HEALTHCHECK',
+    'ARG CAMPUS_COPILOT_VERSION=0.1.0',
+    'ARG VCS_REF=unknown',
+    'ARG BUILD_DATE=unknown',
+    'org.opencontainers.image.title=',
+    'org.opencontainers.image.description=',
+    'org.opencontainers.image.url=',
+    'org.opencontainers.image.documentation=',
+    'org.opencontainers.image.source=',
+    'org.opencontainers.image.licenses=',
+    'org.opencontainers.image.vendor=',
+    'org.opencontainers.image.version=',
+    'org.opencontainers.image.revision=',
+    'org.opencontainers.image.created=',
   ];
 
   for (const snippet of dockerfileSnippets) {
@@ -83,11 +98,29 @@ export function validateContainerSurface() {
   if (!distribution.includes('compose.yaml') || !distribution.includes('pnpm smoke:docker:api')) {
     failures.push('distribution_missing_compose_reference');
   }
+  if (!distribution.includes('ghcr.io/xiaojiou176-open/campus-copilot-api')) {
+    failures.push('distribution_missing_canonical_public_image');
+  }
   if (!readme.includes('run a local Docker path with health checks')) {
     failures.push('root_readme_missing_container_entry');
   }
   if (!scoreboard.includes('repo-owned container path') && !scoreboard.includes('Containerized API sidecar')) {
     failures.push('scoreboard_missing_container_surface');
+  }
+  if (!scoreboard.includes('container-publication.packet.json')) {
+    failures.push('scoreboard_missing_container_packet_reference');
+  }
+  if (!submissionPacket.includes('"canonicalPublic": "ghcr.io/xiaojiou176-open/campus-copilot-api"')) {
+    failures.push('container_packet_missing_canonical_public_image');
+  }
+  if (!submissionPacket.includes('"notMcpTransport": true')) {
+    failures.push('container_packet_missing_truth_boundary');
+  }
+  if (!preflightDoc.includes('campus-copilot-api:local')) {
+    failures.push('preflight_doc_missing_local_image_tag');
+  }
+  if (!preflightDoc.includes('ghcr.io/xiaojiou176-open/campus-copilot-api')) {
+    failures.push('preflight_doc_missing_public_image_coordinate');
   }
 
   return failures;

@@ -75,9 +75,9 @@ entry point, use this table instead of guessing:
 | a GitHub visitor or reviewer | [`DISTRIBUTION.md`](DISTRIBUTION.md) and [`docs/storefront-assets.md`](docs/storefront-assets.md) | public front door is live | GitHub Pages returns `HTTP 200` |
 | a student trying the product locally | [Quickstart](#quickstart) and [`docs/chrome-web-store-submission-packet.md`](docs/chrome-web-store-submission-packet.md) | build-ready local-first product | `pnpm verify` |
 | a Codex / Claude MCP consumer | [`packages/mcp-server/README.md`](packages/mcp-server/README.md) and [`examples/integrations/README.md`](examples/integrations/README.md) | `public-ready (repo-local)` | `pnpm proof:public` |
-| a team that wants one containerized local HTTP surface | [`DISTRIBUTION.md`](DISTRIBUTION.md) and [`packages/mcp-server/README.md`](packages/mcp-server/README.md) | `container-ready (repo-local)` | `docker build -t campus-copilot-api:local .` and `pnpm smoke:docker:api` |
-| a skill consumer who wants machine-readable bundle truth | [`skills/catalog.json`](skills/catalog.json) and [`skills/README.md`](skills/README.md) | `public-ready (repo-local)` | `pnpm check:skill-catalog` |
-| a package or registry reviewer | [`docs/14-public-distribution-scoreboard.md`](docs/14-public-distribution-scoreboard.md) | mixed: one package published, others candidate or blocked | `pnpm proof:public` |
+| a team that wants one containerized local HTTP surface | [`DISTRIBUTION.md`](DISTRIBUTION.md), [`docs/container-publication-prep.md`](docs/container-publication-prep.md), and [`packages/mcp-server/README.md`](packages/mcp-server/README.md) | `container-ready (repo-local)` | `docker build -t campus-copilot-api:local .` and `pnpm smoke:docker:api` |
+| a skill consumer who wants machine-readable bundle truth | [`skills/catalog.json`](skills/catalog.json), [`skills/README.md`](skills/README.md), and [`skills/clawhub-submission.packet.json`](skills/clawhub-submission.packet.json) | `public-ready (repo-local)` with generic upstream packet ready | `pnpm check:skill-catalog` |
+| a package or registry reviewer | [`docs/14-public-distribution-scoreboard.md`](docs/14-public-distribution-scoreboard.md) and [`docs/16-distribution-preflight-packets.md`](docs/16-distribution-preflight-packets.md) | repo-side packets are ready, official listing is still later | `pnpm proof:public` |
 
 ## Fastest Launch Paths
 
@@ -90,7 +90,7 @@ If you already know what kind of user you are, use this shorter router instead o
 | connect one generic stdio MCP server | [`packages/mcp-server/README.md`](packages/mcp-server/README.md) | public-ready (repo-local) |
 | run a local Docker path with health checks | [`DISTRIBUTION.md`](DISTRIBUTION.md) | container-ready (repo-local) for the thin local BFF |
 | load the unpacked browser extension | [`docs/chrome-web-store-submission-packet.md`](docs/chrome-web-store-submission-packet.md) | build-ready, owner-side store submission later |
-| inspect the public read-only skill pack | [`skills/README.md`](skills/README.md) and [`skills/catalog.json`](skills/catalog.json) | public-ready (repo-local), not officially listed |
+| inspect the public read-only skill pack | [`skills/README.md`](skills/README.md), [`skills/catalog.json`](skills/catalog.json), and [`skills/clawhub-submission.packet.json`](skills/clawhub-submission.packet.json) | public-ready (repo-local), generic upstream packet ready, not officially listed |
 
 ## Current Product Shape
 
@@ -126,6 +126,10 @@ If you need publication truth later, use:
 - [`INTEGRATIONS.md`](INTEGRATIONS.md) for the shortest truthful local bundle/router map
 - [`docs/14-public-distribution-scoreboard.md`](docs/14-public-distribution-scoreboard.md) for the bundle-vs-listing ledger
 - [`docs/15-publication-submission-packet.md`](docs/15-publication-submission-packet.md) for owner-only submission order
+- [`docs/mcp-registry-submission-prep.md`](docs/mcp-registry-submission-prep.md) for the focused MCP Registry packet
+- [`docs/skill-publication-prep.md`](docs/skill-publication-prep.md) for the focused skill / ClawHub packet
+- [`docs/container-publication-prep.md`](docs/container-publication-prep.md) for the focused container / image packet
+- [`docs/16-distribution-preflight-packets.md`](docs/16-distribution-preflight-packets.md) for the consolidated registry / skill / container packet ledger
 - [`docs/chrome-web-store-submission-packet.md`](docs/chrome-web-store-submission-packet.md) for the extension-store last mile
 
 ## Student Questions This Repo Tries To Answer
@@ -328,10 +332,11 @@ Use this order when you want the shortest honest builder route:
 2. [examples/toolbox-chooser.md](examples/toolbox-chooser.md)
 3. [examples/integrations/README.md](examples/integrations/README.md)
 4. [examples/mcp/README.md](examples/mcp/README.md) if you already know you want the site-sidecar route
-5. [skills/README.md](skills/README.md) and [skills/catalog.json](skills/catalog.json)
-6. the package READMEs under `packages/*/README.md` for the exact surface you want to consume
-7. [docs/10-builder-api-and-ecosystem-fit.md](docs/10-builder-api-and-ecosystem-fit.md)
-8. [skills/openclaw-readonly-consumer/SKILL.md](skills/openclaw-readonly-consumer/SKILL.md) if your workflow is specifically an OpenClaw-style local runtime
+5. [skills/README.md](skills/README.md), [skills/catalog.json](skills/catalog.json), and [skills/clawhub-submission.packet.json](skills/clawhub-submission.packet.json)
+6. [docs/16-distribution-preflight-packets.md](docs/16-distribution-preflight-packets.md) if you care about repo-side submission packets and preflight checks
+7. the package READMEs under `packages/*/README.md` for the exact surface you want to consume
+8. [docs/10-builder-api-and-ecosystem-fit.md](docs/10-builder-api-and-ecosystem-fit.md)
+9. [skills/openclaw-readonly-consumer/SKILL.md](skills/openclaw-readonly-consumer/SKILL.md) if your workflow is specifically an OpenClaw-style local runtime
 
 The guardrail stays simple:
 

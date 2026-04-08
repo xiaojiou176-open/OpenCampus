@@ -12,7 +12,7 @@ Use this page when the question is:
 | :-- | :-- |
 | Codex / Claude / Claude Desktop MCP config | [`examples/integrations/README.md`](examples/integrations/README.md) |
 | Plugin-grade bundle overview | [`examples/integrations/plugin-bundles.md`](examples/integrations/plugin-bundles.md) |
-| Read-only public skills | [`skills/README.md`](skills/README.md) and [`skills/catalog.json`](skills/catalog.json) |
+| Read-only public skills | [`skills/README.md`](skills/README.md), [`skills/catalog.json`](skills/catalog.json), [`skills/clawhub-submission.packet.json`](skills/clawhub-submission.packet.json), and [`docs/skill-publication-prep.md`](docs/skill-publication-prep.md) |
 | OpenClaw-style local runtime route | [`examples/openclaw-readonly.md`](examples/openclaw-readonly.md) |
 | Local containerized HTTP edge | [`DISTRIBUTION.md`](DISTRIBUTION.md) |
 | Browser extension store last mile | [`docs/chrome-web-store-submission-packet.md`](docs/chrome-web-store-submission-packet.md) |
@@ -39,6 +39,7 @@ They are **not** currently:
 - **Claude Code / Claude Desktop**: start with [`examples/integrations/claude-code-mcp.example.json`](examples/integrations/claude-code-mcp.example.json)
 - **OpenClaw-style local runtimes**: start with [`examples/openclaw-readonly.md`](examples/openclaw-readonly.md)
 - **Need the repo-owned skill pack index first?** start with [`skills/catalog.json`](skills/catalog.json)
+- **Need the generic upstream packet for later ClawHub-style submission?** start with [`skills/clawhub-submission.packet.json`](skills/clawhub-submission.packet.json) and [`docs/16-distribution-preflight-packets.md`](docs/16-distribution-preflight-packets.md)
 - **Need the local containerized HTTP edge first?** start with [`DISTRIBUTION.md`](DISTRIBUTION.md)
 - **Need the narrowest builder proof first?** start with [`examples/README.md`](examples/README.md)
 
