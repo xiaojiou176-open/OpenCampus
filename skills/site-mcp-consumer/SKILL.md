@@ -1,3 +1,8 @@
+---
+name: site-mcp-consumer
+description: Wire one site-scoped read-only MCP sidecar to a local Campus Copilot snapshot.
+---
+
 # Site MCP Consumer
 
 Use this skill when you want to wire one of the site-scoped read-only MCP sidecars into Codex, Claude Code, Claude Desktop, or another **local** MCP-capable runtime that should keep Campus Copilot on the snapshot-first side.

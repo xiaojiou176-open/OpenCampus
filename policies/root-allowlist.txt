@@ -1,5 +1,6 @@
 # Canonical repo-root entries
 .agents
+.dockerignore
 .env
 .env.example
 .git
@@ -13,15 +14,20 @@ CLAUDE.md
 apps
 CHANGELOG.md
 CODE_OF_CONDUCT.md
+compose.yaml
 CONTRIBUTING.md
+DISTRIBUTION.md
+Dockerfile
 docs
 examples
+INTEGRATIONS.md
 LICENSE
 package.json
 packages
 pnpm-lock.yaml
 pnpm-workspace.yaml
 policies
+PRIVACY.md
 README.md
 RELEASE.md
 scripts

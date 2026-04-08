@@ -8,6 +8,10 @@ The format is inspired by Keep a Changelog.
 
 ### Added
 
+- Added a repo-owned `skills/catalog.json` plus `pnpm check:skill-catalog` so the public read-only skill pack now has machine-readable inventory, pack-level semver, and deterministic validation without pretending to be an upstream marketplace manifest.
+- Added a real local container path for the thin BFF with `Dockerfile`, `compose.yaml`, and `pnpm smoke:docker:api`.
+- Added short root-level routing pages for distribution, integrations, and privacy so release/distribution readiness stays discoverable without turning the docs tree into a second README maze.
+- Added `pnpm check:secret-leaks` as the truthful local convenience gate for tracked/reachable leak checks without misreporting ignored local-only materials as repo leaks.
 - Added the Wave 4-7 omnibus ledger for the post-Wave23 back-half SSOT.
 - Added a repo-public read-only builder preview across `sdk`, `workspace-sdk`, `site-sdk`, `cli`, `mcp`, `mcp-readonly`, `mcp-server`, and site API preview packages.
 - Added browser evidence capture helpers plus HAR-like/network/console support for the internal diagnostics side-lane.
@@ -24,6 +28,8 @@ The format is inspired by Keep a Changelog.
 
 ### Changed
 
+- Reworked distribution and publication wording so repo-local proof no longer overclaims a live npm publication for `@campus-copilot/mcp`, and so stdio MCP, container HTTP, browser extension, skill pack, and plugin-grade bundle paths are split more explicitly.
+- Reworked the root package metadata so it reads as an intentional source-first public monorepo entry instead of an accidental publish target.
 - Reworked the README and builder-fit docs so the builder/toolbox story is no longer only future-facing; it is now described as a truthful read-only preview.
 - Reworked the Campus ↔ Switchyard runtime language so Campus keeps student-facing explanation semantics while Switchyard remains behind the runtime seam.
 - Reworked the repository landing page to focus on product shape, quickstart, and trust signals instead of manual live-session status.

@@ -1,3 +1,8 @@
+---
+name: site-overview-audit
+description: Summarize one supported site's current snapshot records and highest-signal items.
+---
+
 # Site Overview Audit
 
 Use this skill when you want a read-only answer to the question:

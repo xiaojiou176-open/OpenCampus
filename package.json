@@ -1,10 +1,11 @@
 {
   "name": "campus-copilot",
   "private": true,
-  "version": "0.0.0",
-  "description": "Local-first academic decision workspace with read-only SDK, CLI, and MCP preview surfaces.",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Source-first public monorepo for the Campus Copilot local-first academic decision workspace and its read-only builder preview surfaces.",
   "license": "MIT",
-  "homepage": "https://github.com/xiaojiou176-open/campus-copilot",
+  "homepage": "https://xiaojiou176-open.github.io/campus-copilot/",
   "repository": {
     "type": "git",
     "url": "https://github.com/xiaojiou176-open/campus-copilot.git"
@@ -13,6 +14,7 @@
     "url": "https://github.com/xiaojiou176-open/campus-copilot/issues"
   },
   "keywords": [
+    "campus-copilot",
     "campus",
     "canvas",
     "gradescope",
@@ -20,6 +22,9 @@
     "myuw",
     "local-first",
     "academic-workspace",
+    "source-first-monorepo",
+    "browser-extension",
+    "student-productivity",
     "read-only-mcp",
     "codex",
     "claude-code"
@@ -28,11 +33,15 @@
   "scripts": {
     "audit:disk": "node scripts/audit-disk.mjs",
     "audit:public-distribution": "node scripts/audit-public-distribution.mjs",
+    "build:skill-catalog": "node scripts/check-skill-catalog.mjs --write",
     "check:pnpm-store-health": "node scripts/check-pnpm-store-health.mjs",
     "hooks:install": "bash scripts/install-hooks.sh",
     "hooks:run:pre-commit": "bash scripts/run-pre-commit-hooks.sh",
     "hooks:run:pre-push": "bash scripts/run-pre-push-hooks.sh",
     "scan:git-history:secrets": "bash scripts/scan-git-history-secrets.sh",
+    "check:secret-leaks": "bash scripts/check-secret-leaks.sh",
+    "check:skill-catalog": "node scripts/check-skill-catalog.mjs",
+    "check:container-surface": "node scripts/check-container-surface.mjs",
     "dev:extension": "pnpm --filter @campus-copilot/extension dev",
     "dev:api": "pnpm --filter @campus-copilot/api dev",
     "start:api": "pnpm --filter @campus-copilot/api start",
@@ -43,6 +52,7 @@
     "test:smoke": "pnpm --filter @campus-copilot/extension test:smoke",
     "test:api": "pnpm --filter @campus-copilot/api test",
     "smoke:api": "bash scripts/api-healthcheck.sh",
+    "smoke:docker:api": "bash scripts/docker-api-smoke.sh",
     "smoke:provider": "bash scripts/provider-roundtrip-smoke.sh",
     "smoke:sidepanel": "node --env-file-if-exists=.env scripts/sidepanel-provider-smoke.mjs",
     "smoke:support": "bash scripts/support-bundle-smoke.sh",
@@ -50,7 +60,7 @@
     "browser:bootstrap:apply": "node --env-file-if-exists=.env scripts/bootstrap-browser-root.mjs --apply",
     "browser:launch": "node --env-file-if-exists=.env scripts/browser-launch.mjs",
     "browser:attach-check": "node --env-file-if-exists=.env scripts/browser-attach-check.mjs",
-    "test:repo": "node --test scripts/live-probe-shared.test.mjs scripts/browser-evidence-utils.test.mjs scripts/browser-instance-identity.test.mjs scripts/browser-launch.test.mjs scripts/disk-governance.test.mjs scripts/browser-root-contract.test.mjs scripts/bootstrap-browser-root.test.mjs scripts/consumer-surfaces.test.mjs scripts/public-package-surface.test.mjs scripts/test-coverage.test.mjs scripts/dependency-security.test.mjs scripts/cache-governance-race.test.mjs scripts/redact-live-adapter-fixture.test.mjs scripts/check-sensitive-surface.test.mjs scripts/check-sensitive-history.test.mjs",
+    "test:repo": "node --test scripts/live-probe-shared.test.mjs scripts/browser-evidence-utils.test.mjs scripts/browser-instance-identity.test.mjs scripts/browser-launch.test.mjs scripts/disk-governance.test.mjs scripts/browser-root-contract.test.mjs scripts/bootstrap-browser-root.test.mjs scripts/consumer-surfaces.test.mjs scripts/check-container-surface.test.mjs scripts/check-skill-catalog.test.mjs scripts/public-package-surface.test.mjs scripts/test-coverage.test.mjs scripts/dependency-security.test.mjs scripts/cache-governance-race.test.mjs scripts/redact-live-adapter-fixture.test.mjs scripts/check-sensitive-surface.test.mjs scripts/check-sensitive-history.test.mjs",
     "test:workspaces": "pnpm -r --filter @campus-copilot/* --if-present test",
     "test:coverage": "node scripts/test-coverage.mjs",
     "cleanup:repo:safe": "bash scripts/cleanup-repo-safe.sh",
@@ -74,7 +84,7 @@
     "check:sensitive-history": "node scripts/check-sensitive-history.mjs",
     "check:runtime-artifacts": "node scripts/check-runtime-artifacts.mjs",
     "check:root-hygiene": "node scripts/check-root-hygiene.mjs",
-    "verify:governance": "node scripts/check-docs-ssot.mjs && node scripts/check-consumer-surfaces.mjs && node scripts/check-verification-claims.mjs && node scripts/check-public-surface.mjs && node scripts/check-actions-pinning.mjs && node scripts/check-english-canonical.mjs && node scripts/check-logging-schema.mjs && node scripts/check-host-safety-contract.mjs && node scripts/check-sensitive-surface.mjs && node scripts/check-sensitive-history.mjs && node scripts/check-runtime-artifacts.mjs && node scripts/check-root-hygiene.mjs",
+    "verify:governance": "node scripts/check-docs-ssot.mjs && node scripts/check-consumer-surfaces.mjs && node scripts/check-verification-claims.mjs && node scripts/check-public-surface.mjs && node scripts/check-skill-catalog.mjs && node scripts/check-container-surface.mjs && node scripts/check-actions-pinning.mjs && node scripts/check-english-canonical.mjs && node scripts/check-logging-schema.mjs && node scripts/check-host-safety-contract.mjs && node scripts/check-sensitive-surface.mjs && node scripts/check-sensitive-history.mjs && node scripts/check-runtime-artifacts.mjs && node scripts/check-root-hygiene.mjs",
     "verify": "bash scripts/verify.sh",
     "verify:hosted": "bash scripts/verify-hosted.sh",
     "verify:nightly": "bash scripts/verify-nightly.sh",
@@ -86,11 +96,11 @@
     "@types/node": "^25.5.2",
     "@types/react": "^19.1.13",
     "@types/react-dom": "^19.1.9",
-    "@vitest/coverage-v8": "^4.1.2",
+    "@vitest/coverage-v8": "^4.1.3",
     "fake-indexeddb": "^6.1.0",
-    "msw": "^2.13.0",
+    "msw": "^2.13.1",
     "typescript": "^6.0.2",
-    "vitest": "^4.1.2"
+    "vitest": "^4.1.3"
   },
   "pnpm": {
     "overrides": {

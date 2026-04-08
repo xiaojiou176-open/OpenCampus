@@ -4,7 +4,13 @@
   "private": false,
   "description": "Unified read-only MCP stdio server for Campus Copilot builder workflows.",
   "license": "MIT",
-  "keywords": ["campus-copilot", "mcp", "server", "read-only", "stdio"],
+  "keywords": [
+    "campus-copilot",
+    "mcp",
+    "server",
+    "read-only",
+    "stdio"
+  ],
   "homepage": "https://github.com/xiaojiou176-open/campus-copilot/tree/main/packages/mcp-server",
   "bugs": {
     "url": "https://github.com/xiaojiou176-open/campus-copilot/issues"
@@ -19,7 +25,10 @@
   },
   "mcpName": "io.github.xiaojiou176-open/campus-copilot-mcp",
   "type": "module",
-  "files": ["README.md", "dist"],
+  "files": [
+    "README.md",
+    "dist"
+  ],
   "bin": {
     "campus-copilot-mcp": "./dist/bin.mjs"
   },
@@ -30,10 +39,9 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "node --experimental-strip-types --test ./src/server.test.ts ./src/bin.test.ts"
   },
-  "dependencies": {},
   "devDependencies": {
     "@campus-copilot/sdk": "workspace:*",
-    "@modelcontextprotocol/sdk": "^1.18.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "esbuild": "^0.28.0",
     "zod": "^4.1.5"
   }

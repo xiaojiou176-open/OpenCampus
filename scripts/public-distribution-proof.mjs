@@ -2,6 +2,8 @@ import { spawnSync } from 'node:child_process';
 
 const commands = [
   { command: 'node', args: ['scripts/audit-public-distribution.mjs'] },
+  { command: 'pnpm', args: ['check:skill-catalog'] },
+  { command: 'pnpm', args: ['check:container-surface'] },
   { command: 'pnpm', args: ['check:consumer-surfaces'] },
   { command: 'pnpm', args: ['check:public-surface'] },
   { command: 'node', args: ['--test', 'scripts/public-package-surface.test.mjs'] },
@@ -43,6 +45,7 @@ const commands = [
   { command: 'node', args: ['--experimental-strip-types', 'examples/gradescope-api-usage.ts'] },
   { command: 'node', args: ['--experimental-strip-types', 'examples/edstem-api-usage.ts'] },
   { command: 'node', args: ['--experimental-strip-types', 'examples/myuw-api-usage.ts'] },
+  { command: 'pnpm', args: ['smoke:docker:api'] },
 ];
 
 for (const { command, args, cwd } of commands) {

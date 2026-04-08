@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Campus Copilot Local BFF
-  version: 0.0.0
+  version: 0.1.0
   summary: Thin local HTTP edge for formal provider calls and provider readiness.
   description: >
     This contract describes the current local-first HTTP surface that ships in the

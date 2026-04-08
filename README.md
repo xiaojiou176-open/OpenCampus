@@ -2,9 +2,13 @@
 
 > A local-first academic decision workspace for students who want Canvas, Gradescope, EdStem, and MyUW in one structured place, then want clear answers to what changed, what matters first, and what to export or ask with cited AI.
 
-[Docs](docs/README.md) · [Quickstart](#quickstart) · [Product Brief](docs/01-product-prd.md) · [User Surfaces](docs/06-export-and-user-surfaces.md) · [Verification Matrix](docs/verification-matrix.md) · [Contributing](CONTRIBUTING.md) · [AI Collaboration](CLAUDE.md) · [Security](SECURITY.md) · [License](LICENSE)
+[Docs](docs/README.md) · [Quickstart](#quickstart) · [Integrations](INTEGRATIONS.md) · [Distribution](DISTRIBUTION.md) · [Privacy](PRIVACY.md) · [Product Brief](docs/01-product-prd.md) · [User Surfaces](docs/06-export-and-user-surfaces.md) · [Verification Matrix](docs/verification-matrix.md) · [Contributing](CONTRIBUTING.md) · [AI Collaboration](CLAUDE.md) · [Security](SECURITY.md) · [License](LICENSE)
 
 ![Campus Copilot hero overview](docs/assets/hero-workbench-overview.svg)
+
+Real workbench proof, not concept art:
+
+![Campus Copilot sidepanel overview](docs/assets/sidepanel-overview.png)
 
 ## Start Here In 60 Seconds
 
@@ -61,6 +65,33 @@ Proof is there to verify the workbench is real.
 Builder surfaces are there to consume the same substrate.
 Neither should replace the student-first story on the front door.
 
+## Pick The Right Entry Surface
+
+If you already know why the product exists and just need the fastest truthful
+entry point, use this table instead of guessing:
+
+| If you are | Start here | Current state | Quick proof |
+| :-- | :-- | :-- | :-- |
+| a GitHub visitor or reviewer | [`DISTRIBUTION.md`](DISTRIBUTION.md) and [`docs/storefront-assets.md`](docs/storefront-assets.md) | public front door is live | GitHub Pages returns `HTTP 200` |
+| a student trying the product locally | [Quickstart](#quickstart) and [`docs/chrome-web-store-submission-packet.md`](docs/chrome-web-store-submission-packet.md) | build-ready local-first product | `pnpm verify` |
+| a Codex / Claude MCP consumer | [`packages/mcp-server/README.md`](packages/mcp-server/README.md) and [`examples/integrations/README.md`](examples/integrations/README.md) | `public-ready (repo-local)` | `pnpm proof:public` |
+| a team that wants one containerized local HTTP surface | [`DISTRIBUTION.md`](DISTRIBUTION.md) and [`packages/mcp-server/README.md`](packages/mcp-server/README.md) | `container-ready (repo-local)` | `docker build -t campus-copilot-api:local .` and `pnpm smoke:docker:api` |
+| a skill consumer who wants machine-readable bundle truth | [`skills/catalog.json`](skills/catalog.json) and [`skills/README.md`](skills/README.md) | `public-ready (repo-local)` | `pnpm check:skill-catalog` |
+| a package or registry reviewer | [`docs/14-public-distribution-scoreboard.md`](docs/14-public-distribution-scoreboard.md) | mixed: one package published, others candidate or blocked | `pnpm proof:public` |
+
+## Fastest Launch Paths
+
+If you already know what kind of user you are, use this shorter router instead of reading every package description first:
+
+| I am trying to... | Start here | Current truthful state |
+| :-- | :-- | :-- |
+| understand the product in one screen | this README + [`docs/assets/hero-workbench-overview.svg`](docs/assets/hero-workbench-overview.svg) | public front door, GitHub-first |
+| run the student-facing local workbench | [Quickstart](#quickstart) | ready now |
+| connect one generic stdio MCP server | [`packages/mcp-server/README.md`](packages/mcp-server/README.md) | public-ready (repo-local) |
+| run a local Docker path with health checks | [`DISTRIBUTION.md`](DISTRIBUTION.md) | container-ready (repo-local) for the thin local BFF |
+| load the unpacked browser extension | [`docs/chrome-web-store-submission-packet.md`](docs/chrome-web-store-submission-packet.md) | build-ready, owner-side store submission later |
+| inspect the public read-only skill pack | [`skills/README.md`](skills/README.md) and [`skills/catalog.json`](skills/catalog.json) | public-ready (repo-local), not officially listed |
+
 ## Current Product Shape
 
 Today the repository already includes:
@@ -91,8 +122,11 @@ It is not the same thing as official listing, marketplace publication, or owner-
 
 If you need publication truth later, use:
 
+- [`DISTRIBUTION.md`](DISTRIBUTION.md) for the shortest truthful current-state router
+- [`INTEGRATIONS.md`](INTEGRATIONS.md) for the shortest truthful local bundle/router map
 - [`docs/14-public-distribution-scoreboard.md`](docs/14-public-distribution-scoreboard.md) for the bundle-vs-listing ledger
 - [`docs/15-publication-submission-packet.md`](docs/15-publication-submission-packet.md) for owner-only submission order
+- [`docs/chrome-web-store-submission-packet.md`](docs/chrome-web-store-submission-packet.md) for the extension-store last mile
 
 ## Student Questions This Repo Tries To Answer
 
@@ -281,7 +315,7 @@ If your intent is specifically **Codex / Claude Code / OpenClaw / MCP onboarding
 4. [Builder examples](examples/README.md)
 5. [Public skills](skills/README.md)
 6. [Public distribution ledger](docs/14-public-distribution-scoreboard.md)
-5. [Builder API and ecosystem fit](docs/10-builder-api-and-ecosystem-fit.md)
+7. [Builder API and ecosystem fit](docs/10-builder-api-and-ecosystem-fit.md)
 
 ## Builder Quick Paths
 
@@ -294,7 +328,7 @@ Use this order when you want the shortest honest builder route:
 2. [examples/toolbox-chooser.md](examples/toolbox-chooser.md)
 3. [examples/integrations/README.md](examples/integrations/README.md)
 4. [examples/mcp/README.md](examples/mcp/README.md) if you already know you want the site-sidecar route
-5. [skills/README.md](skills/README.md)
+5. [skills/README.md](skills/README.md) and [skills/catalog.json](skills/catalog.json)
 6. the package READMEs under `packages/*/README.md` for the exact surface you want to consume
 7. [docs/10-builder-api-and-ecosystem-fit.md](docs/10-builder-api-and-ecosystem-fit.md)
 8. [skills/openclaw-readonly-consumer/SKILL.md](skills/openclaw-readonly-consumer/SKILL.md) if your workflow is specifically an OpenClaw-style local runtime
