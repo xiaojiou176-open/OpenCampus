@@ -4,51 +4,18 @@ This file is the repo-side preflight packet for the browser-extension listing.
 
 Use it when the question is:
 
-> Have we prepared the extension enough that only the final Chrome Web Store
-> dashboard submission steps remain?
-
-This file is intentionally narrow.
-It is not the general product README, and it is not a full launch diary.
+> Have we prepared the extension enough that only the final Chrome Web Store dashboard submission steps remain?
 
 ## Current repo-side readiness
 
-The repository already has these extension-side prerequisites in place:
+Use the Chrome lane as four narrow gates:
 
-- extension build output:
-  - `apps/extension/dist/chrome-mv3`
-- Manifest V3 build path through:
-  - [`apps/extension/wxt.config.ts`](../apps/extension/wxt.config.ts)
-- current extension identity:
-  - name: `Campus Copilot`
-  - description: local-first academic decision workspace with cited AI
-  - version source: [`../apps/extension/package.json`](../apps/extension/package.json) now aligned to `0.1.0`
-  - icon set:
-    - [`../apps/extension/public/icon-16.png`](../apps/extension/public/icon-16.png)
-    - [`../apps/extension/public/icon-32.png`](../apps/extension/public/icon-32.png)
-    - [`../apps/extension/public/icon-48.png`](../apps/extension/public/icon-48.png)
-    - [`../apps/extension/public/icon-128.png`](../apps/extension/public/icon-128.png)
-- current formal permissions:
-  - `sidePanel`
-  - `activeTab`
-  - `scripting`
-  - `downloads`
-  - `storage`
-- supported host permissions are scoped to:
-  - Canvas
-  - Gradescope
-  - EdStem
-  - MyUW
-  - local loopback BFF hosts
-- privacy/security brief:
-  - [`docs/07-security-privacy-compliance.md`](07-security-privacy-compliance.md)
-  - [`SECURITY.md`](../SECURITY.md)
-- support / issue surface:
-  - GitHub issues and discussions are enabled
-- browser-store privacy page:
-  - [`../PRIVACY.md`](../PRIVACY.md)
-- visual assets already exist:
-  - [`docs/assets/sidepanel-overview.png`](assets/sidepanel-overview.png)
-  - [`docs/assets/social-preview.png`](assets/social-preview.png)
+| Gate | Current truthful state | Evidence |
+| :-- | :-- | :-- |
+| `build-ready` | ready | `pnpm --filter @campus-copilot/extension build` |
+| `asset-ready` | ready | icons plus [`assets/sidepanel-overview.png`](assets/sidepanel-overview.png) and [`assets/social-preview.png`](assets/social-preview.png) |
+| `packet-ready` | ready | this file plus `pnpm verify` and `pnpm proof:public` |
+| `owner-only later` | still later | Chrome Web Store dashboard upload, metadata fields, and final submit click |
 
 ## Repo-tracked packet inventory
 
@@ -66,31 +33,26 @@ The repository already has these extension-side prerequisites in place:
 ## What is already truthful to claim
 
 - the repository already builds a real browser extension
-- the current extension is local-first and read-only
-- the current workbench surfaces are:
-  - sidepanel
-  - popup
-  - options
-- the extension is already GitHub-public and Pages-backed as a product front door
+- the extension is local-first and read-only
+- the current workbench surfaces are sidepanel, popup, and options
+- the extension front door is already GitHub-public and Pages-backed
 
 ## What should still stay out of current claims
 
-- “Chrome Web Store listed”
-- “officially published browser extension”
+- `Chrome Web Store listed`
+- `officially published browser extension`
 - write-capable browser automation
 - generic AI assistant shell
 
 ## Owner-only final steps later
 
-These are the parts that still belong in the Chrome Web Store dashboard or
-owner submission flow:
+These still belong in the Chrome Web Store dashboard:
 
-- final store listing text
-- category selection
-- screenshot upload / ordering
+- final listing copy
+- screenshot upload and ordering
 - privacy-policy field confirmation
-- support contact / store metadata fields
-- final package upload and publish click
+- support contact and store metadata fields
+- package upload and publish click
 
 ## Suggested owner checklist
 
@@ -102,5 +64,5 @@ owner submission flow:
 3. Re-check the front door:
    - GitHub repo page
    - GitHub Pages
-   - screenshots/assets
+   - screenshots and assets
 4. Then complete the final Chrome Web Store dashboard submission manually.

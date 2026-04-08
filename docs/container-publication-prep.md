@@ -8,18 +8,14 @@ Use it when the question becomes:
 
 ## Truth Boundary
 
-- The containerized surface is `apps/api`, the thin local BFF.
-- It is **not** the stdio MCP transport.
-- The local proof image tag stays `campus-copilot-api:local`.
-- The recommended future public image reference is:
-  - `ghcr.io/xiaojiou176-open/campus-copilot-api`
-- That recommended public reference is still only a **repo-side recommendation** today.
-- No image has been pushed to GHCR, Docker Hub, or another registry from this repo in this wave.
+- the containerized surface is `apps/api`, the thin local BFF
+- it is **not** the stdio MCP transport
+- the local proof image tag stays `campus-copilot-api:local`
+- the recommended future public image reference is `ghcr.io/xiaojiou176-open/campus-copilot-api`
+- that reference is still only a repo-side recommendation today
+- no image has been pushed to GHCR, Docker Hub, or another registry from this repo in this wave
 
 ## Naming And Tag Strategy
-
-Use the image naming scheme like a shipping label:
-the box can have a local warehouse tag today and a public carrier label later, but the contents stay the same.
 
 Recommended tags:
 
@@ -31,9 +27,18 @@ Recommended tags:
 
 If the owner later mirrors the image to Docker Hub, keep the same tag scheme under the owner-controlled namespace instead of inventing a second versioning policy.
 
+## Repo-Side Proof
+
+| Item | Current repo-side truth | Local proof |
+| :-- | :-- | :-- |
+| Docker build path | Dockerfile builds the thin local BFF image | `pnpm smoke:docker:api` |
+| Compose path | `compose.yaml` runs the same API image with health checks | `pnpm smoke:docker:api` |
+| publication metadata | OCI labels now describe the image surface and documentation route | `pnpm check:container-publication-surface` |
+| boundary docs | container docs explain that this is not the stdio MCP transport | `pnpm check:container-publication-surface` |
+
 ## OCI Metadata
 
-The Dockerfile now carries the following OCI label set:
+The Dockerfile carries the expected OCI label set:
 
 - `org.opencontainers.image.title`
 - `org.opencontainers.image.description`
@@ -43,15 +48,6 @@ The Dockerfile now carries the following OCI label set:
 - `org.opencontainers.image.documentation`
 - `org.opencontainers.image.version`
 - `org.opencontainers.image.revision`
-
-## Repo-Side Proof
-
-| Item | Current repo-side truth | Local proof |
-| :-- | :-- | :-- |
-| Docker build path | Dockerfile builds the thin local BFF image | `pnpm smoke:docker:api` |
-| Compose path | `compose.yaml` runs the same API image with health checks | `pnpm smoke:docker:api` |
-| publication metadata | OCI labels now describe the image surface and documentation route | `pnpm check:container-publication-surface` |
-| boundary docs | container docs explain that this is not the stdio MCP transport | `pnpm check:container-publication-surface` |
 
 ## Owner-Only Later Steps
 
