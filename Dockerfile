@@ -41,6 +41,8 @@ COPY . .
 
 EXPOSE 8787
 
+USER node
+
 HEALTHCHECK --interval=10s --timeout=5s --start-period=5s --retries=5 CMD node -e "fetch('http://127.0.0.1:8787/health').then((response)=>{if(!response.ok)process.exit(1)}).catch(()=>process.exit(1))"
 
 # Runtime entry: pnpm --filter @campus-copilot/api start
