@@ -1,0 +1,42 @@
+{
+  "schemaVersion": "1.0.0",
+  "kind": "repo-owned-mcp-registry-submission-packet",
+  "truthBoundary": "This packet is a repo-side preflight artifact. It is not proof of package publication or official registry listing.",
+  "officialSources": {
+    "quickstart": "https://modelcontextprotocol.io/registry/quickstart",
+    "schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json"
+  },
+  "package": {
+    "name": "@campus-copilot/mcp-server",
+    "version": "0.1.0",
+    "mcpName": "io.github.xiaojiou176-open/campus-copilot-mcp",
+    "publishConfigAccess": "public",
+    "npmPublicationRequiredBeforeRegistrySubmit": true
+  },
+  "server": {
+    "schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+    "name": "io.github.xiaojiou176-open/campus-copilot-mcp",
+    "title": "Campus Copilot MCP",
+    "description": "Read-only MCP server for the local Campus Copilot BFF and imported workspace snapshots.",
+    "repository": {
+      "url": "https://github.com/xiaojiou176-open/campus-copilot",
+      "source": "github",
+      "subfolder": "packages/mcp-server"
+    },
+    "transport": "stdio"
+  },
+  "docs": {
+    "readme": "packages/mcp-server/README.md",
+    "examples": [
+      "examples/integrations/README.md",
+      "examples/integrations/codex-mcp.example.json",
+      "examples/integrations/claude-code-mcp.example.json"
+    ],
+    "packetDoc": "docs/16-distribution-preflight-packets.md"
+  },
+  "ownerLater": {
+    "publishPackage": "npm publish --access public",
+    "login": "mcp-publisher login github",
+    "publishMetadata": "mcp-publisher publish"
+  }
+}

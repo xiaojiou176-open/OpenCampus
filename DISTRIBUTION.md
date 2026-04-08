@@ -21,7 +21,7 @@ It is the shipping counter:
 | Browser extension | student-facing workbench | build-ready product surface | `pnpm --filter @campus-copilot/extension build` |
 | CLI / sidecars / provider-runtime / site APIs | builder-facing package candidates | public-ready (repo-local) | `pnpm proof:public` |
 | SDK / workspace-sdk / site-sdk | code-first study of the shared substrate | repo-public preview, registry blocked | `pnpm proof:public` |
-| Public skill pack | prompt-first local builder workflows | public-ready (repo-local) | `pnpm check:skill-catalog` |
+| Public skill pack | prompt-first local builder workflows | public-ready (repo-local) with generic upstream packet ready | `pnpm check:skill-catalog` |
 | Codex / Claude / OpenClaw bundles | plugin-grade local bundle routing | plugin-grade repo bundles | `pnpm proof:public` |
 
 ## Truthful Layer Split
@@ -31,6 +31,13 @@ It is the shipping counter:
 - `Dockerfile` and `compose.yaml` intentionally containerize the **thin local BFF**, not the stdio server.
 - the container proof loop is `pnpm smoke:docker:api`, not `pnpm start:mcp`
 - `skills/catalog.json` is the **repo-owned skill pack index**. It is not an OpenClaw native plugin manifest and not a ClawHub listing by itself.
+- `skills/clawhub-submission.packet.json` is the **repo-owned upstream packet** for later ClawHub-style submission. It is intentionally not a vendor-owned manifest.
+- `docs/skill-publication-prep.md` is the focused human-readable packet for that same skill publication lane.
+- `packages/mcp-server/registry-submission.packet.json` plus `pnpm check:mcp-registry-preflight` are the **registry-submit preflight** artifacts for the stdio MCP path.
+- `docs/mcp-registry-submission-prep.md` is the focused human-readable packet for that same MCP Registry lane.
+- `docs/container-publication.packet.json` captures the canonical image naming, OCI labels, and truth boundary for the thin local BFF image.
+- `docs/container-publication-prep.md` is the focused human-readable packet for the same image-publication lane.
+- [`docs/16-distribution-preflight-packets.md`](docs/16-distribution-preflight-packets.md) is the consolidated human-readable packet ledger for all three publication paths.
 
 ## Root Package Posture
 
@@ -60,14 +67,28 @@ Runtime constraints:
 - `PORT` defaults to `8787`
 - provider env vars stay optional; `/health` works without them and `/api/providers/status` reports readiness truthfully
 
+Canonical image naming:
+
+- local smoke tag: `campus-copilot-api:local`
+- canonical public image coordinate: `ghcr.io/xiaojiou176-open/campus-copilot-api`
+- recommended public tags: `0.1.0`, `0.1`, `latest`
+- optional owner-chosen mirror: `<owner-controlled-namespace>/campus-copilot-api`
+
+Repo-side publication packet:
+
+- [`docs/container-publication.packet.json`](docs/container-publication.packet.json)
+- [`docs/container-publication-prep.md`](docs/container-publication-prep.md)
+- `pnpm check:container-surface`
+
 ## Read In This Order
 
 1. [`README.md`](README.md)
 2. [`docs/14-public-distribution-scoreboard.md`](docs/14-public-distribution-scoreboard.md)
 3. [`docs/15-publication-submission-packet.md`](docs/15-publication-submission-packet.md)
-4. [`docs/chrome-web-store-submission-packet.md`](docs/chrome-web-store-submission-packet.md)
-5. [`INTEGRATIONS.md`](INTEGRATIONS.md)
-6. [`PRIVACY.md`](PRIVACY.md)
+4. [`docs/16-distribution-preflight-packets.md`](docs/16-distribution-preflight-packets.md)
+5. [`docs/chrome-web-store-submission-packet.md`](docs/chrome-web-store-submission-packet.md)
+9. [`INTEGRATIONS.md`](INTEGRATIONS.md)
+10. [`PRIVACY.md`](PRIVACY.md)
 
 ## Owner-Only Later Bucket
 
@@ -79,6 +100,12 @@ These do **not** block repo readiness:
 - Chrome Web Store submission click-through
 - Docker Hub / Glama or other directory-side publish actions
 - promo video / announcement / off-repo launch
+
+Repo-side preflight commands that should stay green before those later actions:
+
+- `pnpm check:skill-catalog`
+- `pnpm check:mcp-registry-preflight`
+- `pnpm check:container-surface`
 
 ## Browser Extension Readiness
 

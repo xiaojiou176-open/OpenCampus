@@ -37,7 +37,28 @@ Registry-unblock progress in this repo:
 - the published bin now targets a bundled `dist/bin.mjs` artifact instead of a raw TypeScript entrypoint
 - this package is the cleanest current candidate for future official MCP Registry submission work
 - preregistry metadata now lives beside the package in [`server.json`](./server.json) and the package-level `mcpName`
+- repo-side submit-ready fields now also live in [`registry-submission.packet.json`](./registry-submission.packet.json)
+- the consolidated preflight ledger lives in [`../../docs/16-distribution-preflight-packets.md`](../../docs/16-distribution-preflight-packets.md)
+- the container/image packet lives in [`../../docs/container-publication-prep.md`](../../docs/container-publication-prep.md)
 - official listing is still a separate upstream step; this README does not imply it has already happened
+
+Registry preflight proof from the repo root:
+
+```bash
+pnpm check:mcp-registry-preflight
+```
+
+That preflight checks the late-stage alignment work that tends to drift:
+
+- `package.json#mcpName`
+- `server.json` name/version/repository/transport alignment
+- the monorepo `subfolder` path
+- example config plus truthful install wording
+- the repo-owned submission packet that the owner can reuse later
+
+Related packet docs:
+
+- [`../../docs/16-distribution-preflight-packets.md`](../../docs/16-distribution-preflight-packets.md)
 
 ## Pair It With The Container Path
 
@@ -83,6 +104,7 @@ docker run --rm -p 8787:8787 campus-copilot-api:local
 
 - local-first
 - read-only
+- stdio
 - snapshot-first or thin-BFF-first
 - not a hosted MCP service
 - not a hosted API

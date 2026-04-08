@@ -46,6 +46,22 @@ const bundleSurfaces = [
 
 const supportingSurfaces = [
   {
+    surface: 'MCP Registry packet',
+    currentStateWhenReady: 'registry-preflight ready',
+    registryReadiness: 'owner-side submit later',
+    installPath: 'packages/mcp-server/registry-submission.packet.json',
+    proof: 'pnpm check:mcp-registry-preflight',
+    docs: 'docs/16-distribution-preflight-packets.md',
+    sample: 'packages/mcp-server/registry-submission.packet.json',
+    requiredPaths: [
+      'docs/16-distribution-preflight-packets.md',
+      'packages/mcp-server/package.json',
+      'packages/mcp-server/server.json',
+      'packages/mcp-server/registry-submission.packet.json',
+      'scripts/check-mcp-registry-preflight.mjs',
+    ],
+  },
+  {
     surface: 'Skill pack',
     currentStateWhenReady: 'public-ready (repo-local)',
     registryReadiness: 'owner-side publish later',
@@ -53,17 +69,31 @@ const supportingSurfaces = [
     proof: 'pnpm check:skill-catalog',
     docs: 'skills/README.md',
     sample: 'examples/current-view-triage-example.md',
-    requiredPaths: ['skills/catalog.json', 'skills/README.md', 'scripts/check-skill-catalog.mjs'],
+    requiredPaths: [
+      'skills/catalog.json',
+      'skills/README.md',
+      'skills/clawhub-submission.packet.json',
+      'docs/16-distribution-preflight-packets.md',
+      'scripts/check-skill-catalog.mjs',
+    ],
   },
   {
     surface: 'API container',
     currentStateWhenReady: 'container-ready (repo-local)',
     registryReadiness: 'owner-side publish later',
     installPath: 'docker compose up -d campus-copilot-api',
-    proof: 'pnpm smoke:docker:api',
+    proof: 'pnpm check:container-surface && pnpm smoke:docker:api',
     docs: 'DISTRIBUTION.md',
     sample: 'Dockerfile',
-    requiredPaths: ['Dockerfile', '.dockerignore', 'compose.yaml', 'scripts/docker-api-smoke.sh'],
+    requiredPaths: [
+      'Dockerfile',
+      '.dockerignore',
+      'compose.yaml',
+      'docs/container-publication.packet.json',
+      'docs/16-distribution-preflight-packets.md',
+      'scripts/docker-api-smoke.sh',
+      'scripts/check-container-surface.mjs',
+    ],
   },
 ];
 

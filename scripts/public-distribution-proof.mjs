@@ -3,6 +3,7 @@ import { spawnSync } from 'node:child_process';
 const commands = [
   { command: 'node', args: ['scripts/audit-public-distribution.mjs'] },
   { command: 'pnpm', args: ['check:skill-catalog'] },
+  { command: 'pnpm', args: ['check:mcp-registry-preflight'] },
   { command: 'pnpm', args: ['check:container-surface'] },
   { command: 'pnpm', args: ['check:consumer-surfaces'] },
   { command: 'pnpm', args: ['check:public-surface'] },
