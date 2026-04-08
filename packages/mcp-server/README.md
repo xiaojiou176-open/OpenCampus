@@ -39,6 +39,35 @@ Registry-unblock progress in this repo:
 - preregistry metadata now lives beside the package in [`server.json`](./server.json) and the package-level `mcpName`
 - official listing is still a separate upstream step; this README does not imply it has already happened
 
+## Pair It With The Container Path
+
+The current Docker surface is intentionally the **thin local BFF**, not this
+stdio server itself.
+
+That split is on purpose:
+
+- the stdio MCP server stays the local read-only MCP entrypoint
+- the Docker path gives the repo one truthful HTTP and health-check surface
+- together they keep the product local-first instead of pretending Campus Copilot is a hosted MCP service
+
+Build the containerized BFF from the repo root:
+
+```bash
+docker build -t campus-copilot-api:local .
+docker compose up -d campus-copilot-api
+```
+
+Use the container path when you need a local HTTP surface or container-friendly
+healthcheck.
+Keep using this package when you need the local stdio MCP server.
+If you want the shortest rule in one sentence: pair it with the local stdio MCP server, and treat the Docker route as a local HTTP helper, not a hosted API.
+
+You can also launch the local container directly without Compose:
+
+```bash
+docker run --rm -p 8787:8787 campus-copilot-api:local
+```
+
 ## Current tools
 
 - `campus_health`
@@ -56,6 +85,7 @@ Registry-unblock progress in this repo:
 - read-only
 - snapshot-first or thin-BFF-first
 - not a hosted MCP service
+- not a hosted API
 - not a live-browser control plane
 
 ## See also

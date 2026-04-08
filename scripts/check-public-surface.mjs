@@ -23,9 +23,13 @@ const requiredFiles = [
   'examples/openclaw-readonly.md',
   'scripts/proof-public-surface.sh',
   'scripts/audit-public-distribution.mjs',
+  'scripts/check-container-surface.mjs',
+  'scripts/check-skill-catalog.mjs',
   'scripts/consumer/campus-copilot-mcp.sh',
   'scripts/consumer/campus-copilot-site-sidecar.sh',
+  'scripts/docker-api-smoke.sh',
   'skills/README.md',
+  'skills/catalog.json',
   'skills/current-view-triage/SKILL.md',
   'skills/openclaw-readonly-consumer/SKILL.md',
   'skills/site-overview-audit/SKILL.md',
@@ -36,6 +40,7 @@ const requiredFiles = [
   'apps/web/public/favicon.svg',
   'apps/web/public/web-workbench-share-card.svg',
   'apps/web/public/site.webmanifest',
+  'compose.yaml',
   'CHANGELOG.md',
   'CONTRIBUTING.md',
   'SECURITY.md',
@@ -87,6 +92,7 @@ const publicSkillFiles = [
 
 const expectedRepositoryUrl = 'https://github.com/xiaojiou176-open/campus-copilot.git';
 const expectedIssuesUrl = 'https://github.com/xiaojiou176-open/campus-copilot/issues';
+const expectedRootHomepage = 'https://xiaojiou176-open.github.io/campus-copilot/';
 
 const failures = [];
 
@@ -144,6 +150,31 @@ if (existsSync('README.md')) {
     if (!readme.includes(link)) {
       failures.push(`readme_missing_public_link:${link}`);
     }
+  }
+}
+
+if (existsSync('package.json')) {
+  const rootPackage = JSON.parse(readFileSync('package.json', 'utf8'));
+  if (rootPackage.private !== true) {
+    failures.push('root_package_must_stay_private');
+  }
+  if (rootPackage.version === '0.0.0') {
+    failures.push('root_package_version_not_release_aligned');
+  }
+  if (rootPackage.type !== 'module') {
+    failures.push('root_package_type_missing_module');
+  }
+  if (rootPackage.homepage !== expectedRootHomepage) {
+    failures.push('root_package_homepage_not_pages');
+  }
+  if (
+    typeof rootPackage.description !== 'string' ||
+    !rootPackage.description.includes('Source-first public monorepo')
+  ) {
+    failures.push('root_package_description_not_source_first');
+  }
+  if (!Array.isArray(rootPackage.keywords) || !rootPackage.keywords.includes('campus-copilot')) {
+    failures.push('root_package_keywords_missing_canonical_tag');
   }
 }
 

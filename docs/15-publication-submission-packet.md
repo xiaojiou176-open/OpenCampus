@@ -31,7 +31,7 @@ These package surfaces are currently the strongest repo-local publication candid
 
 | Surface | Current repo-local state | Why it is a candidate now | Why it is still not an official listing yet |
 | :-- | :-- | :-- | :-- |
-| `@campus-copilot/mcp` | `published (npm)` | the first package-level release has now been executed and fresh registry smoke confirms the package can be installed and imported from npm | npm publication is real, but this config-helper package is still not itself an official MCP Registry server artifact or official listing |
+| `@campus-copilot/mcp` | `public-ready (repo-local)` + `registry candidate` | the config-helper package has a real README, proof loop, and sample route inside the repo | repo-local proof still does not itself prove a live npm page or official listing |
 | `@campus-copilot/mcp-server` | `public-ready (repo-local)` + `registry candidate` | bundled standalone `dist/bin.mjs`, real help surface, repo-local proof path | an official MCP Registry submission still has to be executed; bundled server artifact is not the same thing as official listing |
 | `@campus-copilot/mcp-readonly` | `public-ready (repo-local)` + `registry candidate` | bundled site sidecars now install and run through packaged `dist/*.js` bins | still not the same thing as an official MCP Registry listing |
 | `@campus-copilot/cli` | `public-ready (repo-local)` + `registry candidate` | bundled CLI now builds, packs, installs, and runs outside the monorepo | npm/package publication still needs owner-controlled release action |
@@ -39,13 +39,15 @@ These package surfaces are currently the strongest repo-local publication candid
 | `@campus-copilot/gradescope-api` | `public-ready (repo-local)` + `registry candidate` | package now builds to `dist/`, packs cleanly, and has runnable usage proof | upstream publication still not executed |
 | `@campus-copilot/edstem-api` | `public-ready (repo-local)` + `registry candidate` | package now builds to `dist/`, packs cleanly, and has runnable usage proof | upstream publication still not executed |
 | `@campus-copilot/myuw-api` | `public-ready (repo-local)` + `registry candidate` | package now builds to `dist/`, packs cleanly, and has runnable usage proof | upstream publication still not executed |
+| Public skill pack catalog | `public-ready (repo-local)` | machine-readable bundle catalog now exists in `skills/catalog.json` with deterministic validation | the current catalog is intentionally repo-owned and still needs the target platform's exact bundle or manifest shape at publish time |
+| Docker API container | `container-ready (repo-local)` | Dockerfile, compose wiring, and health smoke now exist for the thin local BFF | no container registry publication or platform-specific container listing has been executed |
 
 ## Publish Order
 
 The current recommended publication order is:
 
-1. `@campus-copilot/mcp` — already published on npm
-2. `@campus-copilot/mcp-server`
+1. `@campus-copilot/mcp-server`
+2. `@campus-copilot/mcp`
 3. `@campus-copilot/cli`
 4. `@campus-copilot/mcp-readonly`
 5. `@campus-copilot/provider-runtime`
@@ -55,8 +57,8 @@ The current recommended publication order is:
 
 Why this order:
 
-- `@campus-copilot/mcp` was the smallest claim surface and is now the first published package-level release
-- `@campus-copilot/mcp-server` is the strongest MCP-server-shaped artifact for official registry prep
+- `@campus-copilot/mcp-server` is the strongest MCP-server-shaped artifact for official registry prep because the official registry path is package-plus-`server.json`, not just config helpers
+- `@campus-copilot/mcp` is still a good helper-package candidate, but it should not outrun the more canonical server artifact
 - `@campus-copilot/cli` is a broad builder entrypoint, but still package-shaped instead of platform-shaped
 - the sidecar/runtime/site-api packages are real and packable, but they are easier to overclaim if they go out before the MCP/core builder story is anchored
 
@@ -64,17 +66,19 @@ Why this order:
 
 | Target surface | Official public face exists? | Exact official URL | Current truthful repo-local status | Exact remaining owner step |
 | :-- | :-- | :-- | :-- | :-- |
-| MCP Registry | Yes | [registry.modelcontextprotocol.io](https://registry.modelcontextprotocol.io/) and [registry quickstart](https://github.com/modelcontextprotocol/registry/blob/main/docs/modelcontextprotocol-io/quickstart.mdx) | `@campus-copilot/mcp` is now a published npm config-helper package, and `@campus-copilot/mcp-server` is the strongest bundled server candidate for an official registry submission | decide whether `mcp-server` is the first official registry artifact, then publish/package it under owner-controlled credentials and execute the official submission flow |
+| MCP Registry | Yes | [registry.modelcontextprotocol.io](https://registry.modelcontextprotocol.io/) and [registry quickstart](https://github.com/modelcontextprotocol/registry/blob/main/docs/modelcontextprotocol-io/quickstart.mdx) | `@campus-copilot/mcp-server` is the strongest bundled server candidate for an official registry submission, while `@campus-copilot/mcp` remains a helper-package candidate only | decide whether `mcp-server` is the first official registry artifact, then publish/package it under owner-controlled credentials and execute the official submission flow |
 | Codex ecosystem | Yes | [developers.openai.com/codex/ide](https://developers.openai.com/codex/ide) | repo already has a truthful Codex bundle/router path | no verified official third-party listing submission URL is currently recorded here; do not claim official listing yet |
 | Claude Code ecosystem | Yes | [docs.anthropic.com/en/docs/claude-code/ide-integrations](https://docs.anthropic.com/en/docs/claude-code/ide-integrations) and [docs.anthropic.com/en/docs/claude-code/mcp](https://docs.anthropic.com/en/docs/claude-code/mcp) | repo already has truthful Claude bundle/router paths | no verified official third-party listing submission URL is currently recorded here; do not claim official listing yet |
-| OpenClaw / ClawHub | Yes | [docs.openclaw.ai/tools/clawhub](https://docs.openclaw.ai/tools/clawhub) and [docs.openclaw.ai/plugins/bundles](https://docs.openclaw.ai/plugins/bundles) | repo already has a plugin-grade compatible bundle route via the existing Claude-style layout | no verified upstream publication/submission URL is currently recorded here; do not claim official listing yet |
+| OpenClaw / ClawHub | Yes | [docs.openclaw.ai/tools/clawhub](https://docs.openclaw.ai/tools/clawhub) and [docs.openclaw.ai/plugins/bundles](https://docs.openclaw.ai/plugins/bundles) | repo already has a plugin-grade compatible bundle route via the existing Claude-style layout plus the repo-owned skill catalog | no verified upstream publication/submission URL is currently recorded here; do not claim official listing yet |
 
 ## Owner Action Cards
 
 | Action | Why owner-only | Exact local path | Exact next step |
 | :-- | :-- | :-- | :-- |
-| Verify the first published package page and decide the next release | only the owner should choose whether the next step is more npm publication or an official registry submission | [`../packages/mcp/package.json`](../packages/mcp/package.json) | confirm that `@campus-copilot/mcp` is the desired first public package, then move to `@campus-copilot/mcp-server` if you want the next release step |
+| Decide the first package publication | only the owner should choose which package really leaves the repo first | [`../packages/mcp-server/package.json`](../packages/mcp-server/package.json) and [`../packages/mcp/package.json`](../packages/mcp/package.json) | decide whether the first external package move is the canonical MCP server artifact or the smaller config-helper route, then publish it under owner-controlled credentials |
 | Prepare an official MCP Registry submission | requires real upstream submission action, not just repo-local proof | [`../packages/mcp-server/package.json`](../packages/mcp-server/package.json) and [`../packages/mcp-server/server.json`](../packages/mcp-server/server.json) | decide whether `mcp-server` is the first official registry artifact, then publish and submit it through the official registry flow |
+| Publish the Docker API container | requires owner credentials and platform-side image or listing choices | [`../Dockerfile`](../Dockerfile), [`../compose.yaml`](../compose.yaml), and [`../scripts/docker-api-smoke.sh`](../scripts/docker-api-smoke.sh) | build and smoke the image locally, then push it to the chosen registry or platform under owner-controlled credentials |
+| Publish the public skill pack to a skill hub | requires the target platform's exact publish flow and credentials | [`../skills/catalog.json`](../skills/catalog.json) and [`../skills/README.md`](../skills/README.md) | treat the current catalog as repo-owned input, then translate it into the exact upstream bundle or manifest required by that platform |
 | Publish the broader builder surfaces | requires owner-controlled package publication and release policy | [`14-public-distribution-scoreboard.md`](14-public-distribution-scoreboard.md) | move down the publish order only after the earlier package surfaces have actually left the repo |
 | Claim any official listing / marketplace status | requires a real upstream listing outcome, not just local package readiness | [`14-public-distribution-scoreboard.md`](14-public-distribution-scoreboard.md) | only switch wording to `officially listed` or `marketplace listed` after the upstream directory actually shows the package |
 

@@ -1,4 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
+import { readSkillCatalog, validateSkillCatalog } from './check-skill-catalog.mjs';
 
 const genericConfigs = [
   'examples/integrations/codex-mcp.example.json',
@@ -13,17 +14,6 @@ const sidecarConfigs = [
   'examples/mcp/claude-desktop.example.json',
   'examples/mcp/codex-repo-root.example.json',
   'examples/mcp/claude-desktop-repo-root.example.json',
-];
-
-const publicSkills = [
-  'read-only-workspace-analysis',
-  'read-only-workspace-audit',
-  'current-view-triage',
-  'openclaw-readonly-consumer',
-  'site-mcp-consumer',
-  'site-overview-audit',
-  'site-snapshot-review',
-  'switchyard-runtime-check',
 ];
 
 const sidecarCommands = new Set([
@@ -161,8 +151,12 @@ export function validateSidecarConfig(path, json) {
 
 export function validateSkillInventory() {
   const failures = [];
+  const catalog = readSkillCatalog();
+  const publicSkills = Array.isArray(catalog.skills) ? catalog.skills.map((skill) => skill.id) : [];
   const skillsReadme = readFileSync('skills/README.md', 'utf8');
   const examplesReadme = readFileSync('examples/README.md', 'utf8');
+
+  failures.push(...validateSkillCatalog(catalog));
 
   for (const skill of publicSkills) {
     const skillPath = `skills/${skill}/SKILL.md`;

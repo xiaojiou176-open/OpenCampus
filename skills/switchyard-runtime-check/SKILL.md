@@ -1,3 +1,8 @@
+---
+name: switchyard-runtime-check
+description: Verify the optional local Switchyard runtime path without changing Campus-owned response semantics.
+---
+
 # Switchyard Runtime Check
 
 Use this skill when you want to verify the Campus consumer seam while keeping runtime transport behind the optional local Switchyard boundary.

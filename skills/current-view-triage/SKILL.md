@@ -1,3 +1,8 @@
+---
+name: current-view-triage
+description: Give one plain-language what-to-do-first answer from a Campus Copilot snapshot or current-view export.
+---
+
 # Current View Triage
 
 Use this skill when you want one plain-language answer to the question:

@@ -1,3 +1,8 @@
+---
+name: site-snapshot-review
+description: Review one supported site's exported snapshot records without reopening live browser automation.
+---
+
 # Site Snapshot Review
 
 Use this skill when you have an exported Campus Copilot workspace snapshot and want a read-only review of one site's current records.

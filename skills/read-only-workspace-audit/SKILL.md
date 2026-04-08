@@ -1,3 +1,8 @@
+---
+name: read-only-workspace-audit
+description: Audit whether one imported workspace snapshot is rich enough for export, cited AI, or MCP consumption.
+---
+
 # Read-Only Workspace Audit
 
 Use this skill when you have an imported Campus Copilot workspace snapshot and need to answer:

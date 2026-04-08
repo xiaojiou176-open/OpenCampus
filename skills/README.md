@@ -4,6 +4,27 @@ These are public, read-only helper skills for builder workflows around Campus Co
 
 Treat them like prompt recipes for local consumers, not installed plugins or browser operators.
 
+Machine-readable pack index:
+
+- [`skills/catalog.json`](catalog.json)
+
+Version semantics:
+
+- this repo currently uses one **skill-pack semver** at the catalog level
+- current pack version: `0.1.0`
+- individual skills are versioned together as one read-only public pack until they need separate release cadence
+
+Validation:
+
+```bash
+pnpm check:skill-catalog
+```
+
+File-based skill ecosystem note:
+
+- OpenHands and OpenCode style consumers usually discover `SKILL.md` files from their own skill roots.
+- This repo keeps the public pack under `skills/` plus `skills/catalog.json`, so the truthful state is still a repo-owned bundle index instead of a hosted registry claim.
+
 - `read-only-workspace-analysis`: inspect an exported workspace snapshot and summarize the current decision surface
 - `read-only-workspace-audit`: audit a local snapshot or local BFF surface without reopening live browser automation
 - `current-view-triage`: answer what the current workspace says the student should do first
@@ -54,6 +75,7 @@ Use these when you want the fastest plain-language proof of what a successful pu
 - Keep the workflow on imported snapshots or the thin local BFF unless a task explicitly requires live validation.
 - Pair these skills with files under `examples/` instead of inventing a new integration shape when a public sample already exists.
 - Do not present these skills as official marketplace plugins or write-capable automations.
+- Do not confuse `skills/catalog.json` with OpenClaw's native `openclaw.plugin.json`; the catalog is a repo-owned bundle index, not an upstream marketplace manifest or native plugin manifest.
 
 ## What These Skills Are Not
 

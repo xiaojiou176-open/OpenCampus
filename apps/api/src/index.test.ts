@@ -24,16 +24,28 @@ describe('api thin bff', () => {
 
   it('treats blank optional provider env values as unset', () => {
     const env = loadApiEnv({
+      HOST: '   ',
       OPENAI_API_KEY: '',
       GEMINI_API_KEY: 'gemini-key',
       OPENAI_BASE_URL: '',
       GEMINI_BASE_URL: '   ',
     });
 
+    expect(env.HOST).toBeUndefined();
     expect(env.OPENAI_API_KEY).toBeUndefined();
     expect(env.GEMINI_API_KEY).toBe('gemini-key');
     expect(env.OPENAI_BASE_URL).toBeUndefined();
     expect(env.GEMINI_BASE_URL).toBeUndefined();
+  });
+
+  it('loads optional host overrides for containerized runs', () => {
+    const env = loadApiEnv({
+      HOST: '0.0.0.0',
+      PORT: '8787',
+    });
+
+    expect(env.HOST).toBe('0.0.0.0');
+    expect(env.PORT).toBe('8787');
   });
 
   it('returns a health payload without touching providers', () => {

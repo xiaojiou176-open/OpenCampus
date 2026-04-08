@@ -6,6 +6,12 @@ export default defineConfig({
     name: 'Campus Copilot',
     short_name: 'Campus Copilot',
     description: 'A local-first academic decision workspace with cited AI over Canvas, Gradescope, EdStem, and MyUW.',
+    icons: {
+      16: 'icon-16.png',
+      32: 'icon-32.png',
+      48: 'icon-48.png',
+      128: 'icon-128.png',
+    },
     permissions: ['sidePanel', 'activeTab', 'scripting', 'downloads', 'storage'],
     host_permissions: [
       'https://canvas.uw.edu/*',

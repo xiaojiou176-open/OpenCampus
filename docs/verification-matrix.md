@@ -50,6 +50,7 @@ Use this split before you decide where a new check belongs:
 | `pnpm redact:live-fixture -- --kind <json\|html> --input <raw-path> --output <redacted-path>` | manual fixture-prep lane | local developer | No | converts a raw manually captured site sample into a redacted candidate fixture for adapter regression work | prove a stable authenticated session by itself or bypass maintainer review before commit |
 | `pnpm check:docs:ssot` | deterministic governance check | contributor / CI | Yes | README/docs roles and forbidden live/platform drift are guarded | product runtime correctness |
 | `pnpm check:consumer-surfaces` | deterministic governance check | contributor / CI | Yes | public examples, public skills, and read-only consumer routing for Codex / Claude Code / OpenClaw-style local runtimes stay internally consistent | live site correctness or hosted plugin distribution |
+| `pnpm check:skill-catalog` | deterministic governance check | contributor / CI | Yes | the repo-owned skill pack catalog stays machine-readable, read-only, semver-tagged, and aligned with `skills/README.md` plus on-disk skill entrypoints | official marketplace listing or native plugin manifest validity |
 | `pnpm check:verification-claims` | deterministic governance check | contributor / CI | Yes | docs do not overclaim what `verify` covers | live site correctness |
 | `pnpm check:public-surface` | deterministic governance check | contributor / CI | Yes | public collaboration shell files exist and README avoids repo-external hard assertions | GitHub settings state |
 | `pnpm check:actions-pinning` | deterministic governance check | contributor / CI | Yes | workflow actions are pinned by commit SHA | runtime code quality |
@@ -73,6 +74,7 @@ They are **not** verification lanes and they do **not** belong in the default PR
 | `pnpm cleanup:repo:safe` | local cleanup | local developer | No | removes explicit low-risk repo-local intermediates | touch formal outputs, evidence/state directories, or external paths |
 | `pnpm cleanup:runtime` | local cleanup | local developer | No | removes repo-named temp residues, selected `.runtime-cache/` artifacts, and TTL/cap-managed repo-exclusive generic external cache while preserving the latest support bundle snapshots | touch repo build intermediates, repo-owned browser roots, legacy browser-state roots, shared caches, or generic temp directories |
 | `pnpm check:pnpm-store-health` | local preflight | local developer | No | validates configured, effective, and recorded `pnpm` store references before deep dependency cleanup | repair drift automatically or imply `node_modules` cleanup is safe |
+| `pnpm smoke:docker:api` | optional local container smoke | local developer | No | the repo-owned Dockerfile and Compose path can build the thin local BFF image, start it, and answer `/health` plus `/api/providers/status` | stdio MCP behavior, hosted deployment, or official directory listing |
 
 ## Command Classification Rules
 

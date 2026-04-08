@@ -1,3 +1,8 @@
+---
+name: openclaw-readonly-consumer
+description: Keep an OpenClaw-style local runtime on the snapshot-first, thin-BFF-first, read-only Campus Copilot path.
+---
+
 # OpenClaw-Style Read-Only Consumer
 
 Use this skill when your local operator/runtime behaves like an OpenClaw-style shell and you want Campus Copilot to stay on the **snapshot-first / thin-BFF-first / read-only** side.

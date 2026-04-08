@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { copyFileSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -110,10 +110,7 @@ function packTarball(cwd, packDir) {
 }
 
 function installTarball(workspaceDir, tarballPath) {
-  const localTarballPath = join(workspaceDir, basename(tarballPath));
-  copyFileSync(tarballPath, localTarballPath);
-
-  execNpm(['install', localTarballPath], {
+  execNpm(['install', tarballPath], {
     cwd: workspaceDir,
     encoding: 'utf8',
     stdio: 'pipe',

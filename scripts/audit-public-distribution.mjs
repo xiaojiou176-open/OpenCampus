@@ -44,6 +44,29 @@ const bundleSurfaces = [
   },
 ];
 
+const supportingSurfaces = [
+  {
+    surface: 'Skill pack',
+    currentStateWhenReady: 'public-ready (repo-local)',
+    registryReadiness: 'owner-side publish later',
+    installPath: 'skills/catalog.json',
+    proof: 'pnpm check:skill-catalog',
+    docs: 'skills/README.md',
+    sample: 'examples/current-view-triage-example.md',
+    requiredPaths: ['skills/catalog.json', 'skills/README.md', 'scripts/check-skill-catalog.mjs'],
+  },
+  {
+    surface: 'API container',
+    currentStateWhenReady: 'container-ready (repo-local)',
+    registryReadiness: 'owner-side publish later',
+    installPath: 'docker compose up -d campus-copilot-api',
+    proof: 'pnpm smoke:docker:api',
+    docs: 'DISTRIBUTION.md',
+    sample: 'Dockerfile',
+    requiredPaths: ['Dockerfile', '.dockerignore', 'compose.yaml', 'scripts/docker-api-smoke.sh'],
+  },
+];
+
 const openClawCompatibleLayoutPaths = [
   'skills',
   'commands',
@@ -97,7 +120,6 @@ const proofByName = {
 };
 
 const previewOnlyRepoLocalStates = new Set();
-const publishedPackageNames = new Set(['@campus-copilot/mcp']);
 
 function readJson(path) {
   return JSON.parse(readFileSync(path, 'utf8'));
@@ -214,20 +236,11 @@ function buildPackageSurface(name) {
 
   const registryIssues = listRegistryIssues(name);
   const repoLocalPublicReady = repoLocalIssues.length === 0 && !previewOnlyRepoLocalStates.has(name);
-  const publishedToRegistry = publishedPackageNames.has(name);
-  const currentState = publishedToRegistry
-    ? 'published (npm)'
-    : repoLocalPublicReady
-      ? 'public-ready (repo-local)'
-      : 'repo-public preview';
-  const registryReadiness = publishedToRegistry
-    ? 'published (npm)'
-    : registryIssues.length === 0
-      ? 'registry candidate'
-      : 'registry blocked';
+  const currentState = repoLocalPublicReady ? 'public-ready (repo-local)' : 'repo-public preview';
+  const registryReadiness = registryIssues.length === 0 ? 'registry candidate' : 'registry blocked';
   const blockers = [
     ...repoLocalIssues,
-    ...(!publishedToRegistry ? registryIssues.map((issue) => `registry:${issue}`) : []),
+    ...registryIssues.map((issue) => `registry:${issue}`),
   ];
 
   return {
@@ -282,14 +295,32 @@ function buildBundleSurface(surface) {
   };
 }
 
+function buildSupportingSurface(surface) {
+  const blockers = surface.requiredPaths.filter((path) => !pathExists(path)).map((path) => `missing:${path}`);
+
+  return {
+    surface: surface.surface,
+    currentState: blockers.length === 0 ? surface.currentStateWhenReady : 'missing required artifacts',
+    registryReadiness: surface.registryReadiness,
+    installPath: surface.installPath,
+    proofLoop: surface.proof,
+    docs: surface.docs,
+    sample: surface.sample,
+    publicReady: blockers.length === 0,
+    repoLocalPublicReady: blockers.length === 0,
+    blockers,
+  };
+}
+
 const packageSurfaces = publicPackageNames.map(buildPackageSurface);
 const bundleResults = bundleSurfaces.map(buildBundleSurface);
-const results = [...packageSurfaces, ...bundleResults];
+const supportingResults = supportingSurfaces.map(buildSupportingSurface);
+const results = [...packageSurfaces, ...bundleResults, ...supportingResults];
 
 const markdown = [
   '# Public Distribution Audit',
   '',
-  '| Surface | Current state | Package registry readiness | Install path | Proof loop | Docs | Sample | Blockers |',
+  '| Surface | Current state | Publication / registry readiness | Install path | Proof loop | Docs | Sample | Blockers |',
   '| :-- | :-- | :-- | :-- | :-- | :-- | :-- | :-- |',
   ...results.map((item) =>
     `| ${item.surface} | ${item.currentState} | ${item.registryReadiness ?? '-'} | ${item.installPath ?? '-'} | ${item.proofLoop ?? '-'} | ${item.docs ?? '-'} | ${item.sample ?? '-'} | ${

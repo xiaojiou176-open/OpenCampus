@@ -24,6 +24,7 @@ const SwitchyardProxyPayloadSchema = z.object({
 
 const ApiEnvSchema = z.object({
   PORT: z.string().optional(),
+  HOST: z.string().optional(),
   OPENAI_API_KEY: z.string().min(1).optional(),
   GEMINI_API_KEY: z.string().min(1).optional(),
   OPENAI_BASE_URL: z.string().url().optional(),
@@ -63,6 +64,7 @@ function normalizeOptionalEnvValue(value: string | undefined) {
 export function loadApiEnv(source: NodeJS.ProcessEnv = process.env): ApiEnv {
   return ApiEnvSchema.parse({
     ...source,
+    HOST: normalizeOptionalEnvValue(source.HOST),
     OPENAI_API_KEY: normalizeOptionalEnvValue(source.OPENAI_API_KEY),
     GEMINI_API_KEY: normalizeOptionalEnvValue(source.GEMINI_API_KEY),
     OPENAI_BASE_URL: normalizeOptionalEnvValue(source.OPENAI_BASE_URL),
