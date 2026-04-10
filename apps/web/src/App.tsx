@@ -33,7 +33,7 @@ import {
 } from '@campus-copilot/storage';
 import { DEMO_IMPORTED_SNAPSHOT, snapshotFromImportedJson } from './import-export-snapshot';
 import { WebAiPanel } from './web-ai-panel';
-import { WebToolbar } from './web-toolbar';
+import { WebSupportRail, WebToolbar } from './web-toolbar';
 import { WebWorkbenchPanels } from './web-workbench-panels';
 import { formatRelativeTime } from './web-view-helpers';
 
@@ -486,6 +486,15 @@ export function App() {
             topSyncRun={topSyncRun}
             siteLabels={SITE_LABELS}
           />
+          <div className="web-shell__support-lane">
+            <WebSupportRail
+              topSyncRun={topSyncRun}
+              populatedSiteCount={populatedSiteCount}
+              trackedEntityCount={trackedEntityCount}
+              unseenUpdateCount={recentUpdates?.unseenCount ?? 0}
+              siteLabels={SITE_LABELS}
+            />
+          </div>
         </div>
 
         <div className="web-shell__explanation-lane">

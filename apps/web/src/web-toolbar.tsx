@@ -3,7 +3,15 @@ import type { Site } from '@campus-copilot/schema';
 import type { SyncRun, WorkbenchFilter } from '@campus-copilot/storage';
 import { formatRelativeTime } from './web-view-helpers';
 
-export function WebToolbar(props: {
+type WebToolbarBaseProps = {
+  topSyncRun?: SyncRun;
+  populatedSiteCount: number;
+  trackedEntityCount: number;
+  unseenUpdateCount: number;
+  siteLabels: Record<Site, string>;
+};
+
+type WebToolbarProps = WebToolbarBaseProps & {
   ready: boolean;
   now: string;
   feedback: string;
@@ -11,11 +19,6 @@ export function WebToolbar(props: {
   exportFormats: ExportFormat[];
   filters: WorkbenchFilter;
   siteOrder: Site[];
-  siteLabels: Record<Site, string>;
-  topSyncRun?: SyncRun;
-  populatedSiteCount: number;
-  trackedEntityCount: number;
-  unseenUpdateCount: number;
   onLoadDemo: () => Promise<void>;
   onImportFile: (file: File) => Promise<void>;
   onExportFormatChange: (value: ExportFormat) => void;
@@ -25,7 +28,63 @@ export function WebToolbar(props: {
   onExportFocusQueue: () => void;
   onExportWeeklyLoad: () => void;
   onExportChangeJournal: () => void;
-}) {
+};
+
+export function WebSupportRail(props: WebToolbarBaseProps) {
+  return (
+    <section className="support-grid" aria-label="Workspace trust and diagnostics">
+      <article className="support-card support-card--trust">
+        <p className="eyebrow">Supporting trust layer</p>
+        <h2>Trust summary</h2>
+        <p className="support-copy">
+          Local-first evidence comes first. AI only explains the visible workspace after the receipts are
+          already on screen.
+        </p>
+        <div className="support-list support-list--compact" role="list" aria-label="Trust summary rules">
+          <div className="support-rule" role="listitem">
+            <strong>Shared contract</strong>
+            <span>Imports and demo resets stay inside the same schema and storage path.</span>
+          </div>
+          <div className="support-rule" role="listitem">
+            <strong>Manual-only boundary</strong>
+            <span>Registration-related and red-zone routes stay outside this product surface.</span>
+          </div>
+          <div className="support-rule" role="listitem">
+            <strong>Cited AI follows</strong>
+            <span>The explanation layer comes after workbench truth, exported slices, and receipts.</span>
+          </div>
+        </div>
+      </article>
+
+      <article className="support-card support-card--diagnostics">
+        <p className="eyebrow">Supporting diagnostics</p>
+        <h2>Diagnostics and receipts</h2>
+        <p className="support-copy">This layer only reports what the imported workspace can currently prove.</p>
+        <div className="support-metrics" role="list" aria-label="Workspace diagnostics">
+          <article className="support-metric" role="listitem">
+            <span>Imported sites with data</span>
+            <strong>{props.populatedSiteCount}</strong>
+          </article>
+          <article className="support-metric" role="listitem">
+            <span>Tracked entities</span>
+            <strong>{props.trackedEntityCount}</strong>
+          </article>
+          <article className="support-metric" role="listitem">
+            <span>Unseen updates</span>
+            <strong>{props.unseenUpdateCount}</strong>
+          </article>
+        </div>
+        <p className="support-note support-note--receipt">
+          {props.topSyncRun
+            ? `Latest stored sync receipt: ${props.siteLabels[props.topSyncRun.site]} · ${props.topSyncRun.outcome} · ${formatRelativeTime(props.topSyncRun.completedAt)}.`
+            : 'No stored sync receipt is visible yet. Import a current-view snapshot first to populate diagnostics and change receipts.'}
+        </p>
+      </article>
+    </section>
+  );
+}
+
+export function WebToolbar(props: WebToolbarProps) {
   return (
     <>
       <section className="hero">
@@ -46,58 +105,6 @@ export function WebToolbar(props: {
           <span>Last refresh {formatRelativeTime(props.now)}</span>
           <span className="hero-card-note">Local-first and read-only on the same schema/export contract.</span>
         </div>
-      </section>
-
-      <section className="support-grid" aria-label="Workspace trust and diagnostics">
-        <article className="support-card support-card--trust">
-          <p className="eyebrow">Supporting trust layer</p>
-          <h2>Trust summary</h2>
-          <p className="support-copy">
-            Local-first evidence comes first. AI only explains the visible workspace after the receipts are
-            already on screen.
-          </p>
-          <div className="support-list support-list--compact" role="list" aria-label="Trust summary rules">
-            <div className="support-rule" role="listitem">
-              <strong>Shared contract</strong>
-              <span>Imports and demo resets stay inside the same schema and storage path.</span>
-            </div>
-            <div className="support-rule" role="listitem">
-              <strong>Manual-only boundary</strong>
-              <span>Registration-related and red-zone routes stay outside this product surface.</span>
-            </div>
-            <div className="support-rule" role="listitem">
-              <strong>Cited AI follows</strong>
-              <span>The explanation layer comes after workbench truth, exported slices, and receipts.</span>
-            </div>
-          </div>
-        </article>
-
-        <article className="support-card support-card--diagnostics">
-          <p className="eyebrow">Supporting diagnostics</p>
-          <h2>Diagnostics and receipts</h2>
-          <p className="support-copy">
-            This layer only reports what the imported workspace can currently prove.
-          </p>
-          <div className="support-metrics" role="list" aria-label="Workspace diagnostics">
-            <article className="support-metric" role="listitem">
-              <span>Imported sites with data</span>
-              <strong>{props.populatedSiteCount}</strong>
-            </article>
-            <article className="support-metric" role="listitem">
-              <span>Tracked entities</span>
-              <strong>{props.trackedEntityCount}</strong>
-            </article>
-            <article className="support-metric" role="listitem">
-              <span>Unseen updates</span>
-              <strong>{props.unseenUpdateCount}</strong>
-            </article>
-          </div>
-          <p className="support-note support-note--receipt">
-            {props.topSyncRun
-              ? `Latest stored sync receipt: ${props.siteLabels[props.topSyncRun.site]} · ${props.topSyncRun.outcome} · ${formatRelativeTime(props.topSyncRun.completedAt)}.`
-              : 'No stored sync receipt is visible yet. Import a current-view snapshot first to populate diagnostics and change receipts.'}
-          </p>
-        </article>
       </section>
 
       <section className="toolbar-card" aria-label="Workbench toolbar">

@@ -71,10 +71,7 @@ export function WebAiPanel(props: {
         <article className="guidance-card guidance-card--warning">
           <p className="meta-title">What AI cannot do</p>
           <strong>Manual-only guardrail</strong>
-          <p>
-            Academic safety guardrails keep Register.UW, Notify.UW, seat watching, and
-            registration-related polling outside the current product path. {aiGuardrails.redZone.summary}
-          </p>
+          <p>{aiGuardrails.redZone.summary}</p>
         </article>
         <article className="guidance-card">
           <p className="meta-title">Read-only posture</p>

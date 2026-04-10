@@ -131,9 +131,14 @@ textarea:focus-visible,
 
 .web-shell__header,
 .web-shell__decision-lane,
+.web-shell__support-lane,
 .web-shell__explanation-lane {
   display: grid;
   gap: var(--cc-space-4);
+}
+
+.web-shell__support-lane {
+  gap: var(--cc-space-3);
 }
 
 .hero,
