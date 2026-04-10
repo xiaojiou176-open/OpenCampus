@@ -20,12 +20,13 @@
   "type": "module",
   "files": ["README.md", "dist"],
   "bin": {
-    "campus-copilot": "./dist/campus-copilot.mjs"
+    "campus-copilot": "./dist/bin-entry.mjs"
   },
   "scripts": {
-    "build": "pnpm exec esbuild ./src/bin-entry.mjs --bundle --platform=node --format=esm --target=node20 --legal-comments=none --outfile=dist/campus-copilot.mjs",
+    "build": "rm -rf dist && pnpm exec esbuild ./src/index.mjs ./src/bin-entry.mjs --bundle --platform=node --format=esm --target=node20 --legal-comments=none --outdir=dist --out-extension:.js=.mjs",
+    "pretest": "pnpm build",
     "prepack": "pnpm build",
-    "start": "pnpm build && node ./dist/campus-copilot.mjs",
+    "start": "pnpm build && node ./dist/bin-entry.mjs",
     "test": "node --test ./bin/campus-copilot.test.mjs"
   },
   "dependencies": {},

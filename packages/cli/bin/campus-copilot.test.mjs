@@ -4,7 +4,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { runCli } from '../src/index.mjs';
+import { runCli } from '../dist/index.mjs';
 
 test('help alias prints the command summary', async () => {
   const chunks = [];
@@ -135,7 +135,7 @@ test('snapshot site prints a site-filtered summary', () => {
 
   const result = spawnSync(
     process.execPath,
-    ['./bin/campus-copilot.mjs', 'snapshot', 'site', '--snapshot', file, '--site', 'canvas'],
+    ['./dist/bin-entry.mjs', 'snapshot', 'site', '--snapshot', file, '--site', 'canvas'],
     {
       cwd: process.cwd(),
       encoding: 'utf8',
@@ -152,7 +152,7 @@ test('snapshot site prints a site-filtered summary', () => {
 test('bin strips the pnpm run separator before dispatch', () => {
   const result = spawnSync(
     process.execPath,
-    ['./bin/campus-copilot.mjs', '--', 'help'],
+    ['./dist/bin-entry.mjs', '--', 'help'],
     {
       cwd: process.cwd(),
       encoding: 'utf8',
