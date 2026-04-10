@@ -301,6 +301,9 @@ importers:
       '@campus-copilot/storage':
         specifier: workspace:*
         version: link:../storage
+      esbuild:
+        specifier: ^0.28.0
+        version: 0.28.0
       zod:
         specifier: ^4.1.5
         version: 4.3.6
@@ -316,6 +319,9 @@ importers:
       '@campus-copilot/workspace-sdk':
         specifier: workspace:*
         version: link:../workspace-sdk
+      esbuild:
+        specifier: ^0.28.0
+        version: 0.28.0
 
   packages/storage:
     dependencies:
@@ -350,6 +356,9 @@ importers:
       '@campus-copilot/storage':
         specifier: workspace:*
         version: link:../storage
+      esbuild:
+        specifier: ^0.28.0
+        version: 0.28.0
       fake-indexeddb:
         specifier: ^6.1.0
         version: 6.2.5
