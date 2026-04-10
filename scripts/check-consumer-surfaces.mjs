@@ -42,7 +42,13 @@ const packageReadmeExpectations = [
   },
   {
     path: 'packages/mcp-server/README.md',
-    snippets: ['Use this package when', '../../examples/integrations/README.md', '../../examples/toolbox-chooser.md', 'pnpm proof:public'],
+    snippets: [
+      'Use this package when',
+      '../../examples/integrations/README.md',
+      '../../examples/toolbox-chooser.md',
+      '../../docs/17-academic-expansion-and-safety-contract.md',
+      'pnpm proof:public',
+    ],
   },
   {
     path: 'packages/provider-runtime/README.md',
@@ -191,6 +197,7 @@ export function validateSkillInventory() {
     'examples/toolbox-chooser.md',
     'examples/current-view-triage-example.md',
     'examples/site-overview-audit-example.md',
+    '../docs/17-academic-expansion-and-safety-contract.md',
   ];
 
   for (const snippet of requiredSkillReadmeSnippets) {

@@ -1,4 +1,5 @@
 import {
+  type AdvancedMaterialAnalysisRequest,
   type ProviderId,
   type SwitchyardLane,
   type SwitchyardRuntimeProvider,
@@ -9,6 +10,7 @@ import type { Alert, TimelineEntry } from '@campus-copilot/schema';
 import type {
   ChangeEvent,
   FocusQueueItem,
+  PlanningSubstrateOwner,
   SyncRun,
   TodaySnapshot,
   WeeklyLoadEntry,
@@ -29,6 +31,7 @@ export function buildAiProxyRequest(input: {
   switchyardLane?: SwitchyardLane;
   uiLanguage: ResolvedUiLanguage;
   question: string;
+  advancedMaterialAnalysis?: AdvancedMaterialAnalysisRequest;
   todaySnapshot: TodaySnapshot;
   recentUpdates: TimelineEntry[];
   alerts: Alert[];
@@ -36,6 +39,7 @@ export function buildAiProxyRequest(input: {
   weeklyLoad: WeeklyLoadEntry[];
   syncRuns: SyncRun[];
   recentChanges: ChangeEvent[];
+  planningSubstrates?: PlanningSubstrateOwner[];
   currentViewExport: ExportArtifact;
 }) {
   getUiText(input.uiLanguage);
@@ -45,6 +49,7 @@ export function buildAiProxyRequest(input: {
     switchyardProvider: input.switchyardProvider,
     switchyardLane: input.switchyardLane,
     question: input.question,
+    advancedMaterialAnalysis: input.advancedMaterialAnalysis,
     todaySnapshot: input.todaySnapshot,
     recentUpdates: input.recentUpdates,
     alerts: input.alerts,
@@ -52,6 +57,7 @@ export function buildAiProxyRequest(input: {
     weeklyLoad: input.weeklyLoad,
     syncRuns: input.syncRuns,
     recentChanges: input.recentChanges,
+    planningSubstrates: input.planningSubstrates,
     currentViewExport: input.currentViewExport,
     presentation: {
       recentUpdates: buildLocalizedRecentUpdatesPresentation(input.recentUpdates, input.uiLanguage),

@@ -18,7 +18,7 @@ import type {
   LocalEntityOverlay,
   SyncState,
   WorkbenchFilter,
-} from './contracts';
+} from './contracts.ts';
 
 export type TrackedEntity = Course | Resource | Assignment | Announcement | Grade | Message | Event;
 

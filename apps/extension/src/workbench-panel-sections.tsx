@@ -1,6 +1,7 @@
 import type { PriorityReason } from '@campus-copilot/schema';
 import { formatDateTime, formatRelativeTime } from './i18n';
 import { SITE_LABELS } from './surface-shell-model';
+import { getAcademicRedZoneHardStops } from './academic-safety-guards';
 import {
   formatAlertImportanceLabel,
   formatAlertSummary,
@@ -45,6 +46,7 @@ type OverviewSectionProps = Pick<
   | 'onSyncSite'
   | 'onExport'
   | 'onOpenConfiguration'
+  | 'onOpenMainWorkbench'
   | 'onMarkVisibleUpdatesSeen'
   | 'diagnostics'
   | 'onExportDiagnostics'
@@ -58,6 +60,7 @@ type DecisionSectionProps = Pick<
   | 'uiLanguage'
   | 'surface'
   | 'focusQueue'
+  | 'planningSubstrates'
   | 'weeklyLoad'
   | 'priorityAlerts'
   | 'criticalAlerts'
@@ -83,6 +86,7 @@ type OperationsSectionProps = Pick<
   | 'currentEvents'
   | 'orderedSiteStatus'
   | 'syncFeedback'
+  | 'exportFeedback'
   | 'onSyncSite'
   | 'onExport'
   | 'latestSyncRun'
@@ -99,6 +103,11 @@ function getWeeklyLoadTone(entry: DecisionSectionProps['weeklyLoad'][number]) {
   }
 
   return 'neutral';
+}
+
+function toSortableTimestamp(value?: string) {
+  const parsed = value ? Date.parse(value) : Number.NaN;
+  return Number.isNaN(parsed) ? 0 : parsed;
 }
 
 function getResourceActionLabel(
@@ -206,6 +215,7 @@ export function WorkbenchOverviewSections({
   onSyncSite,
   onExport,
   onOpenConfiguration,
+  onOpenMainWorkbench,
   onMarkVisibleUpdatesSeen,
   diagnostics,
   onExportDiagnostics,
@@ -259,10 +269,42 @@ export function WorkbenchOverviewSections({
       </div>
 
       {surface === 'sidepanel' ? (
-        <div className="surface__grid surface__grid--split">
-          <article className="surface__panel">
-            <h2>{text.nextUp.title}</h2>
-            <p>{text.nextUp.description}</p>
+        <article className="surface__stats-strip">
+          <div className="surface__stats-strip-head">
+            <div>
+              <p className="surface__meta-label">{text.todaySnapshot.title}</p>
+              <p className="surface__meta">{text.todaySnapshot.description}</p>
+            </div>
+            <span className="surface__badge surface__badge--neutral">{text.meta.currentStatus}</span>
+          </div>
+          <div className="surface__summary-grid surface__summary-grid--compact">
+            <div className="surface__summary-cell">
+              <span className="surface__summary-value">{todaySnapshot?.totalAssignments ?? 0}</span>
+              <span className="surface__summary-label">{text.todaySnapshot.currentTodo}</span>
+            </div>
+            <div className="surface__summary-cell">
+              <span className="surface__summary-value">{todaySnapshot?.dueSoonAssignments ?? 0}</span>
+              <span className="surface__summary-label">{text.todaySnapshot.dueSoon}</span>
+            </div>
+            <div className="surface__summary-cell">
+              <span className="surface__summary-value">{todaySnapshot?.recentUpdates ?? 0}</span>
+              <span className="surface__summary-label">{text.todaySnapshot.recentUpdates}</span>
+            </div>
+            <div className="surface__summary-cell">
+              <span className="surface__summary-value">{currentRecentUpdates?.unseenCount ?? 0}</span>
+              <span className="surface__summary-label">{text.todaySnapshot.unseenInView}</span>
+            </div>
+          </div>
+        </article>
+      ) : null}
+
+      {surface === 'sidepanel' ? (
+        <div className="surface__grid surface__grid--hero-panels">
+          <article className="surface__panel surface__panel--hero">
+            <div>
+              <h2>{text.nextUp.title}</h2>
+              <p>{text.nextUp.description}</p>
+            </div>
             <div className="surface__actions">
               <button className="surface__button surface__button--ghost" onClick={() => void onExport('focus_queue')}>
                 {text.exportPresets.focusQueue}
@@ -325,10 +367,12 @@ export function WorkbenchOverviewSections({
             )}
           </article>
 
-          <article className="surface__panel">
-            <h2>{text.trustSummary.title}</h2>
-            <p>{text.trustSummary.description}</p>
-            <div className="surface__summary-grid">
+          <article className="surface__panel surface__panel--hero">
+            <div>
+              <h2>{text.trustSummary.title}</h2>
+              <p>{text.trustSummary.description}</p>
+            </div>
+            <div className="surface__summary-grid surface__summary-grid--compact">
               <div className="surface__summary-cell">
                 <span className="surface__summary-value">{freshSiteCount}</span>
                 <span className="surface__summary-label">{text.trustSummary.freshSites}</span>
@@ -387,10 +431,87 @@ export function WorkbenchOverviewSections({
               </div>
             </div>
           </article>
+
+          <article className="surface__panel surface__panel--hero">
+            <div>
+              <h2>{text.quickActions.title}</h2>
+              <p>{text.quickActions.description}</p>
+            </div>
+            <div className="surface__actions surface__actions--wrap">
+              <button
+                className="surface__button"
+                disabled={!currentSiteSelection || syncFeedback.inFlightSite === currentSiteSelection}
+                onClick={() => (currentSiteSelection ? void onSyncSite(currentSiteSelection) : undefined)}
+              >
+                {currentSiteSelection
+                  ? syncFeedback.inFlightSite === currentSiteSelection
+                    ? text.quickActions.syncInProgress(SITE_LABELS[currentSiteSelection])
+                    : text.quickActions.syncCurrentSite(SITE_LABELS[currentSiteSelection])
+                  : text.quickActions.selectSiteBeforeSync}
+              </button>
+              <button className="surface__button surface__button--secondary" onClick={() => void onExport('current_view')}>
+                {text.quickActions.openExport}
+              </button>
+              <button className="surface__button surface__button--secondary" onClick={() => void onMarkVisibleUpdatesSeen()}>
+                {text.quickActions.markUpdatesSeen}
+              </button>
+              <button className="surface__button surface__button--ghost" onClick={() => void onOpenConfiguration()}>
+                {text.quickActions.openOptions}
+              </button>
+            </div>
+            {syncFeedback.message ? (
+              <p aria-live="polite" className="surface__feedback" role="status">
+                {syncFeedback.message}
+              </p>
+            ) : null}
+            {exportFeedback ? (
+              <p aria-live="polite" className="surface__feedback" role="status">
+                {exportFeedback}
+              </p>
+            ) : null}
+          </article>
         </div>
       ) : null}
 
-      {surface !== 'options' ? (
+      {surface === 'sidepanel' ? (
+        <div className="surface__grid surface__grid--split">
+          <article className="surface__panel">
+            <h2>{text.diagnostics.title}</h2>
+            <p>{text.diagnostics.description}</p>
+            <div className="surface__stack">
+              <p className="surface__meta">
+                {text.meta.currentStatus}: {diagnostics.healthy ? text.diagnostics.readyToContinue : text.diagnostics.blockedByEnvironmentOrRuntime}
+              </p>
+              {diagnostics.blockers.length > 0 ? (
+                <ul className="surface__list">
+                  {diagnostics.blockers.map((blocker) => (
+                    <li key={blocker}>{blocker}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p>{text.diagnostics.noBlockers}</p>
+              )}
+              {diagnostics.nextActions.length > 0 ? (
+                <div className="surface__group">
+                  <h3>{text.diagnostics.nextActions}</h3>
+                  <ul className="surface__list">
+                    {diagnostics.nextActions.map((action) => (
+                      <li key={action}>{action}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+              <div className="surface__actions">
+                <button className="surface__button surface__button--ghost" onClick={() => void onExportDiagnostics()}>
+                  {text.diagnostics.exportJson}
+                </button>
+              </div>
+            </div>
+          </article>
+        </div>
+      ) : null}
+
+      {surface === 'sidepanel' ? (
         <div className="surface__toolbar">
           <div className="surface__chips">
             <button
@@ -426,49 +547,138 @@ export function WorkbenchOverviewSections({
         </div>
       ) : null}
 
-      <div className="surface__grid surface__grid--split">
-        <article className="surface__panel">
-          <h2>{text.todaySnapshot.title}</h2>
-          <p>{text.todaySnapshot.description}</p>
-          <ul className="surface__list">
-            <li>{text.todaySnapshot.currentTodo}: {todaySnapshot?.totalAssignments ?? 0}</li>
-            <li>{text.todaySnapshot.dueSoon}: {todaySnapshot?.dueSoonAssignments ?? 0}</li>
-            <li>{text.todaySnapshot.recentUpdates}: {todaySnapshot?.recentUpdates ?? 0}</li>
-            <li>{text.todaySnapshot.unseenInView}: {currentRecentUpdates?.unseenCount ?? 0}</li>
-          </ul>
-        </article>
+      {surface === 'popup' ? (
+        <div className="surface__grid surface__grid--split">
+          <article className="surface__panel surface__panel--hero">
+            <div className="surface__section-head">
+              <div>
+                <h2>{text.popup.pulseSummaryTitle}</h2>
+                <p>{text.popup.pulseSummaryDescription}</p>
+              </div>
+              <span className="surface__badge surface__badge--warning">{text.popup.readOnlyBadge}</span>
+            </div>
+            <div className="surface__summary-grid surface__summary-grid--compact">
+              <div className="surface__summary-cell">
+                <span className="surface__summary-value">{todaySnapshot?.totalAssignments ?? 0}</span>
+                <span className="surface__summary-label">{text.metrics.openAssignments}</span>
+              </div>
+              <div className="surface__summary-cell">
+                <span className="surface__summary-value">{todaySnapshot?.dueSoonAssignments ?? 0}</span>
+                <span className="surface__summary-label">{text.metrics.dueWithin48Hours}</span>
+              </div>
+              <div className="surface__summary-cell">
+                <span className="surface__summary-value">{currentRecentUpdates?.unseenCount ?? 0}</span>
+                <span className="surface__summary-label">{text.metrics.unseenUpdates}</span>
+              </div>
+              <div className="surface__summary-cell">
+                <span className="surface__summary-value">{blockedSiteCount}</span>
+                <span className="surface__summary-label">{text.trustSummary.blockedSites}</span>
+              </div>
+            </div>
+            {latestSyncRun ? (
+              <p className="surface__meta">
+                {text.popup.latestReceipt}: {SITE_LABELS[latestSyncRun.site]} ·{' '}
+                {text.changeJournal.receipt(
+                  latestSyncRun.changeCount,
+                  formatSyncOutcomeLabel(latestSyncRun.outcome, text),
+                )}
+              </p>
+            ) : (
+              <p className="surface__meta">{text.popup.noRecentReceipt}</p>
+            )}
+          </article>
 
-        <article className="surface__panel">
-          <h2>{text.quickActions.title}</h2>
-          <p>{text.quickActions.description}</p>
-          <div className="surface__actions surface__actions--wrap">
-            <button
-              className="surface__button"
-              disabled={!currentSiteSelection || syncFeedback.inFlightSite === currentSiteSelection}
-              onClick={() => (currentSiteSelection ? void onSyncSite(currentSiteSelection) : undefined)}
-            >
-              {currentSiteSelection
-                ? syncFeedback.inFlightSite === currentSiteSelection
-                  ? text.quickActions.syncInProgress(SITE_LABELS[currentSiteSelection])
-                  : text.quickActions.syncCurrentSite(SITE_LABELS[currentSiteSelection])
-                : text.quickActions.selectSiteBeforeSync}
-            </button>
-            <button className="surface__button surface__button--secondary" onClick={() => void onExport('current_view')}>
-              {text.quickActions.openExport}
-            </button>
-            <button className="surface__button surface__button--secondary" onClick={() => void onMarkVisibleUpdatesSeen()}>
-              {text.quickActions.markUpdatesSeen}
-            </button>
-            <button className="surface__button surface__button--ghost" onClick={() => void onOpenConfiguration()}>
-              {text.quickActions.openOptions}
-            </button>
-          </div>
-          {syncFeedback.message ? <p className="surface__feedback">{syncFeedback.message}</p> : null}
-          {exportFeedback ? <p className="surface__feedback">{exportFeedback}</p> : null}
-        </article>
-      </div>
+          <article className="surface__panel surface__panel--hero">
+            <div>
+              <h2>{text.popup.fastActionsTitle}</h2>
+              <p>{text.popup.fastActionsDescription}</p>
+            </div>
+            <div className="surface__actions surface__actions--wrap">
+              {onOpenMainWorkbench ? (
+                <button className="surface__button" onClick={() => void onOpenMainWorkbench()}>
+                  {text.quickActions.openMainWorkbench}
+                </button>
+              ) : null}
+              <button
+                className="surface__button surface__button--secondary"
+                disabled={!currentSiteSelection || syncFeedback.inFlightSite === currentSiteSelection}
+                onClick={() => (currentSiteSelection ? void onSyncSite(currentSiteSelection) : undefined)}
+              >
+                {currentSiteSelection
+                  ? syncFeedback.inFlightSite === currentSiteSelection
+                    ? text.quickActions.syncInProgress(SITE_LABELS[currentSiteSelection])
+                    : text.quickActions.syncCurrentSite(SITE_LABELS[currentSiteSelection])
+                  : text.quickActions.selectSiteBeforeSync}
+              </button>
+              <button className="surface__button surface__button--ghost" onClick={() => void onExport('current_view')}>
+                {text.quickActions.exportCurrentView}
+              </button>
+            </div>
+            {syncFeedback.message ? (
+              <p aria-live="polite" className="surface__feedback" role="status">
+                {syncFeedback.message}
+              </p>
+            ) : null}
+            {exportFeedback ? (
+              <p aria-live="polite" className="surface__feedback" role="status">
+                {exportFeedback}
+              </p>
+            ) : null}
+          </article>
+        </div>
+      ) : surface !== 'sidepanel' ? (
+        <div className="surface__grid surface__grid--split">
+          <article className="surface__panel">
+            <h2>{text.todaySnapshot.title}</h2>
+            <p>{text.todaySnapshot.description}</p>
+            <ul className="surface__list">
+              <li>{text.todaySnapshot.currentTodo}: {todaySnapshot?.totalAssignments ?? 0}</li>
+              <li>{text.todaySnapshot.dueSoon}: {todaySnapshot?.dueSoonAssignments ?? 0}</li>
+              <li>{text.todaySnapshot.recentUpdates}: {todaySnapshot?.recentUpdates ?? 0}</li>
+              <li>{text.todaySnapshot.unseenInView}: {currentRecentUpdates?.unseenCount ?? 0}</li>
+            </ul>
+          </article>
 
-      {surface !== 'popup' ? (
+          <article className="surface__panel">
+            <h2>{text.quickActions.title}</h2>
+            <p>{text.quickActions.description}</p>
+            <div className="surface__actions surface__actions--wrap">
+              <button
+                className="surface__button"
+                disabled={!currentSiteSelection || syncFeedback.inFlightSite === currentSiteSelection}
+                onClick={() => (currentSiteSelection ? void onSyncSite(currentSiteSelection) : undefined)}
+              >
+                {currentSiteSelection
+                  ? syncFeedback.inFlightSite === currentSiteSelection
+                    ? text.quickActions.syncInProgress(SITE_LABELS[currentSiteSelection])
+                    : text.quickActions.syncCurrentSite(SITE_LABELS[currentSiteSelection])
+                  : text.quickActions.selectSiteBeforeSync}
+              </button>
+              <button className="surface__button surface__button--secondary" onClick={() => void onExport('current_view')}>
+                {text.quickActions.openExport}
+              </button>
+              <button className="surface__button surface__button--secondary" onClick={() => void onMarkVisibleUpdatesSeen()}>
+                {text.quickActions.markUpdatesSeen}
+              </button>
+              <button className="surface__button surface__button--ghost" onClick={() => void onOpenConfiguration()}>
+                {text.quickActions.openOptions}
+              </button>
+            </div>
+            {syncFeedback.message ? (
+              <p aria-live="polite" className="surface__feedback" role="status">
+                {syncFeedback.message}
+              </p>
+            ) : null}
+            {exportFeedback ? (
+              <p aria-live="polite" className="surface__feedback" role="status">
+                {exportFeedback}
+              </p>
+            ) : null}
+          </article>
+        </div>
+      ) : null}
+
+      {surface !== 'popup' && surface !== 'sidepanel' ? (
         <article className="surface__panel">
           <h2>{text.diagnostics.title}</h2>
           <p>{text.diagnostics.description}</p>
@@ -512,6 +722,7 @@ export function WorkbenchDecisionSections({
   uiLanguage,
   surface,
   focusQueue,
+  planningSubstrates,
   weeklyLoad,
   priorityAlerts,
   criticalAlerts,
@@ -527,6 +738,12 @@ export function WorkbenchDecisionSections({
   if (surface === 'popup') {
     return null;
   }
+
+  const latestPlanningSubstrate = [...planningSubstrates].sort(
+    (left, right) =>
+      toSortableTimestamp(right.lastUpdatedAt ?? right.capturedAt) -
+      toSortableTimestamp(left.lastUpdatedAt ?? left.capturedAt),
+  )[0];
 
   return (
     <>
@@ -713,6 +930,63 @@ export function WorkbenchDecisionSections({
           </div>
         </article>
       </div>
+
+      <article className="surface__panel">
+        <h2>{text.planningPulse.title}</h2>
+        <p>{text.planningPulse.description}</p>
+        <div className="surface__stack">
+          {latestPlanningSubstrate ? (
+            <article className="surface__item">
+              <div className="surface__item-header">
+                <strong>{latestPlanningSubstrate.planLabel}</strong>
+                <div className="surface__pill-row">
+                  <span className="surface__badge surface__badge--neutral">MyPlan</span>
+                  <span className="surface__badge surface__badge--neutral">{text.planningPulse.readOnlyBadge}</span>
+                </div>
+              </div>
+              <p>
+                {text.planningPulse.summary({
+                  termCount: latestPlanningSubstrate.termCount,
+                  plannedCourseCount: latestPlanningSubstrate.plannedCourseCount,
+                  backupCourseCount: latestPlanningSubstrate.backupCourseCount,
+                  scheduleOptionCount: latestPlanningSubstrate.scheduleOptionCount,
+                })}
+              </p>
+              <p className="surface__meta">
+                {text.planningPulse.requirementGroups(latestPlanningSubstrate.requirementGroupCount)} ·{' '}
+                {text.planningPulse.programExploration(latestPlanningSubstrate.programExplorationCount)}
+              </p>
+              <p className="surface__meta">
+                {text.planningPulse.capturedAt(formatDateTime(uiLanguage, latestPlanningSubstrate.capturedAt))}
+                {latestPlanningSubstrate.lastUpdatedAt
+                  ? ` · ${text.planningPulse.updatedAt(formatDateTime(uiLanguage, latestPlanningSubstrate.lastUpdatedAt))}`
+                  : ''}
+              </p>
+              {latestPlanningSubstrate.degreeProgressSummary ? (
+                <p>
+                  {text.planningPulse.degreeProgressLabel}: {latestPlanningSubstrate.degreeProgressSummary}
+                </p>
+              ) : null}
+              {latestPlanningSubstrate.transferPlanningSummary ? (
+                <p>
+                  {text.planningPulse.transferPlanningLabel}: {latestPlanningSubstrate.transferPlanningSummary}
+                </p>
+              ) : null}
+              {latestPlanningSubstrate.terms.length ? (
+                <div className="surface__pill-row">
+                  {latestPlanningSubstrate.terms.slice(0, 4).map((term) => (
+                    <span className="surface__pill" key={term.termCode}>
+                      {text.planningPulse.termSummary(term)}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+            </article>
+          ) : (
+            <p>{text.planningPulse.none}</p>
+          )}
+        </div>
+      </article>
     </>
   );
 }
@@ -754,6 +1028,29 @@ export function WorkbenchOperationsSections({
           myuwBadge: 'MyUW 提醒',
           defaultBadge: '公告',
         };
+  const redZoneCopy =
+    uiLanguage === 'en'
+      ? {
+          title: 'Manual-only campus boundary',
+          description:
+            'Register.UW and Notify.UW stay outside the current product path. Campus Copilot stops at static explanation and manual routing here.',
+          badge: 'No-go',
+          reason: 'Not supported in the current product path',
+          secondary: 'This surface crosses the current read-only academic safety boundary.',
+          disabledAction: (label: string) => `${label} automation not supported`,
+          manualAction: (label: string) => `Open ${label} manually`,
+        }
+      : {
+          title: '仅支持手动继续的校园边界',
+          description:
+            'Register.UW 和 Notify.UW 仍然在当前产品路径之外。Campus Copilot 在这里只提供静态说明和手动跳转，不替你操作。',
+          badge: '禁止区',
+          reason: '当前产品路径不支持这一表面',
+          secondary: '这条线已经越过当前只读学术安全边界。',
+          disabledAction: (label: string) => `${label} 自动化当前不支持`,
+          manualAction: (label: string) => `手动打开 ${label}`,
+        };
+  const redZoneHardStops = getAcademicRedZoneHardStops(['register-uw', 'notify-uw']);
 
   return (
     <>
@@ -880,6 +1177,33 @@ export function WorkbenchOperationsSections({
           ) : (
             <p>{noticeSignalsCopy.none}</p>
           )}
+        </div>
+      </article>
+
+      <article className="surface__panel">
+        <h2>{redZoneCopy.title}</h2>
+        <p>{redZoneCopy.description}</p>
+        <div className="surface__stack">
+          {redZoneHardStops.map((surface) => (
+            <article className="surface__item" key={surface.surface}>
+              <div className="surface__item-header">
+                <strong>{surface.surfaceLabel}</strong>
+                <span className="surface__badge surface__badge--danger">{redZoneCopy.badge}</span>
+              </div>
+              <p>{redZoneCopy.reason}</p>
+              <p className="surface__meta">{redZoneCopy.secondary}</p>
+              <div className="surface__actions surface__actions--wrap">
+                <button className="surface__button" disabled={surface.ctaDisabled}>
+                  {redZoneCopy.disabledAction(surface.surfaceLabel)}
+                </button>
+                {surface.manualPathOnly && surface.manualUrl ? (
+                  <a className="surface__button surface__button--ghost" href={surface.manualUrl} rel="noreferrer" target="_blank">
+                    {redZoneCopy.manualAction(surface.surfaceLabel)}
+                  </a>
+                ) : null}
+              </div>
+            </article>
+          ))}
         </div>
       </article>
 

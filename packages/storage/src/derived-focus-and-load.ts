@@ -1,2 +1,2 @@
-export { getFocusQueue } from './focus-queue';
-export { getWeeklyLoad } from './weekly-load';
+export { getFocusQueue } from './focus-queue.ts';
+export { getWeeklyLoad } from './weekly-load.ts';

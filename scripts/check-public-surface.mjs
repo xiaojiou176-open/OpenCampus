@@ -38,6 +38,7 @@ const requiredFiles = [
   'docs/14-public-distribution-scoreboard.md',
   'docs/15-publication-submission-packet.md',
   'docs/16-distribution-preflight-packets.md',
+  'docs/17-academic-expansion-and-safety-contract.md',
   'packages/mcp-server/mcpb.manifest.json',
   'docs/container-publication.packet.json',
   'docs/assets/hero-workbench-overview.svg',
@@ -150,6 +151,7 @@ if (existsSync('README.md')) {
     'pnpm proof:public',
     'docs/14-public-distribution-scoreboard.md',
     'docs/16-distribution-preflight-packets.md',
+    'docs/17-academic-expansion-and-safety-contract.md',
     'docs/10-builder-api-and-ecosystem-fit.md',
     'docs/api/openapi.yaml',
   ];
@@ -243,6 +245,49 @@ if (existsSync('skills/README.md')) {
   for (const snippet of requiredSkillSnippets) {
     if (!skillsReadme.includes(snippet)) {
       failures.push(`skills_readme_missing_reference:${snippet}`);
+    }
+  }
+}
+
+const rootContractExpectations = [
+  ['PRIVACY.md', ['docs/17-academic-expansion-and-safety-contract.md', '`Register.UW`', '`Notify.UW`']],
+  ['INTEGRATIONS.md', ['docs/17-academic-expansion-and-safety-contract.md', 'read-only', 'protected academic workflows']],
+  ['DISTRIBUTION.md', ['docs/17-academic-expansion-and-safety-contract.md', 'no registration automation']],
+  ['SECURITY.md', ['`Register.UW`', '`Notify.UW`', 'raw course files']],
+  ['CLAUDE.md', ['`Register.UW` / `Notify.UW`', 'raw course files']],
+];
+
+for (const [path, snippets] of rootContractExpectations) {
+  if (!existsSync(path)) {
+    failures.push(`missing_public_surface:${path}`);
+    continue;
+  }
+
+  const body = readFileSync(path, 'utf8');
+  for (const snippet of snippets) {
+    if (!body.includes(snippet)) {
+      failures.push(`root_contract_missing_snippet:${path}:${snippet}`);
+    }
+  }
+}
+
+if (existsSync('docs/17-academic-expansion-and-safety-contract.md')) {
+  const academicSafety = readFileSync('docs/17-academic-expansion-and-safety-contract.md', 'utf8');
+  const requiredAcademicSafetySnippets = [
+    '`MyPlan`',
+    '`DARS`',
+    '`Time Schedule`',
+    '`DawgPath`',
+    '`ctcLink class search`',
+    '`Register.UW`',
+    '`Notify.UW`',
+    'default-disabled',
+    'distribution-facing docs',
+  ];
+
+  for (const snippet of requiredAcademicSafetySnippets) {
+    if (!academicSafety.includes(snippet)) {
+      failures.push(`academic_safety_missing_snippet:${snippet}`);
     }
   }
 }

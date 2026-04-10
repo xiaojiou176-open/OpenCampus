@@ -9,6 +9,14 @@ It is the shipping counter:
 - what is only repo-local proof today
 - what is still owner-only later
 
+All distribution surfaces still inherit the same academic safety contract:
+
+- local-first
+- read-only
+- not official campus-system automation
+- no registration automation
+- no default AI ingestion of raw course files or instructor-authored materials
+
 ## Start Here
 
 | If you need... | Open this | Why |
@@ -17,6 +25,7 @@ It is the shipping counter:
 | the canonical state ledger | [`docs/14-public-distribution-scoreboard.md`](docs/14-public-distribution-scoreboard.md) | this is the SSOT for `public-ready`, `registry candidate`, `registry submitted`, `registry blocked`, and `not officially listed` |
 | the owner-only action queue | [`docs/15-publication-submission-packet.md`](docs/15-publication-submission-packet.md) | use this only when the question becomes "what does the owner click next?" |
 | the packet inventory | [`docs/16-distribution-preflight-packets.md`](docs/16-distribution-preflight-packets.md) | use this when you want the exact repo-owned packet files and validation commands |
+| the academic safety contract | [`docs/17-academic-expansion-and-safety-contract.md`](docs/17-academic-expansion-and-safety-contract.md) | use this before describing any integration or distribution surface as broader than a read-only study/workspace path |
 | browser store last mile | [`docs/chrome-web-store-submission-packet.md`](docs/chrome-web-store-submission-packet.md) | the Chrome lane has its own packet and owner-only dashboard work |
 | the skill catalog and submit packet | [`skills/README.md`](skills/README.md), [`skills/catalog.json`](skills/catalog.json), [`skills/clawhub-submission.packet.json`](skills/clawhub-submission.packet.json) | use these when the question becomes "which public skill surfaces are already machine-readable and what exact publish packet leaves the repo later?" |
 | skill / container / MCP packet details | [`docs/skill-publication-prep.md`](docs/skill-publication-prep.md), [`docs/container-publication-prep.md`](docs/container-publication-prep.md), [`docs/mcp-registry-submission-prep.md`](docs/mcp-registry-submission-prep.md) | keep each surface-specific packet narrow |

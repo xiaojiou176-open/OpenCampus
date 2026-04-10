@@ -8,6 +8,7 @@ import {
   FetchMetadataSchema,
   MessageSchema,
   ResourceSchema,
+  SiteSchema,
 } from './index';
 
 const source = {
@@ -163,6 +164,29 @@ describe('schema package', () => {
         success: false,
         collectorName: 'CanvasStateAssignmentsCollector',
         errorReason: 'state_missing',
+      }),
+    ).toBeTruthy();
+  });
+
+  it('includes time-schedule in the shared site union', () => {
+    expect(SiteSchema.parse('time-schedule')).toBe('time-schedule');
+
+    expect(
+      EventSchema.parse({
+        id: 'event-time-schedule-1',
+        kind: 'event',
+        site: 'time-schedule',
+        source: {
+          site: 'time-schedule',
+          resourceId: 'time-schedule:section:12345',
+          resourceType: 'public_course_offering_section',
+          url: 'https://www.washington.edu/students/timeschd/SPR2026/cse.html',
+        },
+        eventKind: 'class',
+        title: 'CSE 142 A',
+        summary: 'Spring 2026 public course offering',
+        location: 'SAV 260',
+        detail: 'MWF 0930-1020 · public course offerings',
       }),
     ).toBeTruthy();
   });

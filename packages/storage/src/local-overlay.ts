@@ -1,4 +1,4 @@
-import { campusCopilotDb, type CampusCopilotDB } from './db';
+import { campusCopilotDb, type CampusCopilotDB } from './db.ts';
 import {
   LocalEntityOverlayFieldSchema,
   LocalEntityOverlayInputSchema,
@@ -6,7 +6,7 @@ import {
   type LocalEntityOverlay,
   type LocalEntityOverlayField,
   type LocalEntityOverlayInput,
-} from './contracts';
+} from './contracts.ts';
 
 function sanitizeNote(value: string | null | undefined) {
   const trimmed = value?.trim();

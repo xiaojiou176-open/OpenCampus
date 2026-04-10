@@ -60,7 +60,7 @@ describe('site sdk', () => {
     const canvas = await getCanvasOverview(snapshot);
     const edstem = await getEdstemOverview(snapshot);
 
-    expect(SITE_TOOLBOX_ORDER).toEqual(['canvas', 'gradescope', 'edstem', 'myuw']);
+    expect(SITE_TOOLBOX_ORDER).toEqual(['canvas', 'gradescope', 'edstem', 'myuw', 'time-schedule']);
     expect(canvas.counts.assignments).toBe(1);
     expect(edstem.counts.resources).toBe(1);
     expect(edstem.counts.messages).toBe(1);

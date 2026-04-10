@@ -18,6 +18,7 @@ import {
   type Resource,
   type Site,
 } from '@campus-copilot/schema';
+import { PlanningSubstrateOwnerSchema } from '@campus-copilot/storage/contracts';
 
 const SyncRunSchema = z
   .object({
@@ -49,6 +50,7 @@ const ChangeEventSchema = z
 export const ImportedWorkbenchSnapshotSchema = z
   .object({
     generatedAt: IsoDateTimeSchema,
+    planningSubstrates: z.array(PlanningSubstrateOwnerSchema).default([]),
     resources: z.array(ResourceSchema).default([]),
     assignments: z.array(AssignmentSchema).default([]),
     announcements: z.array(AnnouncementSchema).default([]),
@@ -136,6 +138,7 @@ export function buildWorkspaceSummary(snapshot: ImportedWorkbenchSnapshot): Work
     gradescope: emptySiteCounts(),
     edstem: emptySiteCounts(),
     myuw: emptySiteCounts(),
+    'time-schedule': emptySiteCounts(),
   };
 
   for (const assignment of snapshot.assignments) bySite[assignment.site].assignments += 1;

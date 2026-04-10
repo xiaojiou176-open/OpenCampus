@@ -9,8 +9,8 @@ import {
   listSupportedSiteMcpServers,
 } from './index.mjs';
 
-test('lists the four supported site MCP entrypoints', () => {
-  assert.deepEqual(listSupportedSiteMcpServers(), ['canvas', 'gradescope', 'edstem', 'myuw']);
+test('lists the five supported site MCP entrypoints', () => {
+  assert.deepEqual(listSupportedSiteMcpServers(), ['canvas', 'gradescope', 'edstem', 'myuw', 'time-schedule']);
   assert.equal(SITE_MCP_BINARIES.canvas, 'campus-copilot-mcp-canvas');
 });
 

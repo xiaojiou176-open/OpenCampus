@@ -35,13 +35,14 @@ export type ProviderStatusState = {
   error?: string;
 };
 
-export const SITE_ORDER: Site[] = ['canvas', 'gradescope', 'edstem', 'myuw'];
+export const SITE_ORDER: Site[] = ['canvas', 'gradescope', 'edstem', 'myuw', 'time-schedule'];
 
 export const SITE_LABELS: Record<Site, string> = {
   canvas: 'Canvas',
   gradescope: 'Gradescope',
   edstem: 'EdStem',
   myuw: 'MyUW',
+  'time-schedule': 'Time Schedule',
 };
 
 export const EXPORT_FORMAT_OPTIONS: Array<{ value: ExportFormat; label: string }> = [

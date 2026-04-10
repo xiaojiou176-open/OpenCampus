@@ -3,6 +3,7 @@ import type { Site } from '@campus-copilot/schema';
 import type {
   ChangeEvent,
   FocusQueueItem,
+  PlanningSubstrateOwner,
   RecentUpdatesFeed,
   SiteEntityCounts,
   SyncRun,
@@ -16,6 +17,7 @@ export function WebWorkbenchPanels(props: {
   todaySnapshot?: TodaySnapshot;
   recentUpdates?: RecentUpdatesFeed;
   focusQueue: FocusQueueItem[];
+  planningSubstrates: PlanningSubstrateOwner[];
   weeklyLoad: WeeklyLoadEntry[];
   currentAssignments: Array<{
     id: string;
@@ -71,6 +73,12 @@ export function WebWorkbenchPanels(props: {
   topSyncRun?: SyncRun;
   siteLabels: Record<Site, string>;
 }) {
+  const latestPlanningSubstrate = [...props.planningSubstrates].sort((left, right) => {
+    const leftAt = Date.parse(left.lastUpdatedAt ?? left.capturedAt);
+    const rightAt = Date.parse(right.lastUpdatedAt ?? right.capturedAt);
+    return (Number.isNaN(rightAt) ? 0 : rightAt) - (Number.isNaN(leftAt) ? 0 : leftAt);
+  })[0];
+
   return (
     <>
       {!props.workbenchReady ? (
@@ -153,6 +161,64 @@ export function WebWorkbenchPanels(props: {
             </ReadyStateBlock>
           </div>
         </article>
+      </section>
+
+      <section className="panel">
+        <h2>Planning Pulse</h2>
+        <p>
+          A read-only summary of the shared MyPlan substrate, kept in the same decision lane as focus and load without
+          pretending this workspace can register for you.
+        </p>
+        <div className="stack">
+          <ReadyStateBlock
+            ready={props.workbenchReady}
+            hasItems={Boolean(latestPlanningSubstrate)}
+            emptyState={<p>No shared MyPlan planning summary is visible yet.</p>}
+          >
+            {latestPlanningSubstrate ? (
+              <article className="item">
+                <div className="item-header">
+                  <strong>{latestPlanningSubstrate.planLabel}</strong>
+                  <div className="badge-row">
+                    <span className="badge">MyPlan</span>
+                    <span className="badge">Read-only</span>
+                  </div>
+                </div>
+                <p>
+                  {latestPlanningSubstrate.termCount} term(s) · {latestPlanningSubstrate.plannedCourseCount} planned
+                  course(s) · {latestPlanningSubstrate.backupCourseCount} backup course(s) ·{' '}
+                  {latestPlanningSubstrate.scheduleOptionCount} schedule option(s)
+                </p>
+                <p className="meta">
+                  {latestPlanningSubstrate.requirementGroupCount} requirement group(s) ·{' '}
+                  {latestPlanningSubstrate.programExplorationCount} exploration path(s)
+                </p>
+                <p className="meta">
+                  Captured {formatDateTime(latestPlanningSubstrate.capturedAt)}
+                  {latestPlanningSubstrate.lastUpdatedAt
+                    ? ` · Updated ${formatDateTime(latestPlanningSubstrate.lastUpdatedAt)}`
+                    : ''}
+                </p>
+                {latestPlanningSubstrate.degreeProgressSummary ? (
+                  <p>Degree progress: {latestPlanningSubstrate.degreeProgressSummary}</p>
+                ) : null}
+                {latestPlanningSubstrate.transferPlanningSummary ? (
+                  <p>Transfer planning: {latestPlanningSubstrate.transferPlanningSummary}</p>
+                ) : null}
+                {latestPlanningSubstrate.terms.length ? (
+                  <div className="badge-row">
+                    {latestPlanningSubstrate.terms.slice(0, 4).map((term) => (
+                      <span className="badge" key={term.termCode}>
+                        {term.termLabel}: {term.plannedCourseCount} planned · {term.backupCourseCount} backup ·{' '}
+                        {term.scheduleOptionCount} option(s)
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
+              </article>
+            ) : null}
+          </ReadyStateBlock>
+        </div>
       </section>
 
       <section className="split-grid">

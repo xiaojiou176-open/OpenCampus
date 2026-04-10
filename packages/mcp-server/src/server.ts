@@ -10,7 +10,7 @@ import {
   readImportedWorkbenchSnapshot,
 } from '@campus-copilot/sdk';
 
-const SNAPSHOT_SITES = ['canvas', 'gradescope', 'edstem', 'myuw'] as const;
+const SNAPSHOT_SITES = ['canvas', 'gradescope', 'edstem', 'myuw', 'time-schedule'] as const;
 
 export const CAMPUS_MCP_SERVER_TOOL_NAMES = [
   'campus_health',

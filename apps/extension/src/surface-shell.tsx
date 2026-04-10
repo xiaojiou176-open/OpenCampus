@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { browser } from 'wxt/browser';
 import {
+  type AdvancedMaterialAnalysisRequest,
   resolveAiAnswer,
   type AiStructuredAnswer,
   type ProviderId,
@@ -17,11 +18,13 @@ import {
 } from '@campus-copilot/core';
 import type { EntityKind, Site } from '@campus-copilot/schema';
 import {
-  clearLocalEntityOverlayField,
-  markEntitiesSeen,
-  upsertLocalEntityOverlay,
-  useFocusQueue,
-  useLatestSyncRuns,
+    clearLocalEntityOverlayField,
+    markEntitiesSeen,
+    upsertLocalEntityOverlay,
+    useAllCourses,
+    usePlanningSubstratesBySource,
+    useFocusQueue,
+    useLatestSyncRuns,
   type WorkbenchFilter,
   useAllSiteEntityCounts,
   usePriorityAlerts,
@@ -95,6 +98,10 @@ export function SurfaceShell({ surface }: { surface: SurfaceKind }) {
   const [aiNotice, setAiNotice] = useState<string>();
   const [aiError, setAiError] = useState<string>();
   const [aiPending, setAiPending] = useState(false);
+  const [advancedMaterialEnabled, setAdvancedMaterialEnabled] = useState(false);
+  const [advancedMaterialCourseId, setAdvancedMaterialCourseId] = useState('');
+  const [advancedMaterialExcerpt, setAdvancedMaterialExcerpt] = useState('');
+  const [advancedMaterialAcknowledged, setAdvancedMaterialAcknowledged] = useState(false);
   const [providerStatusPending, setProviderStatusPending] = useState(false);
   const [providerStatus, setProviderStatus] = useState<ProviderStatusState>(buildEmptyProviderStatus());
 
@@ -119,7 +126,9 @@ export function SurfaceShell({ surface }: { surface: SurfaceKind }) {
     },
   }[surface];
   const todaySnapshot = useTodaySnapshot(now, undefined, refreshKey);
+  const allCourses = useAllCourses(undefined, refreshKey) ?? [];
   const focusQueue = useFocusQueue(now, undefined, refreshKey) ?? [];
+  const planningSubstrates = usePlanningSubstratesBySource('myplan', undefined, refreshKey) ?? [];
   const weeklyLoad = useWeeklyLoad(now, undefined, refreshKey) ?? [];
   const recentChangeEvents = useRecentChangeEvents(8, undefined, refreshKey) ?? [];
   const latestSyncRuns = useLatestSyncRuns(4, undefined, refreshKey) ?? [];
@@ -174,6 +183,12 @@ export function SurfaceShell({ surface }: { surface: SurfaceKind }) {
   const currentGrades = workbenchView?.grades ?? [];
   const currentEvents = workbenchView?.events ?? [];
   const currentAlerts = workbenchView?.alerts ?? [];
+  const availableCourses = allCourses
+    .filter((course) => filters.site === 'all' || course.site === filters.site)
+    .map((course) => ({
+      id: course.id,
+      label: `${SITE_LABELS[course.site]} · ${course.title}`,
+    }));
   const currentRecentUpdates = workbenchView?.recentUpdates;
 
   async function refreshProviderStatus() {
@@ -385,6 +400,7 @@ export function SurfaceShell({ surface }: { surface: SurfaceKind }) {
         workbenchEvents: workbenchView?.events ?? [],
         priorityAlerts,
         focusQueue,
+        planningSubstrates,
         weeklyLoad,
         latestSyncRuns,
         recentChangeEvents,
@@ -440,6 +456,40 @@ export function SurfaceShell({ surface }: { surface: SurfaceKind }) {
       return;
     }
 
+    const selectedCourse = allCourses.find((course) => course.id === advancedMaterialCourseId);
+
+    if (advancedMaterialEnabled) {
+      if (!selectedCourse) {
+        setAiError('Select one course before turning on advanced material analysis.');
+        return;
+      }
+
+      if (!advancedMaterialExcerpt.trim()) {
+        setAiError('Paste a course excerpt before asking for advanced material analysis.');
+        return;
+      }
+
+      if (!advancedMaterialAcknowledged) {
+        setAiError('Confirm the course-material responsibility notice before continuing.');
+        return;
+      }
+    }
+
+    const advancedMaterialAnalysis: AdvancedMaterialAnalysisRequest =
+      advancedMaterialEnabled && selectedCourse
+        ? {
+            enabled: true,
+            policy: 'per_course_opt_in',
+            courseId: selectedCourse.id,
+            courseLabel: `${SITE_LABELS[selectedCourse.site]} · ${selectedCourse.title}`,
+            excerpt: advancedMaterialExcerpt.trim(),
+            userAcknowledgedResponsibility: true,
+          }
+        : {
+            enabled: false,
+            policy: 'default_disabled',
+          };
+
     setAiPending(true);
     setAiError(undefined);
     setAiNotice(undefined);
@@ -452,6 +502,7 @@ export function SurfaceShell({ surface }: { surface: SurfaceKind }) {
         switchyardProvider,
         switchyardLane,
         question: aiQuestion,
+        advancedMaterialAnalysis,
         todaySnapshot: todaySnapshot ?? {
           totalAssignments: 0,
           dueSoonAssignments: 0,
@@ -480,6 +531,7 @@ export function SurfaceShell({ surface }: { surface: SurfaceKind }) {
           workbenchEvents: workbenchView?.events ?? [],
           priorityAlerts,
           focusQueue,
+          planningSubstrates,
           weeklyLoad,
           latestSyncRuns,
           recentChangeEvents,
@@ -511,7 +563,9 @@ export function SurfaceShell({ surface }: { surface: SurfaceKind }) {
       setAiAnswer(resolvedAnswer.answerText);
       setAiStructuredAnswer(resolvedAnswer.structuredAnswer);
       setAiNotice(
-        resolvedAnswer.citationCoverage === 'uncited_fallback'
+        advancedMaterialAnalysis.enabled
+          ? `Advanced material analysis used only the pasted excerpt for ${advancedMaterialAnalysis.courseLabel}.`
+          : resolvedAnswer.citationCoverage === 'uncited_fallback'
           ? text.feedback.aiFallbackWithoutCitations
           : undefined,
       );
@@ -552,6 +606,12 @@ export function SurfaceShell({ surface }: { surface: SurfaceKind }) {
     }
   }
 
+  async function handleOpenMainWorkbench() {
+    await browser.tabs.create({
+      url: browser.runtime.getURL('/sidepanel.html'),
+    });
+  }
+
   const selectedFormatLabel =
     EXPORT_FORMAT_OPTIONS.find((option) => option.value === selectedFormat)?.label ?? selectedFormat;
 
@@ -587,10 +647,12 @@ export function SurfaceShell({ surface }: { surface: SurfaceKind }) {
           onOpenConfiguration={() => {
             void browser.runtime.openOptionsPage();
           }}
+          onOpenMainWorkbench={surface === 'popup' ? handleOpenMainWorkbench : undefined}
           onMarkVisibleUpdatesSeen={handleMarkVisibleUpdatesSeen}
           onExportDiagnostics={handleExportDiagnostics}
           diagnostics={surfaceView.diagnostics}
           focusQueue={focusQueue}
+          planningSubstrates={planningSubstrates}
           weeklyLoad={weeklyLoad}
           priorityAlerts={priorityAlerts}
           criticalAlerts={surfaceView.criticalAlerts}
@@ -628,6 +690,11 @@ export function SurfaceShell({ surface }: { surface: SurfaceKind }) {
             aiStructuredAnswer={aiStructuredAnswer}
             aiNotice={aiNotice}
             aiError={aiError}
+            availableCourses={availableCourses}
+            advancedMaterialEnabled={advancedMaterialEnabled}
+            advancedMaterialCourseId={advancedMaterialCourseId}
+            advancedMaterialExcerpt={advancedMaterialExcerpt}
+            advancedMaterialAcknowledged={advancedMaterialAcknowledged}
             structuredInputSummary={{
               totalAssignments: todaySnapshot?.totalAssignments ?? 0,
               dueSoonAssignments: todaySnapshot?.dueSoonAssignments ?? 0,
@@ -647,6 +714,17 @@ export function SurfaceShell({ surface }: { surface: SurfaceKind }) {
             onSwitchyardProviderChange={setSwitchyardProvider}
             onSwitchyardLaneChange={setSwitchyardLane}
             onQuestionChange={setAiQuestion}
+            onAdvancedMaterialEnabledChange={(value) => {
+              setAdvancedMaterialEnabled(value);
+              if (!value) {
+                setAdvancedMaterialCourseId('');
+                setAdvancedMaterialExcerpt('');
+                setAdvancedMaterialAcknowledged(false);
+              }
+            }}
+            onAdvancedMaterialCourseChange={setAdvancedMaterialCourseId}
+            onAdvancedMaterialExcerptChange={setAdvancedMaterialExcerpt}
+            onAdvancedMaterialAcknowledgedChange={setAdvancedMaterialAcknowledged}
             onAskAi={handleAskAi}
             onRefreshProviderStatus={refreshProviderStatus}
             onOpenConfiguration={() => {

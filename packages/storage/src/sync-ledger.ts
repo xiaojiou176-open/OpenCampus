@@ -1,5 +1,5 @@
 import type { Announcement, Assignment, Course, Event, Grade, Message, Resource, Site } from '@campus-copilot/schema';
-import { campusCopilotDb, type CampusCopilotDB } from './db';
+import { campusCopilotDb, type CampusCopilotDB } from './db.ts';
 import {
   ChangeEventSchema,
   EntityStateSchema,
@@ -13,10 +13,10 @@ import {
   type SyncResourceFailure,
   type SyncRun,
   type SyncState,
-} from './contracts';
-import { compareNewest, summarizeResourceFailures, toEntityRef } from './storage-shared';
+} from './contracts.ts';
+import { compareNewest, summarizeResourceFailures, toEntityRef } from './storage-shared.ts';
 
-export { compareNewest } from './storage-shared';
+export { compareNewest } from './storage-shared.ts';
 
 type TrackedEntity = Course | Resource | Assignment | Announcement | Grade | Message | Event;
 

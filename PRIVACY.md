@@ -10,6 +10,7 @@ This page exists so contributors, reviewers, and browser-store reviewers can qui
 - the formal product path is read-only
 - Campus Copilot does not require `cookies` permission
 - AI runs **after structure** over normalized workspace results, not over raw campus pages or raw cookies
+- AI does not default to reading raw course files, instructor-authored materials, or exams just because the browser can see them
 
 ## Current Extension Permissions
 
@@ -38,6 +39,21 @@ Campus Copilot does **not** currently claim:
 - background cookie harvesting
 - hosted autonomy
 - public live-browser control
+- default AI ingestion of raw course files or instructor-authored materials
+
+## Academic Expansion Boundary
+
+The next planned academic expansion lane is read-only only:
+
+- `MyPlan`
+- `DARS`
+- `Time Schedule`
+- `DawgPath`
+- class-search-only `ctcLink`
+
+Red-zone surfaces such as `Register.UW`, `Notify.UW`, seat-watch flows, or registration-related polling remain outside the product path.
+
+See [`docs/17-academic-expansion-and-safety-contract.md`](docs/17-academic-expansion-and-safety-contract.md) for the full contract.
 
 ## Sensitive Data Rules
 

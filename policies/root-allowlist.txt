@@ -19,6 +19,7 @@ CONTRIBUTING.md
 DISTRIBUTION.md
 Dockerfile
 docs
+design-system
 examples
 INTEGRATIONS.md
 LICENSE

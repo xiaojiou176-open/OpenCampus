@@ -13,6 +13,9 @@ This file is not a live-proof ledger.
 For manual browser/session evidence, use [`live-validation-runbook.md`](live-validation-runbook.md).
 For the exhaustive current-vs-selective-vs-later map, use [`13-site-depth-exhaustive-ledger.md`](13-site-depth-exhaustive-ledger.md).
 
+Current shipped truth is still the four-site workspace.
+The read-only expansion registry below tracks partial repo-side adoption separately so it does not get confused with full shipped support.
+
 ## Current Matrix
 
 | Site | Resource family | Current path | Boundary type | Current code status | Current live-proof expectation | Next deep gap |
@@ -32,6 +35,26 @@ For the exhaustive current-vs-selective-vs-later map, use [`13-site-depth-exhaus
 | MyUW | `courses` | session-backed `https://my.uw.edu/api/v1/schedule/current` primary-section schedule records | `session-backed` | Implemented | Manual live validation required from a matching MyUW tab | Additional authenticated homepage card families from `/api/v1/*` surfaces |
 | MyUW | `announcements` | session-backed `https://my.uw.edu/api/v1/notices/`, fallback page state, then DOM | `session-backed`, `state-fallback`, `dom-fallback` | Implemented with notice-detail and selective reminder promotion on the current `Announcement` contract | Manual live validation required from a matching MyUW tab | Additional authenticated homepage card families from `/api/v1/*` surfaces plus any future standalone billing/enrollment domain |
 | MyUW | `events` | session-backed `https://my.uw.edu/api/v1/visual_schedule/current` for next class/final-exam projections plus `https://my.uw.edu/api/v1/deptcal/`, fallback page state, then DOM | `session-backed`, `state-fallback`, `dom-fallback` | Implemented with class/exam location/detail plus reminder promotion for registration deadline-like signals on the current `Event` contract | Manual live validation required from a matching MyUW tab | additional authenticated homepage card families remain selective next-phase; broader registration/tuition domains are still not standalone shipped truth |
+
+## Planned Read-Only Expansion Candidates
+
+| Site | Planned surface | Expected posture | Current truth |
+| :-- | :-- | :-- | :-- |
+| MyPlan | planning / transfer-planning context | read-only only; prefer stronger official/public surfaces before session-backed or DOM fallback | shared planning substrate now lands in storage and surfaces as a read-only `Planning Pulse` summary in the extension/web workbench plus AI/export context; still limited expansion support, not full MyPlan parity |
+| DARS | degree-audit visibility | read-only only; current-user-only interpretation | planned next-lane candidate, not current shipped support |
+| Time Schedule | catalog/schedule lookup | read-only only; must not turn into registration automation | shared runtime landing now exists on the public course-offerings carrier with shared site labels/runtime fan-out; still limited read-only expansion support, not registration support or full upstream-site parity |
+| DawgPath | major/program path visibility | read-only only; must not be marketed as an official advising product | planned next-lane candidate, not current shipped support |
+| ctcLink class search | class-search-only discovery | read-only only; validate school-by-school and do not overclaim stable anonymous JSON APIs | planned next-lane candidate, not current shipped support |
+
+## Red-Zone Exclusions
+
+| Surface | Current status | Why |
+| :-- | :-- | :-- |
+| `Register.UW` | `no-go` | registration automation and registration-related polling are out of scope |
+| `Notify.UW` | `no-go` | seat watching, seat-swap flows, and registration-related polling are out of scope |
+| seat-watcher / waitlist polling | `no-go` | repeated registration-availability checks are red-zone behavior, not read-only observation |
+| add/drop submission | `no-go` | the current contract never submits registration-state changes |
+| hold-seat / seat-swap helpers | `no-go` | those are operator actions and stay outside the product path |
 
 ## Exhaustive Disposition Snapshot
 

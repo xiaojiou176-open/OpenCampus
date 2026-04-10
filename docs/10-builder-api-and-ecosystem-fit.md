@@ -21,6 +21,13 @@ Use this file when you need the builder/tooling truth split:
 Do not use this file as the first product introduction. Campus Copilot is still
 first a student-facing local-first academic decision workspace.
 
+All builder-facing surfaces in this file still inherit the academic safety contract in [`17-academic-expansion-and-safety-contract.md`](17-academic-expansion-and-safety-contract.md):
+
+- no registration automation
+- no `Register.UW` / `Notify.UW` product path
+- no default AI ingestion of raw course files or instructor-authored materials
+- no rebranding of internal/session-backed academic paths as official public APIs
+
 ## Current Builder-Facing Surface
 
 Campus Copilot already has a real but secondary **read-side builder spine**:
@@ -209,6 +216,8 @@ The repository already has real substrate pieces, and it now ships repo-public p
 - `apps/web`: read-only second surface consuming imported workspace snapshots on the same substrate
 - `packages/provider-runtime`: Switchyard compat seam that keeps Campus-owned answer semantics separate from runtime transport
 - `packages/gradescope-api`, `packages/edstem-api`, `packages/myuw-api`: read-only site API preview libraries over the current adapter clients
+
+The next academic builder lane may eventually add read-only planning/search surfaces such as `MyPlan`, `DARS`, `Time Schedule`, `DawgPath`, and class-search-only `ctcLink`, but those are still future contract work and should not be described here as current shipped surfaces.
 
 This is the honest builder statement:
 

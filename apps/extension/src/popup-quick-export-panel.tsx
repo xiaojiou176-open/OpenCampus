@@ -5,32 +5,77 @@ export function PopupQuickExportPanel(props: {
   text: UiText;
   onExport: (preset: ExportPreset) => Promise<void>;
 }) {
+  const pulseActions: Array<{
+    preset: ExportPreset;
+    title: string;
+    description: string;
+    tone: 'featured' | 'default';
+  }> = [
+    {
+      preset: 'weekly_assignments',
+      title: props.text.popup.weeklyAssignments,
+      description: props.text.popup.weeklyAssignmentsDescription,
+      tone: 'featured',
+    },
+    {
+      preset: 'recent_updates',
+      title: props.text.popup.recentUpdates,
+      description: props.text.popup.recentUpdatesDescription,
+      tone: 'featured',
+    },
+    {
+      preset: 'all_deadlines',
+      title: props.text.popup.allDeadlines,
+      description: props.text.popup.allDeadlinesDescription,
+      tone: 'default',
+    },
+    {
+      preset: 'focus_queue',
+      title: props.text.popup.focusQueue,
+      description: props.text.popup.focusQueueDescription,
+      tone: 'default',
+    },
+    {
+      preset: 'weekly_load',
+      title: props.text.popup.weeklyLoad,
+      description: props.text.popup.weeklyLoadDescription,
+      tone: 'default',
+    },
+    {
+      preset: 'change_journal',
+      title: props.text.popup.changeJournal,
+      description: props.text.popup.changeJournalDescription,
+      tone: 'default',
+    },
+    {
+      preset: 'current_view',
+      title: props.text.popup.currentView,
+      description: props.text.popup.currentViewDescription,
+      tone: 'default',
+    },
+  ];
+
   return (
     <div className="surface__grid">
-      <article className="surface__panel">
-        <h2>{props.text.popup.quickExport}</h2>
-        <div className="surface__actions surface__actions--wrap">
-          <button className="surface__button surface__button--secondary" onClick={() => void props.onExport('weekly_assignments')}>
-            {props.text.popup.weeklyAssignments}
-          </button>
-          <button className="surface__button surface__button--ghost" onClick={() => void props.onExport('recent_updates')}>
-            {props.text.popup.recentUpdates}
-          </button>
-          <button className="surface__button surface__button--ghost" onClick={() => void props.onExport('all_deadlines')}>
-            {props.text.popup.allDeadlines}
-          </button>
-          <button className="surface__button surface__button--ghost" onClick={() => void props.onExport('focus_queue')}>
-            {props.text.popup.focusQueue}
-          </button>
-          <button className="surface__button surface__button--ghost" onClick={() => void props.onExport('weekly_load')}>
-            {props.text.popup.weeklyLoad}
-          </button>
-          <button className="surface__button surface__button--ghost" onClick={() => void props.onExport('change_journal')}>
-            {props.text.popup.changeJournal}
-          </button>
-          <button className="surface__button surface__button--ghost" onClick={() => void props.onExport('current_view')}>
-            {props.text.popup.currentView}
-          </button>
+      <article className="surface__panel surface__panel--hero">
+        <div className="surface__section-head">
+          <div>
+            <h2>{props.text.popup.quickPulse}</h2>
+            <p>{props.text.popup.quickPulseDescription}</p>
+          </div>
+          <span className="surface__badge surface__badge--warning">{props.text.popup.readOnlyBadge}</span>
+        </div>
+        <div className="surface__quick-pulse-grid">
+          {pulseActions.map((action) => (
+            <button
+              className={`surface__pulse-action surface__pulse-action--${action.tone}`}
+              key={action.preset}
+              onClick={() => void props.onExport(action.preset)}
+            >
+              <span className="surface__pulse-action-title">{action.title}</span>
+              <span className="surface__pulse-action-description">{action.description}</span>
+            </button>
+          ))}
         </div>
       </article>
     </div>

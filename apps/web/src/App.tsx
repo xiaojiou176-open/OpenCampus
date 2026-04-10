@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
+  type AdvancedMaterialAnalysisRequest,
   resolveAiAnswer,
   type AiStructuredAnswer,
   type ProviderId,
@@ -13,18 +14,20 @@ import {
   type ExportFormat,
   type ExportPreset,
 } from '@campus-copilot/exporter';
-import type { Site } from '@campus-copilot/schema';
+import type { Course, Site } from '@campus-copilot/schema';
 import {
-  campusCopilotDb,
-  replaceImportedWorkbenchSnapshot,
-  useAllSiteEntityCounts,
-  useFocusQueue,
-  useLatestSyncRuns,
-  usePriorityAlerts,
-  useRecentChangeEvents,
-  useRecentUpdates,
-  useTodaySnapshot,
-  useWeeklyLoad,
+    campusCopilotDb,
+    replaceImportedWorkbenchSnapshot,
+    useAllCourses,
+    useAllSiteEntityCounts,
+    useFocusQueue,
+    useLatestSyncRuns,
+    usePlanningSubstratesBySource,
+    usePriorityAlerts,
+    useRecentChangeEvents,
+    useRecentUpdates,
+    useTodaySnapshot,
+    useWeeklyLoad,
   useWorkbenchView,
   type WorkbenchFilter,
 } from '@campus-copilot/storage';
@@ -34,13 +37,14 @@ import { WebToolbar } from './web-toolbar';
 import { WebWorkbenchPanels } from './web-workbench-panels';
 import { formatRelativeTime } from './web-view-helpers';
 
-const SITE_ORDER: Site[] = ['canvas', 'gradescope', 'edstem', 'myuw'];
+const SITE_ORDER: Site[] = ['canvas', 'gradescope', 'edstem', 'myuw', 'time-schedule'];
 
 const SITE_LABELS: Record<Site, string> = {
   canvas: 'Canvas',
   gradescope: 'Gradescope',
   edstem: 'EdStem',
   myuw: 'MyUW',
+  'time-schedule': 'Time Schedule',
 };
 
 const PROVIDERS: Array<{ value: ProviderId; label: string; model: string }> = [
@@ -81,6 +85,10 @@ export function App() {
   const [aiStructured, setAiStructured] = useState<AiStructuredAnswer>();
   const [aiNotice, setAiNotice] = useState<string>();
   const [aiError, setAiError] = useState<string>();
+  const [advancedMaterialEnabled, setAdvancedMaterialEnabled] = useState(false);
+  const [advancedMaterialCourseId, setAdvancedMaterialCourseId] = useState('');
+  const [advancedMaterialExcerpt, setAdvancedMaterialExcerpt] = useState('');
+  const [advancedMaterialAcknowledged, setAdvancedMaterialAcknowledged] = useState(false);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date().toISOString()), 60000);
@@ -124,7 +132,9 @@ export function App() {
   }, []);
 
   const todaySnapshot = useTodaySnapshot(now, undefined, refreshKey);
+  const allCoursesResult = useAllCourses(undefined, refreshKey);
   const focusQueueResult = useFocusQueue(now, undefined, refreshKey);
+  const planningSubstratesResult = usePlanningSubstratesBySource('myplan', undefined, refreshKey);
   const weeklyLoadResult = useWeeklyLoad(now, undefined, refreshKey);
   const recentUpdates = useRecentUpdates(now, 8, undefined, refreshKey);
   const recentChangeEventsResult = useRecentChangeEvents(8, undefined, refreshKey);
@@ -137,6 +147,7 @@ export function App() {
     ready &&
     todaySnapshot != null &&
     focusQueueResult != null &&
+    planningSubstratesResult != null &&
     weeklyLoadResult != null &&
     recentUpdates != null &&
     recentChangeEventsResult != null &&
@@ -146,6 +157,8 @@ export function App() {
     workbenchView != null;
 
   const focusQueue = focusQueueResult ?? [];
+  const allCourses = allCoursesResult ?? [];
+  const planningSubstrates = planningSubstratesResult ?? [];
   const weeklyLoad = weeklyLoadResult ?? [];
   const recentChangeEvents = recentChangeEventsResult ?? [];
   const priorityAlerts = priorityAlertsResult ?? [];
@@ -161,6 +174,16 @@ export function App() {
   const currentAlerts = workbenchView?.alerts ?? [];
 
   const topSyncRun = latestSyncRuns[0];
+  const availableCourses = useMemo(
+    () =>
+      allCourses
+        .filter((course) => filters.site === 'all' || course.site === filters.site)
+        .map((course: Course) => ({
+          id: course.id,
+          label: `${SITE_LABELS[course.site]} · ${course.title}`,
+        })),
+    [allCourses, filters.site],
+  );
 
   function handleExport(preset: ExportPreset) {
     const siteLabel = filters.site === 'all' ? 'All sites' : SITE_LABELS[filters.site];
@@ -212,6 +235,40 @@ export function App() {
       return;
     }
 
+    const selectedCourse = allCourses.find((course) => course.id === advancedMaterialCourseId);
+
+    if (advancedMaterialEnabled) {
+      if (!selectedCourse) {
+        setAiError('Select one course before turning on advanced material analysis.');
+        return;
+      }
+
+      if (!advancedMaterialExcerpt.trim()) {
+        setAiError('Paste a course excerpt before asking for advanced material analysis.');
+        return;
+      }
+
+      if (!advancedMaterialAcknowledged) {
+        setAiError('Confirm the course-material responsibility notice before continuing.');
+        return;
+      }
+    }
+
+    const advancedMaterialAnalysis: AdvancedMaterialAnalysisRequest =
+      advancedMaterialEnabled && selectedCourse
+        ? {
+            enabled: true,
+            policy: 'per_course_opt_in',
+            courseId: selectedCourse.id,
+            courseLabel: `${SITE_LABELS[selectedCourse.site]} · ${selectedCourse.title}`,
+            excerpt: advancedMaterialExcerpt.trim(),
+            userAcknowledgedResponsibility: true,
+          }
+        : {
+            enabled: false,
+            policy: 'default_disabled',
+          };
+
     setAiPending(true);
     setAiError(undefined);
     setAiNotice(undefined);
@@ -249,6 +306,7 @@ export function App() {
         switchyardProvider,
         switchyardLane,
         question,
+        advancedMaterialAnalysis,
         todaySnapshot:
           todaySnapshot ?? {
             totalAssignments: 0,
@@ -261,6 +319,7 @@ export function App() {
         recentUpdates: recentUpdates?.items ?? [],
         alerts: priorityAlerts,
         focusQueue,
+        planningSubstrates,
         weeklyLoad,
         syncRuns: latestSyncRuns,
         recentChanges: recentChangeEvents,
@@ -294,7 +353,9 @@ export function App() {
       setAiAnswer(resolvedAnswer.answerText);
       setAiStructured(resolvedAnswer.structuredAnswer);
       setAiNotice(
-        resolvedAnswer.citationCoverage === 'uncited_fallback'
+        advancedMaterialAnalysis.enabled
+          ? `Advanced material analysis used only the pasted excerpt for ${advancedMaterialAnalysis.courseLabel}.`
+          : resolvedAnswer.citationCoverage === 'uncited_fallback'
           ? 'The provider returned a displayable answer, but it did not include the structured citation block yet. Treat this as uncited fallback.'
           : undefined,
       );
@@ -332,8 +393,45 @@ export function App() {
     [siteCounts],
   );
 
+  const populatedSiteCount = useMemo(
+    () =>
+      countsBySite.filter((entry) =>
+        [
+          entry.counts.courses,
+          entry.counts.resources,
+          entry.counts.assignments,
+          entry.counts.announcements,
+          entry.counts.grades,
+          entry.counts.messages,
+          entry.counts.events,
+        ].some((count) => count > 0),
+      ).length,
+    [countsBySite],
+  );
+
+  const trackedEntityCount = useMemo(
+    () =>
+      countsBySite.reduce(
+        (total, entry) =>
+          total +
+          entry.counts.courses +
+          entry.counts.resources +
+          entry.counts.assignments +
+          entry.counts.announcements +
+          entry.counts.grades +
+          entry.counts.messages +
+          entry.counts.events,
+        0,
+      ),
+    [countsBySite],
+  );
+
   return (
-    <main className="web-shell">
+    <>
+      <a className="skip-link" href="#workbench-content">
+        Skip to workbench content
+      </a>
+      <main id="workbench-content" className="web-shell" tabIndex={-1}>
       <WebToolbar
         ready={ready}
         now={now}
@@ -343,6 +441,10 @@ export function App() {
         filters={filters}
         siteOrder={SITE_ORDER}
         siteLabels={SITE_LABELS}
+        topSyncRun={topSyncRun}
+        populatedSiteCount={populatedSiteCount}
+        trackedEntityCount={trackedEntityCount}
+        unseenUpdateCount={recentUpdates?.unseenCount ?? 0}
         onLoadDemo={handleResetDemo}
         onImportFile={handleImportFile}
         onExportFormatChange={setExportFormat}
@@ -369,6 +471,7 @@ export function App() {
         todaySnapshot={todaySnapshot ?? undefined}
         recentUpdates={recentUpdates ?? undefined}
         focusQueue={focusQueue}
+        planningSubstrates={planningSubstrates}
         weeklyLoad={weeklyLoad}
         currentAssignments={currentAssignments}
         currentMessages={currentMessages}
@@ -394,6 +497,11 @@ export function App() {
         aiNotice={aiNotice}
         aiAnswer={aiAnswer}
         aiStructured={aiStructured}
+        availableCourses={availableCourses}
+        advancedMaterialEnabled={advancedMaterialEnabled}
+        advancedMaterialCourseId={advancedMaterialCourseId}
+        advancedMaterialExcerpt={advancedMaterialExcerpt}
+        advancedMaterialAcknowledged={advancedMaterialAcknowledged}
         onAiBaseUrlChange={setAiBaseUrl}
         onProviderChange={(nextProvider) => {
           setProvider(nextProvider);
@@ -403,8 +511,20 @@ export function App() {
         onSwitchyardProviderChange={setSwitchyardProvider}
         onSwitchyardLaneChange={setSwitchyardLane}
         onQuestionChange={setQuestion}
+        onAdvancedMaterialEnabledChange={(value) => {
+          setAdvancedMaterialEnabled(value);
+          if (!value) {
+            setAdvancedMaterialCourseId('');
+            setAdvancedMaterialExcerpt('');
+            setAdvancedMaterialAcknowledged(false);
+          }
+        }}
+        onAdvancedMaterialCourseChange={setAdvancedMaterialCourseId}
+        onAdvancedMaterialExcerptChange={setAdvancedMaterialExcerpt}
+        onAdvancedMaterialAcknowledgedChange={setAdvancedMaterialAcknowledged}
         onAskAi={handleAskAi}
       />
-    </main>
+      </main>
+    </>
   );
 }

@@ -12,6 +12,7 @@ const siteLabels = {
   gradescope: 'Gradescope',
   edstem: 'EdStem',
   myuw: 'MyUW',
+  'time-schedule': 'Time Schedule',
 } as const;
 
 describe('diagnostics helpers', () => {

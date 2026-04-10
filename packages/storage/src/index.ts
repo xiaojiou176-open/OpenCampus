@@ -5,6 +5,10 @@ export {
   LocalEntityOverlayFieldSchema,
   LocalEntityOverlayInputSchema,
   LocalEntityOverlaySchema,
+  PlanningSubstrateFitSchema,
+  PlanningSubstrateOwnerSchema,
+  PlanningSubstrateSourceSchema,
+  PlanningSubstrateTermSummarySchema,
   RecentUpdatesFeedSchema,
   SyncResourceFailureSchema,
   SyncRunSchema,
@@ -23,6 +27,10 @@ export {
   type LocalEntityOverlay,
   type LocalEntityOverlayField,
   type LocalEntityOverlayInput,
+  type PlanningSubstrateFit,
+  type PlanningSubstrateOwner,
+  type PlanningSubstrateSource,
+  type PlanningSubstrateTermSummary,
   type RecentUpdatesFeed,
   type SiteEntityCounts,
   type SiteSnapshotPayload,
@@ -33,8 +41,8 @@ export {
   type WeeklyLoadEntry,
   type WorkbenchFilter,
   type WorkbenchView,
-} from './contracts';
-export { CampusCopilotDB, campusCopilotDb, createCampusCopilotDb } from './db';
+} from './contracts.ts';
+export { CampusCopilotDB, campusCopilotDb, createCampusCopilotDb } from './db.ts';
 export {
   applySiteSnapshotWithLedger,
   putAnnouncements,
@@ -45,7 +53,7 @@ export {
   putMessages,
   putResources,
   replaceSiteSnapshot,
-} from './snapshot-write';
+} from './snapshot-write.ts';
 export {
   getLatestSyncRunBySite,
   getLatestSyncRuns,
@@ -56,7 +64,7 @@ export {
   markEntitiesSeen,
   putSyncState,
   recordSiteSyncError,
-} from './sync-ledger';
+} from './sync-ledger.ts';
 export {
   clearLocalEntityOverlayField,
   dismissEntity,
@@ -65,11 +73,18 @@ export {
   saveEntityNote,
   snoozeEntity,
   upsertLocalEntityOverlay,
-} from './local-overlay';
-export { replaceImportedWorkbenchSnapshot, type ImportedWorkbenchSnapshot } from './imported-workbench';
+} from './local-overlay.ts';
+export {
+  getLatestPlanningSubstrateBySource,
+  getPlanningSubstratesBySource,
+  putPlanningSubstrates,
+  replacePlanningSubstratesBySource,
+} from './planning-substrate.ts';
+export { replaceImportedWorkbenchSnapshot, type ImportedWorkbenchSnapshot } from './imported-workbench.ts';
 export {
   getAllAnnouncements,
   getAllAssignments,
+  getAllCourses,
   getAllEvents,
   getAllGrades,
   getAllMessages,
@@ -78,7 +93,7 @@ export {
   getAssignmentsBySite,
   getEntityCounts,
   getSiteEntityCounts,
-} from './query-entities';
+} from './query-entities.ts';
 export {
   getFocusQueue,
   getPriorityAlerts,
@@ -86,10 +101,11 @@ export {
   getTodaySnapshot,
   getWeeklyLoad,
   getWorkbenchView,
-} from './derived';
+} from './derived.ts';
 export {
   useAllAnnouncements,
   useAllAssignments,
+  useAllCourses,
   useAllEvents,
   useAllGrades,
   useAllMessages,
@@ -99,6 +115,7 @@ export {
   useFocusQueue,
   useLatestSyncRunBySite,
   useLatestSyncRuns,
+  usePlanningSubstratesBySource,
   usePriorityAlerts,
   useRecentChangeEvents,
   useRecentUpdates,
@@ -109,4 +126,4 @@ export {
   useTodaySnapshot,
   useWeeklyLoad,
   useWorkbenchView,
-} from './hooks';
+} from './hooks.ts';

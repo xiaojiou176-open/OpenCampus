@@ -19,6 +19,7 @@ export default defineConfig({
       'https://edstem.org/*',
       'https://us.edstem.org/*',
       'https://my.uw.edu/*',
+      'https://www.washington.edu/students/timeschd/*',
       'http://127.0.0.1/*',
       'http://localhost/*',
     ],

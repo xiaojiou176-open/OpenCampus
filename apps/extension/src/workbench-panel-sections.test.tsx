@@ -11,6 +11,35 @@ describe('workbench decision sections', () => {
         uiLanguage="en"
         surface="sidepanel"
         focusQueue={[]}
+        planningSubstrates={[
+          {
+            id: 'myplan:plan:1',
+            source: 'myplan',
+            fit: 'derived_planning_substrate',
+            readOnly: true,
+            capturedAt: '2026-04-01T00:00:00.000Z',
+            lastUpdatedAt: '2026-04-01T03:00:00.000Z',
+            planId: 'plan-1',
+            planLabel: 'Allen School planning draft',
+            termCount: 3,
+            plannedCourseCount: 9,
+            backupCourseCount: 2,
+            scheduleOptionCount: 4,
+            requirementGroupCount: 5,
+            programExplorationCount: 1,
+            degreeProgressSummary: 'Core degree requirements still need one systems elective.',
+            transferPlanningSummary: 'One transfer credit is still pending review.',
+            terms: [
+              {
+                termCode: '2026-spring',
+                termLabel: 'Spring 2026',
+                plannedCourseCount: 3,
+                backupCourseCount: 1,
+                scheduleOptionCount: 2,
+              },
+            ],
+          },
+        ]}
         weeklyLoad={[]}
         priorityAlerts={[
           {
@@ -69,6 +98,12 @@ describe('workbench decision sections', () => {
     expect(markup).toContain('Homework 5 is due soon');
     expect(markup).toContain('This work is approaching its deadline and should stay near the top.');
     expect(markup).toContain('High');
+    expect(markup).toContain('Planning Pulse');
+    expect(markup).toContain('Allen School planning draft');
+    expect(markup).toContain('Read-only');
+    expect(markup).toContain('3 term(s) · 9 planned course(s) · 2 backup course(s) · 4 schedule option(s)');
+    expect(markup).toContain('Degree progress: Core degree requirements still need one systems elective.');
+    expect(markup).toContain('Spring 2026: 3 planned · 1 backup · 2 option(s)');
     expect(markup).toContain('Recent discussion update');
     expect(markup).toContain('Recent discussion activity landed here.');
     expect(markup).toContain('Discussion reply');
@@ -168,6 +203,12 @@ describe('workbench operations sections', () => {
     expect(markup).toContain('https://us.edstem.org/api/resources/1/download/week-8-review-sheet.pdf?dl=1');
     expect(markup).toContain('Notice Signals');
     expect(markup).toContain('Spring quarter tuition is due.');
+    expect(markup).toContain('Manual-only campus boundary');
+    expect(markup).toContain('Not supported in the current product path');
+    expect(markup).toContain('Register.UW automation not supported');
+    expect(markup).toContain('Notify.UW automation not supported');
+    expect(markup).toContain('href="https://register.uw.edu/"');
+    expect(markup).toContain('href="https://notify.uw.edu/"');
     expect(markup).toContain('Discussion Highlights');
     expect(markup).toContain('Project 2 thread: instructor clarified the grading scope.');
     expect(markup).toContain('Unread');
@@ -175,5 +216,32 @@ describe('workbench operations sections', () => {
     expect(markup).toContain('Schedule Outlook');
     expect(markup).toContain('Lecture meets in person this week.');
     expect(markup).toContain('MEB 246');
+  });
+
+  it('announces sync and export feedback through live regions on landed quick-action surfaces', () => {
+    const markup = renderToStaticMarkup(
+      <WorkbenchOperationsSections
+        text={getUiText('en')}
+        uiLanguage="en"
+        surface="popup"
+        currentResources={[]}
+        currentAssignments={[]}
+        currentAnnouncements={[]}
+        currentMessages={[]}
+        currentEvents={[]}
+        orderedSiteStatus={[]}
+        syncFeedback={{ message: 'Sync finished for Canvas.' }}
+        exportFeedback="Current view exported."
+        onSyncSite={async () => {}}
+        onExport={async () => {}}
+        latestSyncRun={undefined}
+        recentChangeEvents={[]}
+      />,
+    );
+
+    expect(markup).toContain('role="status"');
+    expect(markup).toContain('aria-live="polite"');
+    expect(markup).toContain('Sync finished for Canvas.');
+    expect(markup).toContain('Current view exported.');
   });
 });

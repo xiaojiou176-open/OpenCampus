@@ -1,5 +1,5 @@
-import type { SyncState } from './contracts';
-import { isWithinHours, makePriorityReason } from './storage-shared';
+import type { SyncState } from './contracts.ts';
+import { isWithinHours, makePriorityReason } from './storage-shared.ts';
 
 export function formatReasonDetail(detail: string | undefined) {
   return detail?.trim() ? detail.trim() : undefined;
