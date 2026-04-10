@@ -20,5 +20,5 @@ test('mcp-server bin exposes the package version', () => {
   });
 
   assert.equal(result.status, 0);
-  assert.equal(result.stdout.trim(), '0.1.0');
+  assert.equal(result.stdout.trim(), '0.1.1');
 });

@@ -23,7 +23,7 @@ export const CAMPUS_MCP_SERVER_TOOL_NAMES = [
 export function createCampusCopilotMcpServer() {
   const server = new McpServer({
     name: 'campus-copilot-mcp',
-    version: '0.1.0',
+    version: '0.1.1',
   });
 
   server.registerTool(

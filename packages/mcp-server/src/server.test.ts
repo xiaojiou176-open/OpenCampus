@@ -8,7 +8,7 @@ test('mcp-server registers the expected read-only tool surface', async () => {
   const server = createCampusCopilotMcpServer();
   const client = new Client({
     name: 'campus-copilot-mcp-server-test-client',
-    version: '0.1.0',
+    version: '0.1.1',
   });
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
 
