@@ -1,7 +1,144 @@
 import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { WorkbenchDecisionSections, WorkbenchOperationsSections } from './workbench-panel-sections';
+import {
+  WorkbenchDecisionSections,
+  WorkbenchOperationsSections,
+  WorkbenchOverviewSections,
+} from './workbench-panel-sections';
 import { getUiText } from './i18n';
+
+describe('workbench overview sections', () => {
+  it('keeps sidepanel first screen anchored on next up, trust summary, quick actions, then diagnostics', () => {
+    const html = renderToStaticMarkup(
+      <WorkbenchOverviewSections
+        copy={{
+          eyebrow: 'Campus Copilot',
+          title: 'Local-first academic decision workspace',
+          description: 'Read-only pulse for the current study surface.',
+        }}
+        text={getUiText('en')}
+        uiLanguage="en"
+        selectedFormatLabel="Markdown"
+        lastSuccessfulSync="2026-04-10T08:00:00.000Z"
+        surface="sidepanel"
+        filters={{ site: 'all', onlyUnseenUpdates: false }}
+        setFilters={() => {}}
+        orderedSiteStatus={[
+          {
+            site: 'canvas',
+            counts: {
+              site: 'canvas',
+              courses: 1,
+              resources: 4,
+              assignments: 3,
+              announcements: 1,
+              grades: 1,
+              messages: 0,
+              events: 1,
+            },
+            sync: {
+              key: 'canvas',
+              site: 'canvas',
+              status: 'success',
+              lastOutcome: 'success',
+              lastSyncedAt: '2026-04-10T07:45:00.000Z',
+            },
+          },
+          {
+            site: 'edstem',
+            counts: {
+              site: 'edstem',
+              courses: 1,
+              resources: 1,
+              assignments: 0,
+              announcements: 0,
+              grades: 0,
+              messages: 2,
+              events: 0,
+            },
+            sync: {
+              key: 'edstem',
+              site: 'edstem',
+              status: 'error',
+              lastOutcome: 'request_failed',
+              lastSyncedAt: '2026-04-10T04:00:00.000Z',
+            },
+            hint: 'EdStem needs a fresh repo-owned sign-in.',
+          },
+        ]}
+        todaySnapshot={{
+          totalAssignments: 6,
+          dueSoonAssignments: 2,
+          recentUpdates: 3,
+          newGrades: 1,
+          riskAlerts: 2,
+          syncedSites: 3,
+        }}
+        currentRecentUpdates={{
+          unseenCount: 2,
+          items: [],
+        }}
+        syncFeedback={{ message: 'Canvas sync refreshed.' }}
+        exportFeedback="Current view exported."
+        currentSiteSelection="canvas"
+        onSyncSite={async () => {}}
+        onExport={async () => {}}
+        onOpenConfiguration={() => {}}
+        onOpenMainWorkbench={async () => {}}
+        onMarkVisibleUpdatesSeen={async () => {}}
+        diagnostics={{
+          healthy: false,
+          blockers: ['EdStem needs a fresh repo-owned sign-in.', 'MyUW lane is stale.'],
+          nextActions: ['Resume the EdStem session in Profile 1.', 'Re-run the current site sync.'],
+        }}
+        onExportDiagnostics={async () => {}}
+        focusQueue={[
+          {
+            id: 'focus:1',
+            title: 'Finish the Canvas lab reflection',
+            summary: 'This is the highest-leverage next step before the next sync.',
+            note: 'Need 20 focused minutes.',
+            site: 'canvas',
+            score: 92,
+            dueAt: '2026-04-10T12:00:00.000Z',
+            blockedBy: ['grader feedback'],
+            reasons: [
+              {
+                code: 'due_soon',
+                label: 'Due soon',
+                importance: 'high',
+                detail: 'Needs attention before noon.',
+              },
+            ],
+            pinned: true,
+            entityId: 'canvas:assignment:1',
+            entityRef: { id: 'canvas:assignment:1', kind: 'assignment', site: 'canvas' },
+            kind: 'assignment',
+          },
+        ]}
+        latestSyncRun={{
+          id: 'sync:1',
+          site: 'canvas',
+          startedAt: '2026-04-10T07:40:00.000Z',
+          completedAt: '2026-04-10T07:45:00.000Z',
+          status: 'success',
+          outcome: 'partial_success',
+          changeCount: 4,
+          resourceFailures: [],
+        }}
+      />,
+    );
+
+    expect(html).toContain('surface__hero-stage');
+    expect(html).toContain('surface__panel--priority');
+    expect(html).toContain('surface__panel--trust');
+    expect(html).toContain('surface__panel--actions');
+    expect(html).toContain('surface__panel--diagnostics');
+    expect(html).toContain('Finish the Canvas lab reflection');
+    expect(html).toContain('Resume the EdStem session in Profile 1.');
+    expect(html.indexOf('Next up')).toBeLessThan(html.indexOf('Diagnostics'));
+  });
+});
 
 describe('workbench decision sections', () => {
   it('renders English-facing alerts and recent updates through localization helpers', () => {

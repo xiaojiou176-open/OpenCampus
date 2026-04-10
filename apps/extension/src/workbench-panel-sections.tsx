@@ -269,7 +269,7 @@ export function WorkbenchOverviewSections({
       </div>
 
       {surface === 'sidepanel' ? (
-        <article className="surface__stats-strip">
+        <article className="surface__stats-strip surface__stats-strip--slim">
           <div className="surface__stats-strip-head">
             <div>
               <p className="surface__meta-label">{text.todaySnapshot.title}</p>
@@ -277,20 +277,20 @@ export function WorkbenchOverviewSections({
             </div>
             <span className="surface__badge surface__badge--neutral">{text.meta.currentStatus}</span>
           </div>
-          <div className="surface__summary-grid surface__summary-grid--compact">
-            <div className="surface__summary-cell">
+          <div className="surface__summary-grid surface__summary-grid--compact surface__summary-grid--slim">
+            <div className="surface__summary-cell surface__summary-cell--slim">
               <span className="surface__summary-value">{todaySnapshot?.totalAssignments ?? 0}</span>
               <span className="surface__summary-label">{text.todaySnapshot.currentTodo}</span>
             </div>
-            <div className="surface__summary-cell">
+            <div className="surface__summary-cell surface__summary-cell--slim">
               <span className="surface__summary-value">{todaySnapshot?.dueSoonAssignments ?? 0}</span>
               <span className="surface__summary-label">{text.todaySnapshot.dueSoon}</span>
             </div>
-            <div className="surface__summary-cell">
+            <div className="surface__summary-cell surface__summary-cell--slim">
               <span className="surface__summary-value">{todaySnapshot?.recentUpdates ?? 0}</span>
               <span className="surface__summary-label">{text.todaySnapshot.recentUpdates}</span>
             </div>
-            <div className="surface__summary-cell">
+            <div className="surface__summary-cell surface__summary-cell--slim">
               <span className="surface__summary-value">{currentRecentUpdates?.unseenCount ?? 0}</span>
               <span className="surface__summary-label">{text.todaySnapshot.unseenInView}</span>
             </div>
@@ -299,8 +299,8 @@ export function WorkbenchOverviewSections({
       ) : null}
 
       {surface === 'sidepanel' ? (
-        <div className="surface__grid surface__grid--hero-panels">
-          <article className="surface__panel surface__panel--hero">
+        <div className="surface__hero-stage">
+          <article className="surface__panel surface__panel--hero surface__panel--priority">
             <div>
               <h2>{text.nextUp.title}</h2>
               <p>{text.nextUp.description}</p>
@@ -367,7 +367,7 @@ export function WorkbenchOverviewSections({
             )}
           </article>
 
-          <article className="surface__panel surface__panel--hero">
+          <article className="surface__panel surface__panel--hero surface__panel--trust">
             <div>
               <h2>{text.trustSummary.title}</h2>
               <p>{text.trustSummary.description}</p>
@@ -432,7 +432,7 @@ export function WorkbenchOverviewSections({
             </div>
           </article>
 
-          <article className="surface__panel surface__panel--hero">
+          <article className="surface__panel surface__panel--hero surface__panel--actions">
             <div>
               <h2>{text.quickActions.title}</h2>
               <p>{text.quickActions.description}</p>
@@ -475,32 +475,40 @@ export function WorkbenchOverviewSections({
 
       {surface === 'sidepanel' ? (
         <div className="surface__grid surface__grid--split">
-          <article className="surface__panel">
+          <article className="surface__panel surface__panel--diagnostics surface__panel--subtle">
             <h2>{text.diagnostics.title}</h2>
             <p>{text.diagnostics.description}</p>
-            <div className="surface__stack">
-              <p className="surface__meta">
-                {text.meta.currentStatus}: {diagnostics.healthy ? text.diagnostics.readyToContinue : text.diagnostics.blockedByEnvironmentOrRuntime}
-              </p>
-              {diagnostics.blockers.length > 0 ? (
-                <ul className="surface__list">
-                  {diagnostics.blockers.map((blocker) => (
-                    <li key={blocker}>{blocker}</li>
-                  ))}
-                </ul>
-              ) : (
-                <p>{text.diagnostics.noBlockers}</p>
-              )}
-              {diagnostics.nextActions.length > 0 ? (
-                <div className="surface__group">
-                  <h3>{text.diagnostics.nextActions}</h3>
-                  <ul className="surface__list">
-                    {diagnostics.nextActions.map((action) => (
+            <div className="surface__status-rail">
+              <div className="surface__group">
+                <p className="surface__meta-label">{text.meta.currentStatus}</p>
+                <p className="surface__item-lead">
+                  {diagnostics.healthy ? text.diagnostics.readyToContinue : text.diagnostics.blockedByEnvironmentOrRuntime}
+                </p>
+              </div>
+              <div className="surface__group">
+                <p className="surface__meta-label">{text.trustSummary.topBlocker}</p>
+                {diagnostics.blockers.length > 0 ? (
+                  <ul className="surface__list surface__list--compact">
+                    {diagnostics.blockers.slice(0, 2).map((blocker) => (
+                      <li key={blocker}>{blocker}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p>{text.diagnostics.noBlockers}</p>
+                )}
+              </div>
+              <div className="surface__group">
+                <p className="surface__meta-label">{text.diagnostics.nextActions}</p>
+                {diagnostics.nextActions.length > 0 ? (
+                  <ul className="surface__list surface__list--compact">
+                    {diagnostics.nextActions.slice(0, 2).map((action) => (
                       <li key={action}>{action}</li>
                     ))}
                   </ul>
-                </div>
-              ) : null}
+                ) : (
+                  <p>{text.diagnostics.noBlockers}</p>
+                )}
+              </div>
               <div className="surface__actions">
                 <button className="surface__button surface__button--ghost" onClick={() => void onExportDiagnostics()}>
                   {text.diagnostics.exportJson}
@@ -549,7 +557,7 @@ export function WorkbenchOverviewSections({
 
       {surface === 'popup' ? (
         <div className="surface__grid surface__grid--split">
-          <article className="surface__panel surface__panel--hero">
+          <article className="surface__panel surface__panel--hero surface__panel--pulse-summary">
             <div className="surface__section-head">
               <div>
                 <h2>{text.popup.pulseSummaryTitle}</h2>
@@ -557,20 +565,20 @@ export function WorkbenchOverviewSections({
               </div>
               <span className="surface__badge surface__badge--warning">{text.popup.readOnlyBadge}</span>
             </div>
-            <div className="surface__summary-grid surface__summary-grid--compact">
-              <div className="surface__summary-cell">
+            <div className="surface__summary-grid surface__summary-grid--compact surface__summary-grid--slim">
+              <div className="surface__summary-cell surface__summary-cell--slim">
                 <span className="surface__summary-value">{todaySnapshot?.totalAssignments ?? 0}</span>
                 <span className="surface__summary-label">{text.metrics.openAssignments}</span>
               </div>
-              <div className="surface__summary-cell">
+              <div className="surface__summary-cell surface__summary-cell--slim">
                 <span className="surface__summary-value">{todaySnapshot?.dueSoonAssignments ?? 0}</span>
                 <span className="surface__summary-label">{text.metrics.dueWithin48Hours}</span>
               </div>
-              <div className="surface__summary-cell">
+              <div className="surface__summary-cell surface__summary-cell--slim">
                 <span className="surface__summary-value">{currentRecentUpdates?.unseenCount ?? 0}</span>
                 <span className="surface__summary-label">{text.metrics.unseenUpdates}</span>
               </div>
-              <div className="surface__summary-cell">
+              <div className="surface__summary-cell surface__summary-cell--slim">
                 <span className="surface__summary-value">{blockedSiteCount}</span>
                 <span className="surface__summary-label">{text.trustSummary.blockedSites}</span>
               </div>
@@ -588,7 +596,7 @@ export function WorkbenchOverviewSections({
             )}
           </article>
 
-          <article className="surface__panel surface__panel--hero">
+          <article className="surface__panel surface__panel--hero surface__panel--fast-actions">
             <div>
               <h2>{text.popup.fastActionsTitle}</h2>
               <p>{text.popup.fastActionsDescription}</p>

@@ -54,23 +54,41 @@ export function PopupQuickExportPanel(props: {
       tone: 'default',
     },
   ];
+  const featuredActions = pulseActions.filter((action) => action.tone === 'featured');
+  const supportingActions = pulseActions.filter((action) => action.tone === 'default');
 
   return (
     <div className="surface__grid">
-      <article className="surface__panel surface__panel--hero">
+      <article className="surface__panel surface__panel--hero surface__panel--subtle">
         <div className="surface__section-head">
           <div>
             <h2>{props.text.popup.quickPulse}</h2>
-            <p>{props.text.popup.quickPulseDescription}</p>
+            <p className="surface__meta">
+              {props.text.popup.quickPulseDescription}
+            </p>
           </div>
           <span className="surface__badge surface__badge--warning">{props.text.popup.readOnlyBadge}</span>
         </div>
-        <div className="surface__quick-pulse-grid">
-          {pulseActions.map((action) => (
+        <div className="surface__pulse-featured-grid">
+          {featuredActions.map((action) => (
             <button
               className={`surface__pulse-action surface__pulse-action--${action.tone}`}
               key={action.preset}
               onClick={() => void props.onExport(action.preset)}
+              type="button"
+            >
+              <span className="surface__pulse-action-title">{action.title}</span>
+              <span className="surface__pulse-action-description">{action.description}</span>
+            </button>
+          ))}
+        </div>
+        <div className="surface__pulse-compact-grid" role="list" aria-label={props.text.popup.quickPulse}>
+          {supportingActions.map((action) => (
+            <button
+              className="surface__pulse-action surface__pulse-action--compact"
+              key={action.preset}
+              onClick={() => void props.onExport(action.preset)}
+              type="button"
             >
               <span className="surface__pulse-action-title">{action.title}</span>
               <span className="surface__pulse-action-description">{action.description}</span>

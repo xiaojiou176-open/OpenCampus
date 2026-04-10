@@ -590,7 +590,7 @@ test('switches to Chinese UI and shows partial-success plus site-filter behavior
     has: page.getByRole('heading', { name: '围绕这张工作台来问 AI' }),
   });
 
-  await expect(page.getByText('当前状态: 被环境或运行时阻塞')).toBeVisible();
+  await expect(page.getByText('被环境或运行时阻塞')).toBeVisible();
   await expect(page.getByRole('heading', { name: '现在先做什么' })).toBeVisible();
   await expect(chineseAskAiPanel.getByRole('heading', { name: 'AI 当前能看见什么' })).toBeVisible();
   await expect(chineseAskAiPanel.getByText('今日快照', { exact: true })).toBeVisible();
