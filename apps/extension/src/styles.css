@@ -393,6 +393,28 @@ textarea {
   margin-top: 16px;
 }
 
+.surface__status-intro--supporting {
+  margin-top: 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(13, 148, 136, 0.12);
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(247, 252, 251, 0.96), rgba(255, 255, 255, 0.92));
+  box-shadow: none;
+}
+
+.surface__status-intro--supporting .surface__item-header {
+  margin-bottom: 0;
+  align-items: center;
+}
+
+.surface__status-intro-copy {
+  min-width: 0;
+}
+
+.surface__status-intro-copy .surface__meta {
+  margin-bottom: 0;
+}
+
 .surface__status-grid {
   display: grid;
   gap: 10px;
@@ -572,6 +594,10 @@ textarea {
   flex-wrap: wrap;
 }
 
+.surface__actions--tight {
+  margin-top: 4px;
+}
+
 .surface__button {
   border: 1px solid transparent;
   border-radius: 999px;
@@ -681,6 +707,10 @@ textarea {
   gap: 16px;
 }
 
+.surface__composer--primary {
+  gap: 12px;
+}
+
 .surface__question-card {
   display: grid;
   gap: 12px;
@@ -691,6 +721,20 @@ textarea {
   box-shadow: var(--surface-shadow-sm);
 }
 
+.surface__question-card--primary {
+  gap: 14px;
+  padding: 16px 18px;
+  border-color: rgba(13, 148, 136, 0.18);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(245, 253, 251, 0.98));
+}
+
+.surface__group--supporting {
+  padding-inline: 2px;
+}
+
+.surface__group--supporting .surface__actions {
+  margin-top: 10px;
+}
 .surface__status-rail {
   display: grid;
   gap: 14px;

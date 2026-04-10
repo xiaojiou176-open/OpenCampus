@@ -228,7 +228,7 @@ textarea:focus-visible,
 .support-grid {
   display: grid;
   gap: var(--cc-space-4);
-  grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.9fr);
+  grid-template-columns: minmax(0, 1.05fr) minmax(280px, 0.95fr);
 }
 
 .support-card {
@@ -236,14 +236,14 @@ textarea:focus-visible,
   border-radius: var(--cc-radius-lg);
   background: rgba(255, 255, 255, 0.92);
   box-shadow: var(--cc-shadow-sm);
-  padding: var(--cc-space-5);
+  padding: var(--cc-space-4);
   display: grid;
-  gap: var(--cc-space-3);
+  gap: var(--cc-space-2);
 }
 
 .support-card h2 {
   margin: 0;
-  font-size: 1.25rem;
+  font-size: 1.12rem;
 }
 
 .support-card--trust {
@@ -261,20 +261,43 @@ textarea:focus-visible,
 .support-note {
   margin: 0;
   color: var(--cc-color-text-muted);
-  line-height: 1.6;
+  line-height: 1.5;
+  font-size: 0.94rem;
 }
 
 .support-list {
   margin: 0;
-  padding-left: 1.15rem;
   display: grid;
   gap: var(--cc-space-2);
   color: var(--cc-color-text);
 }
 
+.support-list--compact {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.support-rule {
+  display: grid;
+  gap: 0.28rem;
+  padding: 0.72rem 0.8rem;
+  border-radius: var(--cc-radius-md);
+  border: 1px solid rgba(19, 78, 74, 0.08);
+  background: rgba(248, 252, 250, 0.9);
+}
+
+.support-rule strong {
+  font-size: 0.9rem;
+}
+
+.support-rule span {
+  color: var(--cc-color-text-muted);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
 .support-metrics {
   display: grid;
-  gap: var(--cc-space-3);
+  gap: var(--cc-space-2);
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
@@ -282,7 +305,7 @@ textarea:focus-visible,
   border-radius: var(--cc-radius-md);
   border: 1px solid rgba(19, 78, 74, 0.08);
   background: rgba(243, 250, 247, 0.82);
-  padding: var(--cc-space-4);
+  padding: 0.8rem 0.9rem;
   display: grid;
   gap: var(--cc-space-1);
 }
@@ -293,8 +316,15 @@ textarea:focus-visible,
 }
 
 .support-metric strong {
-  font-size: 1.6rem;
+  font-size: 1.35rem;
   line-height: 1;
+}
+
+.support-note--receipt {
+  padding: 0.78rem 0.85rem;
+  border-radius: var(--cc-radius-md);
+  border: 1px dashed rgba(19, 78, 74, 0.14);
+  background: rgba(248, 252, 250, 0.82);
 }
 
 .toolbar-card,
@@ -339,7 +369,8 @@ textarea:focus-visible,
 .toolbar-group-copy {
   margin: 0;
   color: var(--cc-color-text-muted);
-  line-height: 1.5;
+  line-height: 1.45;
+  max-width: 60ch;
 }
 
 .toolbar-row {

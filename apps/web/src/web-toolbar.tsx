@@ -53,22 +53,30 @@ export function WebToolbar(props: {
           <p className="eyebrow">Supporting trust layer</p>
           <h2>Trust summary</h2>
           <p className="support-copy">
-            The web workbench keeps local-first, read-only evidence in front. AI follows the visible
-            snapshot instead of becoming the product headline.
+            Local-first evidence comes first. AI only explains the visible workspace after the receipts are
+            already on screen.
           </p>
-          <ul className="support-list">
-            <li>Imports and demo resets stay inside this workspace on the shared schema and storage contract.</li>
-            <li>Manual-only and registration-related routes stay outside the product path.</li>
-            <li>Cited AI comes after the workbench truth, exported slice, and visible receipts.</li>
-          </ul>
+          <div className="support-list support-list--compact" role="list" aria-label="Trust summary rules">
+            <div className="support-rule" role="listitem">
+              <strong>Shared contract</strong>
+              <span>Imports and demo resets stay inside the same schema and storage path.</span>
+            </div>
+            <div className="support-rule" role="listitem">
+              <strong>Manual-only boundary</strong>
+              <span>Registration-related and red-zone routes stay outside this product surface.</span>
+            </div>
+            <div className="support-rule" role="listitem">
+              <strong>Cited AI follows</strong>
+              <span>The explanation layer comes after workbench truth, exported slices, and receipts.</span>
+            </div>
+          </div>
         </article>
 
         <article className="support-card support-card--diagnostics">
           <p className="eyebrow">Supporting diagnostics</p>
           <h2>Diagnostics and receipts</h2>
           <p className="support-copy">
-            This layer reports what the imported workspace can currently prove. It does not invent live
-            sync success beyond the receipts already stored here.
+            This layer only reports what the imported workspace can currently prove.
           </p>
           <div className="support-metrics" role="list" aria-label="Workspace diagnostics">
             <article className="support-metric" role="listitem">
@@ -84,7 +92,7 @@ export function WebToolbar(props: {
               <strong>{props.unseenUpdateCount}</strong>
             </article>
           </div>
-          <p className="support-note">
+          <p className="support-note support-note--receipt">
             {props.topSyncRun
               ? `Latest stored sync receipt: ${props.siteLabels[props.topSyncRun.site]} · ${props.topSyncRun.outcome} · ${formatRelativeTime(props.topSyncRun.completedAt)}.`
               : 'No stored sync receipt is visible yet. Import a current-view snapshot first to populate diagnostics and change receipts.'}

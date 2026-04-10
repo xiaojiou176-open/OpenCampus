@@ -65,7 +65,9 @@ describe('ask ai panel guardrails', () => {
     expect(html).toContain('type="checkbox"');
     expect(html).toContain('Enable excerpt analysis for one course');
     expect(html.indexOf('Academic safety guardrails')).toBeLessThan(html.indexOf('Question box'));
-    expect(html.indexOf('Question box')).toBeLessThan(html.indexOf('What AI can see'));
-    expect(html.indexOf('What AI can see')).toBeLessThan(html.indexOf('Advanced material analysis'));
+    expect(html.indexOf('Question box')).toBeLessThan(html.indexOf('Suggested prompts'));
+    expect(html.indexOf('Suggested prompts')).toBeLessThan(html.indexOf('What AI can see'));
+    expect(html.indexOf('What AI can see')).toBeLessThan(html.indexOf('Current runtime'));
+    expect(html.indexOf('Current runtime')).toBeLessThan(html.indexOf('Advanced material analysis'));
   });
 });

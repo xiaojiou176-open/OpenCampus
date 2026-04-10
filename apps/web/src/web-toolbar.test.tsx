@@ -51,7 +51,7 @@ describe('web toolbar trust and diagnostics layer', () => {
     expect(html).toContain('Tracked entities');
     expect(html).toContain('Unseen updates');
     expect(html).toContain('Latest stored sync receipt: Canvas');
-    expect(html).toContain('AI follows the visible snapshot instead of becoming the product headline.');
-    expect(html).toContain('Manual-only and registration-related routes stay outside the product path.');
+    expect(html).toContain('Local-first evidence comes first. AI only explains the visible workspace after the receipts are already on screen.');
+    expect(html).toContain('Registration-related and red-zone routes stay outside this product surface.');
   });
 });

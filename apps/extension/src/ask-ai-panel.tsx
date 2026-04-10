@@ -148,20 +148,6 @@ export function AskAiPanel(props: {
       </div>
 
       <div className="surface__ask-ai-flow">
-        <div className="surface__status-intro surface__status-intro--compact">
-          <div>
-            <p className="surface__meta-label">{text.askAi.runtimeSummary}</p>
-            <p className="surface__item-lead">
-              {selectedProviderLabel} · {selectedProviderReady ? text.meta.ready : text.meta.notReady}
-            </p>
-            <p className="surface__meta">
-              {formatProviderReason(selectedProviderStatus?.reason, uiLanguage)} · {text.meta.lastChecked}:{' '}
-              {formatRelativeTime(uiLanguage, providerStatus.checkedAt)}
-              {providerStatus.error ? ` · ${formatProviderStatusError(providerStatus.error, uiLanguage)}` : ''}
-            </p>
-          </div>
-        </div>
-
         <article className="surface__callout surface__callout--danger">
           <div className="surface__section-head">
             <div>
@@ -188,8 +174,8 @@ export function AskAiPanel(props: {
           </article>
         </article>
 
-        <div className="surface__composer">
-          <div className="surface__group">
+        <div className="surface__composer surface__composer--primary">
+          <div className="surface__question-card surface__question-card--primary">
             <h3>{text.askAi.questionBox}</h3>
             <label className="surface__field">
               <span>{text.askAi.question}</span>
@@ -200,8 +186,13 @@ export function AskAiPanel(props: {
                 placeholder={text.askAi.placeholder}
               />
             </label>
+            <div className="surface__actions surface__actions--wrap surface__actions--tight">
+              <button className="surface__button" disabled={aiPending} onClick={() => void onAskAi()} type="button">
+                {aiPending ? `${text.askAi.ask}…` : text.askAi.ask}
+              </button>
+            </div>
           </div>
-          <div className="surface__group">
+          <div className="surface__group surface__group--supporting">
             <h3>{text.askAi.suggestedPrompts}</h3>
             <div className="surface__actions surface__actions--wrap">
               {Object.values(text.askAi.suggestions).map((suggestion) => (
@@ -215,11 +206,6 @@ export function AskAiPanel(props: {
                 </button>
               ))}
             </div>
-          </div>
-          <div className="surface__actions surface__actions--wrap">
-            <button className="surface__button" disabled={aiPending} onClick={() => void onAskAi()} type="button">
-              {aiPending ? `${text.askAi.ask}…` : text.askAi.ask}
-            </button>
           </div>
         </div>
 
@@ -239,6 +225,21 @@ export function AskAiPanel(props: {
             ))}
           </div>
         </div>
+
+        <aside aria-live="polite" className="surface__status-intro surface__status-intro--compact surface__status-intro--supporting">
+          <div className="surface__item-header">
+            <div className="surface__status-intro-copy">
+              <p className="surface__meta-label">{text.askAi.runtimeSummary}</p>
+              <p className="surface__meta">
+                {selectedProviderLabel} · {selectedProviderReady ? text.meta.ready : text.meta.notReady} ·{' '}
+                {formatProviderReason(selectedProviderStatus?.reason, uiLanguage)} · {text.meta.lastChecked}:{' '}
+                {formatRelativeTime(uiLanguage, providerStatus.checkedAt)}
+                {providerStatus.error ? ` · ${formatProviderStatusError(providerStatus.error, uiLanguage)}` : ''}
+              </p>
+            </div>
+            <span className="surface__badge surface__badge--neutral">{selectedProviderLabel}</span>
+          </div>
+        </aside>
 
         <details className="surface__advanced-settings" open={advancedMaterialEnabled}>
           <summary className="surface__advanced-settings-summary">
