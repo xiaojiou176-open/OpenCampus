@@ -16,7 +16,7 @@ test('shows the standalone workbench and exports the current view', async ({ pag
   await expect(loadingWorkbenchHeading).toBeHidden();
   await expect(page.getByRole('heading', { name: 'Academic workbench' })).toBeVisible();
   await expect(
-    page.getByText('This standalone second surface stays on the same local-first, read-only contract'),
+    page.getByText('This local-first academic decision workspace keeps shared storage, exported evidence, and visible receipts in front.'),
   ).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Focus Queue' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Weekly Load' })).toBeVisible();

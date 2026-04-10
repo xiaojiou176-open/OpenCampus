@@ -91,7 +91,7 @@ export function WebWorkbenchPanels(props: {
         </section>
       ) : null}
 
-      <section className="stats-grid">
+      <section className="stats-grid stats-grid--quiet">
         <article className="stat-card">
           <span>Open assignments</span>
           <LoadingStatValue ready={props.workbenchReady} value={props.todaySnapshot?.totalAssignments ?? 0} />
@@ -110,7 +110,7 @@ export function WebWorkbenchPanels(props: {
         </article>
       </section>
 
-      <section className="split-grid">
+      <section className="split-grid split-grid--primary">
         <article className="panel">
           <h2>Focus Queue</h2>
           <p>Decision-first ranking on the shared read-model.</p>
@@ -163,7 +163,7 @@ export function WebWorkbenchPanels(props: {
         </article>
       </section>
 
-      <section className="panel">
+      <section className="panel panel--planning">
         <h2>Planning Pulse</h2>
         <p>
           A read-only summary of the shared MyPlan substrate, kept in the same decision lane as focus and load without
@@ -221,7 +221,7 @@ export function WebWorkbenchPanels(props: {
         </div>
       </section>
 
-      <section className="split-grid">
+      <section className="split-grid split-grid--evidence">
         <article className="panel">
           <h2>Current Tasks</h2>
           <p>Wave 2 assignment detail now stays visible in the shared contract.</p>
@@ -341,7 +341,7 @@ export function WebWorkbenchPanels(props: {
         </div>
       </section>
 
-      <section className="split-grid">
+      <section className="split-grid split-grid--secondary">
         <article className="panel">
           <h2>Schedule Outlook</h2>
           <p>MyUW class and exam location context stays tied to the same event entities.</p>
@@ -400,7 +400,7 @@ export function WebWorkbenchPanels(props: {
         </article>
       </section>
 
-      <section className="panel">
+      <section className="panel panel--supporting panel--counts">
         <h2>Imported site counts</h2>
         <p>This surface stays honest about what the imported snapshot currently contains.</p>
         {props.workbenchReady ? (

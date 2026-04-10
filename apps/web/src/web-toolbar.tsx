@@ -36,8 +36,8 @@ export function WebToolbar(props: {
             One local workspace for what changed, what is open, and what needs attention first.
           </p>
           <p className="hero-support">
-            Shared storage and read-only exports stay in front. Cited AI explains the workspace after
-            the facts are already visible.
+            This local-first academic decision workspace keeps shared storage, exported evidence, and
+            visible receipts in front. Cited AI explains the workspace after the facts are already visible.
           </p>
         </div>
         <div className="hero-card">
@@ -49,7 +49,7 @@ export function WebToolbar(props: {
       </section>
 
       <section className="support-grid" aria-label="Workspace trust and diagnostics">
-        <article className="support-card">
+        <article className="support-card support-card--trust">
           <p className="eyebrow">Supporting trust layer</p>
           <h2>Trust summary</h2>
           <p className="support-copy">
@@ -63,7 +63,7 @@ export function WebToolbar(props: {
           </ul>
         </article>
 
-        <article className="support-card">
+        <article className="support-card support-card--diagnostics">
           <p className="eyebrow">Supporting diagnostics</p>
           <h2>Diagnostics and receipts</h2>
           <p className="support-copy">
@@ -94,18 +94,15 @@ export function WebToolbar(props: {
 
       <section className="toolbar-card" aria-label="Workbench toolbar">
         <div className="toolbar-groups">
-          <section className="toolbar-group" aria-labelledby="web-load-import-group">
+          <section className="toolbar-group toolbar-group--primary" aria-labelledby="web-load-import-group">
             <div className="toolbar-group-header">
               <p className="eyebrow" id="web-load-import-group">
                 Load / Import
               </p>
               <p className="toolbar-group-copy">Bring a local snapshot into the workbench without changing the source systems.</p>
             </div>
-            <div className="toolbar-row">
-              <button type="button" className="secondary-button" onClick={() => void props.onLoadDemo()}>
-                Load demo workspace
-              </button>
-              <label className="file-button">
+            <div className="toolbar-row toolbar-row--actions">
+              <label className="file-button file-button--primary">
                 Import current-view JSON
                 <input
                   type="file"
@@ -118,10 +115,13 @@ export function WebToolbar(props: {
                   }}
                 />
               </label>
+              <button type="button" className="quiet-button" onClick={() => void props.onLoadDemo()}>
+                Load demo workspace
+              </button>
             </div>
           </section>
 
-          <section className="toolbar-group" aria-labelledby="web-filter-export-group">
+          <section className="toolbar-group toolbar-group--secondary" aria-labelledby="web-filter-export-group">
             <div className="toolbar-group-header">
               <p className="eyebrow" id="web-filter-export-group">
                 Filter / Export
@@ -162,17 +162,17 @@ export function WebToolbar(props: {
                 </select>
               </label>
             </div>
-            <div className="toolbar-row">
-              <button type="button" className="primary-button" onClick={props.onExportCurrentView}>
+            <div className="toolbar-row toolbar-row--actions toolbar-row--secondary-actions">
+              <button type="button" className="secondary-button secondary-button--strong" onClick={props.onExportCurrentView}>
                 Export current view
               </button>
-              <button type="button" className="secondary-button" onClick={props.onExportFocusQueue}>
+              <button type="button" className="quiet-button" onClick={props.onExportFocusQueue}>
                 Export focus queue
               </button>
-              <button type="button" className="secondary-button" onClick={props.onExportWeeklyLoad}>
+              <button type="button" className="quiet-button" onClick={props.onExportWeeklyLoad}>
                 Export weekly load
               </button>
-              <button type="button" className="secondary-button" onClick={props.onExportChangeJournal}>
+              <button type="button" className="quiet-button" onClick={props.onExportChangeJournal}>
                 Export change journal
               </button>
             </div>

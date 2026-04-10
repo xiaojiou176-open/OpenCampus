@@ -137,151 +137,169 @@ export function AskAiPanel(props: {
 
   return (
     <article className="surface__panel">
-      <h2>{text.askAi.title}</h2>
-      <p>{text.askAi.description}</p>
-      <div className="surface__status-intro surface__status-intro--compact">
+      <div className="surface__section-head">
         <div>
-          <p className="surface__meta-label">{text.askAi.runtimeSummary}</p>
-          <p className="surface__item-lead">
-            {selectedProviderLabel} · {selectedProviderReady ? text.meta.ready : text.meta.notReady}
-          </p>
-          <p className="surface__meta">
-            {formatProviderReason(selectedProviderStatus?.reason, uiLanguage)} · {text.meta.lastChecked}:{' '}
-            {formatRelativeTime(uiLanguage, providerStatus.checkedAt)}
-            {providerStatus.error ? ` · ${formatProviderStatusError(providerStatus.error, uiLanguage)}` : ''}
-          </p>
+          <h2>{text.askAi.title}</h2>
+          <p>{text.askAi.description}</p>
         </div>
         <span className={`surface__badge surface__badge--${selectedProviderReady ? 'success' : 'danger'}`}>
           {selectedProviderReady ? text.meta.ready : text.meta.notReady}
         </span>
       </div>
-      <div className="surface__group">
-        <div className="surface__section-head">
+
+      <div className="surface__ask-ai-flow">
+        <div className="surface__status-intro surface__status-intro--compact">
           <div>
-            <h3>{text.askAi.whatAiCanSee}</h3>
-            <p className="surface__meta">{text.askAi.structuredInputsDescription}</p>
+            <p className="surface__meta-label">{text.askAi.runtimeSummary}</p>
+            <p className="surface__item-lead">
+              {selectedProviderLabel} · {selectedProviderReady ? text.meta.ready : text.meta.notReady}
+            </p>
+            <p className="surface__meta">
+              {formatProviderReason(selectedProviderStatus?.reason, uiLanguage)} · {text.meta.lastChecked}:{' '}
+              {formatRelativeTime(uiLanguage, providerStatus.checkedAt)}
+              {providerStatus.error ? ` · ${formatProviderStatusError(providerStatus.error, uiLanguage)}` : ''}
+            </p>
           </div>
         </div>
-        <div className="surface__evidence-grid">
-          {structuredInputs.map((item) => (
-            <article className="surface__evidence-card" key={item.label}>
-              <p className="surface__meta-label">{item.label}</p>
-              <p className="surface__item-lead">{item.value}</p>
-            </article>
-          ))}
-        </div>
-      </div>
-      <div className="surface__group">
-        <div className="surface__section-head">
-          <div>
-            <h3>{text.askAi.guardrailsTitle}</h3>
-            <p className="surface__item-lead">{text.askAi.whatAiCannotDo}</p>
-            <p className="surface__meta">{text.askAi.redZoneDescription}</p>
-          </div>
-        </div>
-        <article className="surface__status-card surface__status-card--danger">
-          <div className="surface__item-header">
-            <strong>{redZoneHardStop.title}</strong>
+
+        <article className="surface__callout surface__callout--danger">
+          <div className="surface__section-head">
+            <div>
+              <h3>{text.askAi.guardrailsTitle}</h3>
+              <p className="surface__item-lead">{text.askAi.whatAiCannotDo}</p>
+              <p className="surface__meta">{text.askAi.redZoneDescription}</p>
+            </div>
             <span className="surface__badge surface__badge--danger">{text.askAi.manualOnlyBadge}</span>
           </div>
-          <p className="surface__meta">{aiGuardrails.redZone.summary}</p>
-          <button
-            className="surface__button surface__button--ghost"
-            type="button"
-            disabled={redZoneHardStop.ctaDisabled}
-          >
-            {redZoneHardStop.actionLabel}
-          </button>
-          <p className="surface__meta">{redZoneHardStop.manualOnlyNote}</p>
+          <article className="surface__status-card surface__status-card--danger">
+            <div className="surface__item-header">
+              <strong>{redZoneHardStop.title}</strong>
+              <span className="surface__badge surface__badge--danger">{text.askAi.manualOnlyBadge}</span>
+            </div>
+            <p className="surface__meta">{aiGuardrails.redZone.summary}</p>
+            <button
+              className="surface__button surface__button--ghost"
+              type="button"
+              disabled={redZoneHardStop.ctaDisabled}
+            >
+              {redZoneHardStop.actionLabel}
+            </button>
+            <p className="surface__meta">{redZoneHardStop.manualOnlyNote}</p>
+          </article>
         </article>
-        <article className="surface__status-card surface__status-card--danger">
-          <div className="surface__item-header">
-            <strong>{text.askAi.advancedMaterialTitle}</strong>
+
+        <div className="surface__composer">
+          <div className="surface__group">
+            <h3>{text.askAi.questionBox}</h3>
+            <label className="surface__field">
+              <span>{text.askAi.question}</span>
+              <textarea
+                rows={4}
+                value={aiQuestion}
+                onChange={(event) => onQuestionChange(event.target.value)}
+                placeholder={text.askAi.placeholder}
+              />
+            </label>
+          </div>
+          <div className="surface__group">
+            <h3>{text.askAi.suggestedPrompts}</h3>
+            <div className="surface__actions surface__actions--wrap">
+              {Object.values(text.askAi.suggestions).map((suggestion) => (
+                <button
+                  key={suggestion}
+                  className="surface__button surface__button--ghost"
+                  onClick={() => onQuestionChange(suggestion)}
+                  type="button"
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="surface__actions surface__actions--wrap">
+            <button className="surface__button" disabled={aiPending} onClick={() => void onAskAi()} type="button">
+              {aiPending ? `${text.askAi.ask}…` : text.askAi.ask}
+            </button>
+          </div>
+        </div>
+
+        <div className="surface__group">
+          <div className="surface__section-head">
+            <div>
+              <h3>{text.askAi.whatAiCanSee}</h3>
+              <p className="surface__meta">{text.askAi.structuredInputsDescription}</p>
+            </div>
+          </div>
+          <div className="surface__evidence-grid">
+            {structuredInputs.map((item) => (
+              <article className="surface__evidence-card" key={item.label}>
+                <p className="surface__meta-label">{item.label}</p>
+                <p className="surface__item-lead">{item.value}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+
+        <details className="surface__advanced-settings" open={advancedMaterialEnabled}>
+          <summary className="surface__advanced-settings-summary">
+            <span>{text.askAi.advancedMaterialTitle}</span>
             <span className={`surface__badge surface__badge--${advancedMaterialEnabled ? 'warning' : 'danger'}`}>
               {advancedMaterialEnabled ? text.askAi.manualOnlyBadge : text.askAi.defaultDisabledBadge}
             </span>
+          </summary>
+          <div className="surface__advanced-settings-body">
+            <p className="surface__item-lead">{text.askAi.advancedMaterialDescription}</p>
+            <p className="surface__meta">{text.askAi.advancedMaterialOptInSummary}</p>
+            <label className="surface__field surface__field--inline">
+              <span>{text.askAi.advancedMaterialEnableLabel}</span>
+              <input
+                type="checkbox"
+                checked={advancedMaterialEnabled}
+                onChange={(event) => onAdvancedMaterialEnabledChange(event.target.checked)}
+              />
+            </label>
+            {advancedMaterialEnabled ? (
+              <div className="surface__stack">
+                <label className="surface__field">
+                  <span>{text.askAi.advancedMaterialCourseLabel}</span>
+                  <select
+                    value={advancedMaterialCourseId}
+                    onChange={(event) => onAdvancedMaterialCourseChange(event.target.value)}
+                  >
+                    <option value="">{text.askAi.advancedMaterialCoursePlaceholder}</option>
+                    {availableCourses.map((course) => (
+                      <option key={course.id} value={course.id}>
+                        {course.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="surface__field">
+                  <span>{text.askAi.advancedMaterialExcerptLabel}</span>
+                  <textarea
+                    rows={5}
+                    value={advancedMaterialExcerpt}
+                    onChange={(event) => onAdvancedMaterialExcerptChange(event.target.value)}
+                    placeholder={text.askAi.advancedMaterialExcerptPlaceholder}
+                  />
+                </label>
+                <label className="surface__field surface__field--inline">
+                  <span>{text.askAi.advancedMaterialAcknowledgement}</span>
+                  <input
+                    type="checkbox"
+                    checked={advancedMaterialAcknowledged}
+                    onChange={(event) => onAdvancedMaterialAcknowledgedChange(event.target.checked)}
+                  />
+                </label>
+              </div>
+            ) : null}
+            <p className="surface__meta">
+              {advancedMaterialEnabled ? advancedMaterialGuard.requirements.join(' · ') : advancedMaterialGuard.note}
+            </p>
           </div>
-          <label className="surface__field">
-            <span>{text.askAi.advancedMaterialEnableLabel}</span>
-            <input
-              type="checkbox"
-              checked={advancedMaterialEnabled}
-              onChange={(event) => onAdvancedMaterialEnabledChange(event.target.checked)}
-            />
-          </label>
-          <p className="surface__meta">{text.askAi.advancedMaterialDescription}</p>
-          <p className="surface__meta">{text.askAi.advancedMaterialOptInSummary}</p>
-          {advancedMaterialEnabled ? (
-            <div className="surface__stack">
-              <label className="surface__field">
-                <span>{text.askAi.advancedMaterialCourseLabel}</span>
-                <select
-                  value={advancedMaterialCourseId}
-                  onChange={(event) => onAdvancedMaterialCourseChange(event.target.value)}
-                >
-                  <option value="">{text.askAi.advancedMaterialCoursePlaceholder}</option>
-                  {availableCourses.map((course) => (
-                    <option key={course.id} value={course.id}>
-                      {course.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="surface__field">
-                <span>{text.askAi.advancedMaterialExcerptLabel}</span>
-                <textarea
-                  rows={5}
-                  value={advancedMaterialExcerpt}
-                  onChange={(event) => onAdvancedMaterialExcerptChange(event.target.value)}
-                  placeholder={text.askAi.advancedMaterialExcerptPlaceholder}
-                />
-              </label>
-              <label className="surface__field">
-                <span>{text.askAi.advancedMaterialAcknowledgement}</span>
-                <input
-                  type="checkbox"
-                  checked={advancedMaterialAcknowledged}
-                  onChange={(event) => onAdvancedMaterialAcknowledgedChange(event.target.checked)}
-                />
-              </label>
-            </div>
-          ) : null}
-          <p className="surface__meta">
-            {advancedMaterialEnabled ? advancedMaterialGuard.requirements.join(' · ') : advancedMaterialGuard.note}
-          </p>
-        </article>
+        </details>
       </div>
-      <div className="surface__group">
-        <h3>{text.askAi.suggestedPrompts}</h3>
-        <div className="surface__actions surface__actions--wrap">
-          {Object.values(text.askAi.suggestions).map((suggestion) => (
-            <button
-              key={suggestion}
-              className="surface__button surface__button--ghost"
-              onClick={() => onQuestionChange(suggestion)}
-            >
-              {suggestion}
-            </button>
-          ))}
-        </div>
-      </div>
-      <div className="surface__group">
-        <h3>{text.askAi.questionBox}</h3>
-        <label className="surface__field">
-          <span>{text.askAi.question}</span>
-          <textarea
-            rows={4}
-            value={aiQuestion}
-            onChange={(event) => onQuestionChange(event.target.value)}
-            placeholder={text.askAi.placeholder}
-          />
-        </label>
-      </div>
-      <div className="surface__actions surface__actions--wrap">
-        <button className="surface__button" disabled={aiPending} onClick={() => void onAskAi()}>
-          {aiPending ? `${text.askAi.ask}…` : text.askAi.ask}
-        </button>
-      </div>
+
       <details className="surface__advanced-settings">
         <summary className="surface__advanced-settings-summary">
           <span>{text.askAi.advancedRuntimeSettings}</span>

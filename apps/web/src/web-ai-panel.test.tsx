@@ -38,16 +38,17 @@ describe('web ai panel guardrails', () => {
       }),
     );
 
-    expect(html).toContain('Academic safety guardrails');
-    expect(html).toContain('Register.UW, Notify.UW, seat watching, and registration-related polling stay outside the current product path.');
-    expect(html).toContain('Registration automation stays off');
-    expect(html).toContain('Advanced material analysis');
-    expect(html).toContain('default off');
     expect(html).toContain('What AI can see');
     expect(html).toContain('What AI cannot do');
+    expect(html).toContain('Workspace explanation strip');
+    expect(html).toContain('Manual-only guardrail');
     expect(html).toContain('The current workbench slice, focus queue, weekly load, planning pulse, and exported current view');
-    expect(html).toContain('Advanced/runtime settings');
-    expect(html).toContain('These controls stay available for runtime debugging, but they are not the main path of this surface.');
+    expect(html).toContain('Cited answer zone');
+    expect(html).toContain('Waiting for a cited answer');
+    expect(html).toContain('Advanced settings and opt-ins');
+    expect(html).toContain('These controls stay available for targeted opt-ins and runtime debugging, but they are not the main path of this surface.');
+    expect(html).toContain('Advanced material analysis');
+    expect(html).toContain('default off');
     expect(html).toContain('BFF base URL');
     expect(html).toContain('Provider');
     expect(html).toContain('Model');

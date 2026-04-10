@@ -432,98 +432,104 @@ export function App() {
         Skip to workbench content
       </a>
       <main id="workbench-content" className="web-shell" tabIndex={-1}>
-      <WebToolbar
-        ready={ready}
-        now={now}
-        feedback={feedback}
-        exportFormat={exportFormat}
-        exportFormats={EXPORT_FORMATS}
-        filters={filters}
-        siteOrder={SITE_ORDER}
-        siteLabels={SITE_LABELS}
-        topSyncRun={topSyncRun}
-        populatedSiteCount={populatedSiteCount}
-        trackedEntityCount={trackedEntityCount}
-        unseenUpdateCount={recentUpdates?.unseenCount ?? 0}
-        onLoadDemo={handleResetDemo}
-        onImportFile={handleImportFile}
-        onExportFormatChange={setExportFormat}
-        onSiteFilterChange={(site) =>
-          setFilters((current) => ({
-            ...current,
-            site,
-          }))
-        }
-        onOnlyUnseenChange={(onlyUnseenUpdates) =>
-          setFilters((current) => ({
-            ...current,
-            onlyUnseenUpdates,
-          }))
-        }
-        onExportCurrentView={() => handleExport('current_view')}
-        onExportFocusQueue={() => handleExport('focus_queue')}
-        onExportWeeklyLoad={() => handleExport('weekly_load')}
-        onExportChangeJournal={() => handleExport('change_journal')}
-      />
+        <div className="web-shell__header">
+          <WebToolbar
+            ready={ready}
+            now={now}
+            feedback={feedback}
+            exportFormat={exportFormat}
+            exportFormats={EXPORT_FORMATS}
+            filters={filters}
+            siteOrder={SITE_ORDER}
+            siteLabels={SITE_LABELS}
+            topSyncRun={topSyncRun}
+            populatedSiteCount={populatedSiteCount}
+            trackedEntityCount={trackedEntityCount}
+            unseenUpdateCount={recentUpdates?.unseenCount ?? 0}
+            onLoadDemo={handleResetDemo}
+            onImportFile={handleImportFile}
+            onExportFormatChange={setExportFormat}
+            onSiteFilterChange={(site) =>
+              setFilters((current) => ({
+                ...current,
+                site,
+              }))
+            }
+            onOnlyUnseenChange={(onlyUnseenUpdates) =>
+              setFilters((current) => ({
+                ...current,
+                onlyUnseenUpdates,
+              }))
+            }
+            onExportCurrentView={() => handleExport('current_view')}
+            onExportFocusQueue={() => handleExport('focus_queue')}
+            onExportWeeklyLoad={() => handleExport('weekly_load')}
+            onExportChangeJournal={() => handleExport('change_journal')}
+          />
+        </div>
 
-      <WebWorkbenchPanels
-        workbenchReady={workbenchReady}
-        todaySnapshot={todaySnapshot ?? undefined}
-        recentUpdates={recentUpdates ?? undefined}
-        focusQueue={focusQueue}
-        planningSubstrates={planningSubstrates}
-        weeklyLoad={weeklyLoad}
-        currentAssignments={currentAssignments}
-        currentMessages={currentMessages}
-        currentResources={currentResources}
-        currentAnnouncements={currentAnnouncements}
-        currentEvents={currentEvents}
-        recentChangeEvents={recentChangeEvents}
-        countsBySite={countsBySite}
-        topSyncRun={topSyncRun}
-        siteLabels={SITE_LABELS}
-      />
+        <div className="web-shell__decision-lane" aria-label="Decision workspace">
+          <WebWorkbenchPanels
+            workbenchReady={workbenchReady}
+            todaySnapshot={todaySnapshot ?? undefined}
+            recentUpdates={recentUpdates ?? undefined}
+            focusQueue={focusQueue}
+            planningSubstrates={planningSubstrates}
+            weeklyLoad={weeklyLoad}
+            currentAssignments={currentAssignments}
+            currentMessages={currentMessages}
+            currentResources={currentResources}
+            currentAnnouncements={currentAnnouncements}
+            currentEvents={currentEvents}
+            recentChangeEvents={recentChangeEvents}
+            countsBySite={countsBySite}
+            topSyncRun={topSyncRun}
+            siteLabels={SITE_LABELS}
+          />
+        </div>
 
-      <WebAiPanel
-        provider={provider}
-        model={model}
-        switchyardProvider={switchyardProvider}
-        switchyardLane={switchyardLane}
-        providers={PROVIDERS}
-        aiBaseUrl={aiBaseUrl}
-        question={question}
-        aiPending={aiPending}
-        aiError={aiError}
-        aiNotice={aiNotice}
-        aiAnswer={aiAnswer}
-        aiStructured={aiStructured}
-        availableCourses={availableCourses}
-        advancedMaterialEnabled={advancedMaterialEnabled}
-        advancedMaterialCourseId={advancedMaterialCourseId}
-        advancedMaterialExcerpt={advancedMaterialExcerpt}
-        advancedMaterialAcknowledged={advancedMaterialAcknowledged}
-        onAiBaseUrlChange={setAiBaseUrl}
-        onProviderChange={(nextProvider) => {
-          setProvider(nextProvider);
-          setModel(PROVIDERS.find((item) => item.value === nextProvider)?.model ?? model);
-        }}
-        onModelChange={setModel}
-        onSwitchyardProviderChange={setSwitchyardProvider}
-        onSwitchyardLaneChange={setSwitchyardLane}
-        onQuestionChange={setQuestion}
-        onAdvancedMaterialEnabledChange={(value) => {
-          setAdvancedMaterialEnabled(value);
-          if (!value) {
-            setAdvancedMaterialCourseId('');
-            setAdvancedMaterialExcerpt('');
-            setAdvancedMaterialAcknowledged(false);
-          }
-        }}
-        onAdvancedMaterialCourseChange={setAdvancedMaterialCourseId}
-        onAdvancedMaterialExcerptChange={setAdvancedMaterialExcerpt}
-        onAdvancedMaterialAcknowledgedChange={setAdvancedMaterialAcknowledged}
-        onAskAi={handleAskAi}
-      />
+        <div className="web-shell__explanation-lane">
+          <WebAiPanel
+            provider={provider}
+            model={model}
+            switchyardProvider={switchyardProvider}
+            switchyardLane={switchyardLane}
+            providers={PROVIDERS}
+            aiBaseUrl={aiBaseUrl}
+            question={question}
+            aiPending={aiPending}
+            aiError={aiError}
+            aiNotice={aiNotice}
+            aiAnswer={aiAnswer}
+            aiStructured={aiStructured}
+            availableCourses={availableCourses}
+            advancedMaterialEnabled={advancedMaterialEnabled}
+            advancedMaterialCourseId={advancedMaterialCourseId}
+            advancedMaterialExcerpt={advancedMaterialExcerpt}
+            advancedMaterialAcknowledged={advancedMaterialAcknowledged}
+            onAiBaseUrlChange={setAiBaseUrl}
+            onProviderChange={(nextProvider) => {
+              setProvider(nextProvider);
+              setModel(PROVIDERS.find((item) => item.value === nextProvider)?.model ?? model);
+            }}
+            onModelChange={setModel}
+            onSwitchyardProviderChange={setSwitchyardProvider}
+            onSwitchyardLaneChange={setSwitchyardLane}
+            onQuestionChange={setQuestion}
+            onAdvancedMaterialEnabledChange={(value) => {
+              setAdvancedMaterialEnabled(value);
+              if (!value) {
+                setAdvancedMaterialCourseId('');
+                setAdvancedMaterialExcerpt('');
+                setAdvancedMaterialAcknowledged(false);
+              }
+            }}
+            onAdvancedMaterialCourseChange={setAdvancedMaterialCourseId}
+            onAdvancedMaterialExcerptChange={setAdvancedMaterialExcerpt}
+            onAdvancedMaterialAcknowledgedChange={setAdvancedMaterialAcknowledged}
+            onAskAi={handleAskAi}
+          />
+        </div>
       </main>
     </>
   );
