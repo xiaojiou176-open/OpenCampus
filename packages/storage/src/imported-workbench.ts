@@ -14,13 +14,25 @@ import {
   type Site,
 } from '@campus-copilot/schema';
 import { IsoDateTimeSchema } from '@campus-copilot/schema';
-import { ChangeEventSchema, EntityStateSchema, SyncRunSchema, SyncStateSchema, type ChangeEvent, type EntityState, type SyncRun, type SyncState } from './contracts';
-import { campusCopilotDb, type CampusCopilotDB } from './db';
+import {
+  ChangeEventSchema,
+  EntityStateSchema,
+  PlanningSubstrateOwnerSchema,
+  SyncRunSchema,
+  SyncStateSchema,
+  type ChangeEvent,
+  type EntityState,
+  type PlanningSubstrateOwner,
+  type SyncRun,
+  type SyncState,
+} from './contracts.ts';
+import { campusCopilotDb, type CampusCopilotDB } from './db.ts';
 
 type ImportedTrackedEntity = Resource | Assignment | Announcement | Message | Grade | Event;
 
 export interface ImportedWorkbenchSnapshot {
   generatedAt: string;
+  planningSubstrates?: PlanningSubstrateOwner[];
   resources?: Resource[];
   assignments?: Assignment[];
   announcements?: Announcement[];
@@ -96,6 +108,7 @@ export async function replaceImportedWorkbenchSnapshot(
   db: CampusCopilotDB = campusCopilotDb,
 ) {
   const importedAt = IsoDateTimeSchema.parse(snapshot.generatedAt);
+  const planningSubstrates = (snapshot.planningSubstrates ?? []).map((item) => PlanningSubstrateOwnerSchema.parse(item));
   const resources = (snapshot.resources ?? []).map((item) => ResourceSchema.parse(item));
   const assignments = (snapshot.assignments ?? []).map((item) => AssignmentSchema.parse(item));
   const announcements = (snapshot.announcements ?? []).map((item) => AnnouncementSchema.parse(item));
@@ -119,6 +132,7 @@ export async function replaceImportedWorkbenchSnapshot(
     'rw',
     [
       db.courses,
+      db.planning_substrates,
       db.resources,
       db.assignments,
       db.announcements,
@@ -134,6 +148,7 @@ export async function replaceImportedWorkbenchSnapshot(
     async () => {
       await Promise.all([
         db.courses.clear(),
+        db.planning_substrates.clear(),
         db.resources.clear(),
         db.assignments.clear(),
         db.announcements.clear(),
@@ -147,6 +162,9 @@ export async function replaceImportedWorkbenchSnapshot(
         db.change_events.clear(),
       ]);
 
+      if (planningSubstrates.length > 0) {
+        await db.planning_substrates.bulkPut(planningSubstrates);
+      }
       if (resources.length > 0) {
         await db.resources.bulkPut(resources);
       }

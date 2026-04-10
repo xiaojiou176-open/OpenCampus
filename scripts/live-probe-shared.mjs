@@ -510,16 +510,60 @@ export function getRequestedUrlMatchScore(pageUrl, requestedUrl) {
   return isKnownRedirectHost(requestedHostname, pageHostname) ? 1 : 0;
 }
 
-export function findBestRequestedUrlMatch(entries, requestedUrl, getUrl = (entry) => entry?.url) {
+const AUTH_BOUNDARY_PRIORITY = {
+  authenticated: 4,
+  session_resumable: 3,
+  mfa_required: 2,
+  logged_out: 1,
+  not_open: 0,
+  attach_failed: -1,
+  profile_mismatch: -2,
+};
+
+function inferSiteFromRequestedUrl(requestedUrl) {
+  const requestedHostname = toHostname(requestedUrl);
+  if (!requestedHostname) {
+    return undefined;
+  }
+
+  const matchedTarget = SITE_TARGETS.find(([, siteUrl]) => toHostname(siteUrl) === requestedHostname);
+  return matchedTarget?.[0];
+}
+
+function getRequestedUrlMatchPriority(entry, requestedUrl, getUrl, getTitle) {
+  const finalUrl = getUrl(entry);
+  const score = getRequestedUrlMatchScore(finalUrl, requestedUrl);
+  const title = getTitle(entry);
+  const authState =
+    score > 0
+      ? classifyFromExistingTab(finalUrl, title, {
+          site: inferSiteFromRequestedUrl(requestedUrl),
+        })
+      : undefined;
+
+  return {
+    score,
+    authPriority: authState ? (AUTH_BOUNDARY_PRIORITY[authState.authBoundary] ?? 0) : -99,
+  };
+}
+
+export function findBestRequestedUrlMatch(
+  entries,
+  requestedUrl,
+  getUrl = (entry) => entry?.url,
+  getTitle = (entry) => entry?.title ?? '',
+) {
   let bestEntry;
   let bestScore = 0;
+  let bestAuthPriority = -99;
 
   for (const entry of entries) {
-    const score = getRequestedUrlMatchScore(getUrl(entry), requestedUrl);
-    if (score > bestScore) {
+    const { score, authPriority } = getRequestedUrlMatchPriority(entry, requestedUrl, getUrl, getTitle);
+    if (score > bestScore || (score === bestScore && authPriority > bestAuthPriority)) {
       bestEntry = entry;
       bestScore = score;
-      if (score === 3) {
+      bestAuthPriority = authPriority;
+      if (score === 3 && authPriority === AUTH_BOUNDARY_PRIORITY.authenticated) {
         break;
       }
     }
@@ -528,20 +572,27 @@ export function findBestRequestedUrlMatch(entries, requestedUrl, getUrl = (entry
   return bestEntry;
 }
 
-export function assignRequestedUrlMatches(entries, requestedUrls, getUrl = (entry) => entry?.url) {
+export function assignRequestedUrlMatches(
+  entries,
+  requestedUrls,
+  getUrl = (entry) => entry?.url,
+  getTitle = (entry) => entry?.title ?? '',
+) {
   const unused = entries.map((entry, index) => ({ entry, index }));
 
   return requestedUrls.map((requestedUrl) => {
     let bestIndex = -1;
     let bestScore = 0;
+    let bestAuthPriority = -99;
 
     for (let index = 0; index < unused.length; index += 1) {
       const candidate = unused[index];
-      const score = getRequestedUrlMatchScore(getUrl(candidate.entry), requestedUrl);
-      if (score > bestScore) {
+      const { score, authPriority } = getRequestedUrlMatchPriority(candidate.entry, requestedUrl, getUrl, getTitle);
+      if (score > bestScore || (score === bestScore && authPriority > bestAuthPriority)) {
         bestIndex = index;
         bestScore = score;
-        if (score === 3) {
+        bestAuthPriority = authPriority;
+        if (score === 3 && authPriority === AUTH_BOUNDARY_PRIORITY.authenticated) {
           break;
         }
       }

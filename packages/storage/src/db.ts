@@ -4,9 +4,10 @@ import type {
   ChangeEvent,
   EntityState,
   LocalEntityOverlay,
+  PlanningSubstrateOwner,
   SyncRun,
   SyncState,
-} from './contracts';
+} from './contracts.ts';
 
 export class CampusCopilotDB extends Dexie {
   courses!: Table<Course, string>;
@@ -19,6 +20,7 @@ export class CampusCopilotDB extends Dexie {
   sync_state!: Table<SyncState, string>;
   entity_state!: Table<EntityState, string>;
   local_entity_overlay!: Table<LocalEntityOverlay, string>;
+  planning_substrates!: Table<PlanningSubstrateOwner, string>;
   sync_runs!: Table<SyncRun, string>;
   change_events!: Table<ChangeEvent, string>;
 
@@ -100,6 +102,22 @@ export class CampusCopilotDB extends Dexie {
       sync_state: '&key, site, status, lastSyncedAt, lastOutcome',
       entity_state: '&key, site, kind, firstSeenAt, lastSyncedAt, seenAt',
       local_entity_overlay: '&entityId, site, kind, updatedAt, pinnedAt, snoozeUntil, dismissUntil',
+      sync_runs: '&id, site, completedAt, startedAt, outcome',
+      change_events: '&id, runId, site, entityId, changeType, occurredAt',
+    });
+    this.version(8).stores({
+      courses: '&id, site, title, code',
+      resources: '&id, site, courseId, releasedAt, resourceKind',
+      assignments: '&id, site, courseId, dueAt, status',
+      announcements: '&id, site, courseId, postedAt',
+      grades: '&id, site, courseId, assignmentId, releasedAt, gradedAt',
+      messages: '&id, site, courseId, createdAt, unread',
+      events: '&id, site, eventKind, startAt, endAt',
+      alerts: null,
+      sync_state: '&key, site, status, lastSyncedAt, lastOutcome',
+      entity_state: '&key, site, kind, firstSeenAt, lastSyncedAt, seenAt',
+      local_entity_overlay: '&entityId, site, kind, updatedAt, pinnedAt, snoozeUntil, dismissUntil',
+      planning_substrates: '&id, source, fit, capturedAt, planId',
       sync_runs: '&id, site, completedAt, startedAt, outcome',
       change_events: '&id, runId, site, entityId, changeType, occurredAt',
     });

@@ -210,6 +210,18 @@ test('findBestRequestedUrlMatch prefers an exact site tab over a generic login r
   );
 });
 
+test('findBestRequestedUrlMatch prefers the stronger authenticated Gradescope tab over a timeout tab when URL scores tie', () => {
+  const tabs = [
+    { url: 'https://www.gradescope.com/?reason=timeout', title: 'Gradescope' },
+    { url: 'https://www.gradescope.com/', title: 'Your Courses | Gradescope' },
+  ];
+
+  assert.deepEqual(
+    findBestRequestedUrlMatch(tabs, 'https://www.gradescope.com/auth/saml/uw', (entry) => entry.url, (entry) => entry.title),
+    tabs[1],
+  );
+});
+
 test('buildCdpTargetSummary keeps full page targets for matching and truncates preview fields only', () => {
   const targets = Array.from({ length: 10 }, (_, index) => ({
     type: 'page',
@@ -248,6 +260,22 @@ test('assignRequestedUrlMatches does not reuse the same redirect tab across mult
   assert.equal(matches.length, 3);
   assert.equal(new Set(matches.map((entry) => entry?.url)).size, 3);
   assert.equal(matches[2]?.title, 'Duo Security');
+});
+
+test('assignRequestedUrlMatches prefers the stronger authenticated Gradescope tab over a timeout tab on the same host', () => {
+  const tabs = [
+    { url: 'https://www.gradescope.com/?reason=timeout', title: 'Gradescope' },
+    { url: 'https://www.gradescope.com/', title: 'Your Courses | Gradescope' },
+  ];
+
+  const matches = assignRequestedUrlMatches(
+    tabs,
+    ['https://www.gradescope.com/auth/saml/uw'],
+    (entry) => entry.url,
+    (entry) => entry.title,
+  );
+
+  assert.equal(matches[0], tabs[1]);
 });
 
 test('classifyFromExistingTab maps known login redirect hosts into deterministic auth boundaries', () => {

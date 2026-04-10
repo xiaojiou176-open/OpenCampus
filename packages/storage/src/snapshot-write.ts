@@ -15,7 +15,7 @@ import {
   type Resource,
   type Site,
 } from '@campus-copilot/schema';
-import { campusCopilotDb, type CampusCopilotDB } from './db';
+import { campusCopilotDb, type CampusCopilotDB } from './db.ts';
 import {
   SyncRunSchema,
   SyncStateSchema,
@@ -23,8 +23,8 @@ import {
   type SiteSnapshotPayload,
   type SiteSnapshotRecords,
   type SyncState,
-} from './contracts';
-import { buildChangeEvents, buildEntityStates, makeSyncRunId } from './sync-ledger';
+} from './contracts.ts';
+import { buildChangeEvents, buildEntityStates, makeSyncRunId } from './sync-ledger.ts';
 
 type TrackedEntity = Course | Resource | Assignment | Announcement | Grade | Message | Event;
 

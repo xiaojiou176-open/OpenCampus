@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  AcademicRedZoneSurfaceSchema,
+  AiRuntimeRequestSchema,
   AiRuntimeModeSchema,
   AiCitationSchema,
   CampusAiAskRequestSchema,
@@ -7,8 +9,16 @@ import {
   HealthPayloadSchema,
   ProviderStatusPayloadSchema,
   AiStructuredAnswerSchema,
+  assertAiQuestionWithinAcademicBoundary,
   buildAiRuntimeMessages,
   createProviderProxyRequest,
+  getAcademicAiCallerGuardrails,
+  getAcademicRedZoneHardStop,
+  getAcademicRedZoneHardStops,
+  getAcademicRedZoneUiGuard,
+  getAcademicRedZoneUiGuards,
+  getAiMaterialBoundaryVerdict,
+  getAdvancedMaterialAnalysisGuard,
   getToolDefinitions,
   parseAiStructuredAnswer,
   resolveAiAnswer,
@@ -71,6 +81,10 @@ describe('ai runtime contracts', () => {
         messages: [{ role: 'user', content: 'What changed?' }],
       }),
     ).toEqual({
+      advancedMaterialAnalysis: {
+        enabled: false,
+        policy: 'default_disabled',
+      },
       provider: 'gemini',
       model: 'gemini-2.5-flash',
       messages: [{ role: 'user', content: 'What changed?' }],
@@ -152,11 +166,194 @@ describe('ai runtime contracts', () => {
     });
 
     expect(messages.systemPrompt).toContain('Never request raw DOM');
+    expect(messages.systemPrompt).toContain('raw course files');
+    expect(messages.systemPrompt).toContain('assignment PDFs');
+    expect(messages.systemPrompt).toContain('Advanced material analysis stays default-disabled');
     expect(messages.systemPrompt).toContain('"summary"');
     expect(messages.systemPrompt).toContain('"nextActions"');
     expect(messages.systemPrompt).toContain('"trustGaps"');
     expect(messages.systemPrompt).toContain('"citations"');
     expect(messages.userPrompt).toContain('Homework 5 明晚截止');
+  });
+
+  it('exposes red-zone hard-stops as manual-only runtime guards', () => {
+    expect(AcademicRedZoneSurfaceSchema.options).toEqual([
+      'register-uw',
+      'notify-uw',
+      'registration-related-resources',
+      'seat-watcher-waitlist-polling',
+      'add-drop-submission',
+      'seat-swap-hold-seat',
+      'registration-query-loop',
+    ]);
+
+    expect(getAcademicRedZoneHardStop('register-uw')).toEqual({
+      surface: 'register-uw',
+      title: 'Not supported in the current product path',
+      reason: 'This surface crosses the current read-only academic safety boundary.',
+      actionLabel: 'Registration automation stays off',
+      manualOnlyNote: 'Open the original site if you need to continue manually.',
+      docsLabel: 'Academic Safety Contract',
+    });
+
+    expect(getAcademicRedZoneHardStops(['register-uw', 'notify-uw'])).toEqual([
+      getAcademicRedZoneHardStop('register-uw'),
+      getAcademicRedZoneHardStop('notify-uw'),
+    ]);
+
+    expect(getAcademicRedZoneUiGuard('register-uw')).toEqual({
+      surface: 'register-uw',
+      surfaceLabel: 'Register.UW',
+      title: 'Not supported in the current product path',
+      reason: 'This surface crosses the current read-only academic safety boundary.',
+      actionLabel: 'Registration automation stays off',
+      manualOnlyNote: 'Open the original site if you need to continue manually.',
+      docsLabel: 'Academic Safety Contract',
+      docsPath: '/docs/17-academic-expansion-and-safety-contract.md',
+      ctaDisabled: true,
+      manualPathOnly: true,
+    });
+
+    expect(getAcademicRedZoneUiGuards(['register-uw', 'notify-uw']).map((item) => item.surface)).toEqual([
+      'register-uw',
+      'notify-uw',
+    ]);
+  });
+
+  it('keeps advanced material analysis default-disabled across shared AI contracts', () => {
+    expect(getAdvancedMaterialAnalysisGuard()).toEqual({
+      status: 'default_disabled',
+      enabled: false,
+      toggleLabel: 'Advanced material analysis',
+      note: 'Default off. Raw course files, lecture slides, instructor-authored notes, exams, quizzes, assignment PDFs, and solution documents stay outside the default AI path.',
+      requirements: [
+        'explicit per-course opt-in',
+        'separate UX',
+        'separate review',
+        'user-responsibility language',
+      ],
+    });
+
+    expect(
+      AiRuntimeRequestSchema.parse({
+        provider: 'gemini',
+        model: 'gemini-2.5-flash',
+        question: 'What changed?',
+      }).advancedMaterialAnalysis,
+    ).toEqual({
+      enabled: false,
+      policy: 'default_disabled',
+    });
+
+    expect(
+      AiRuntimeRequestSchema.parse({
+        provider: 'gemini',
+        model: 'gemini-2.5-flash',
+        question: 'Please help me understand these lecture slides for CSE 142.',
+        advancedMaterialAnalysis: {
+          enabled: true,
+          policy: 'per_course_opt_in',
+          courseId: 'canvas:course:1',
+          courseLabel: 'Canvas · CSE 142',
+          excerpt: 'Week 2 slides explain asymptotic growth with several examples.',
+          userAcknowledgedResponsibility: true,
+        },
+      }).advancedMaterialAnalysis,
+    ).toEqual({
+      enabled: true,
+      policy: 'per_course_opt_in',
+      courseId: 'canvas:course:1',
+      courseLabel: 'Canvas · CSE 142',
+      excerpt: 'Week 2 slides explain asymptotic growth with several examples.',
+      userAcknowledgedResponsibility: true,
+    });
+
+    expect(
+      CampusAiAskRequestSchema.parse({
+        provider: 'gemini',
+        model: 'gemini-2.5-flash',
+        messages: [{ role: 'user', content: 'What changed?' }],
+        advancedMaterialAnalysis: {
+          enabled: true,
+          policy: 'per_course_opt_in',
+          courseId: 'canvas:course:1',
+          courseLabel: 'Canvas · CSE 142',
+          excerpt: 'Week 2 slides explain asymptotic growth with several examples.',
+          userAcknowledgedResponsibility: true,
+        },
+      }).advancedMaterialAnalysis,
+    ).toEqual({
+      enabled: true,
+      policy: 'per_course_opt_in',
+      courseId: 'canvas:course:1',
+      courseLabel: 'Canvas · CSE 142',
+      excerpt: 'Week 2 slides explain asymptotic growth with several examples.',
+      userAcknowledgedResponsibility: true,
+    });
+  });
+
+  it('exposes a shared caller guard wrapper for current AI surfaces', () => {
+    expect(getAcademicAiCallerGuardrails()).toEqual({
+      redZone: {
+        primaryHardStop: getAcademicRedZoneUiGuard('register-uw'),
+        summary:
+          'Register.UW, Notify.UW, seat watching, and registration-related polling stay outside the current product path.',
+        badge: 'manual_only',
+      },
+      advancedMaterial: getAdvancedMaterialAnalysisGuard(),
+    });
+  });
+
+  it('rejects raw-material questions even when the default-disabled guard stays untouched', () => {
+    expect(getAiMaterialBoundaryVerdict('Please summarize these lecture slides and assignment PDFs.')).toEqual({
+      allowed: false,
+      matchedInputs: ['lecture slides', 'assignment PDFs'],
+      denialReason:
+        'Advanced material analysis is not supported in the current product path. Matched raw-material request categories: lecture slides, assignment PDFs.',
+    });
+
+    expect(() => assertAiQuestionWithinAcademicBoundary('Can you summarize the lecture slides for this class?')).toThrow(
+      'Advanced material analysis is not supported in the current product path.',
+    );
+
+    expect(() =>
+      buildAiRuntimeMessages({
+        provider: 'gemini',
+        model: 'gemini-2.5-flash',
+        question: 'Read my assignment PDF and solution document.',
+      }),
+    ).toThrow('Advanced material analysis is not supported in the current product path.');
+  });
+
+  it('allows raw-material questions only when a per-course opt-in excerpt is explicitly provided', () => {
+    const messages = buildAiRuntimeMessages({
+      provider: 'gemini',
+      model: 'gemini-2.5-flash',
+      question: 'Please summarize these lecture slides for the midterm.',
+      advancedMaterialAnalysis: {
+        enabled: true,
+        policy: 'per_course_opt_in',
+        courseId: 'canvas:course:1',
+        courseLabel: 'Canvas · CSE 142',
+        excerpt: 'The lecture focuses on asymptotic notation, loop invariants, and binary search.',
+        userAcknowledgedResponsibility: true,
+      },
+      toolResults: [
+        {
+          name: 'get_opted_in_course_material_excerpt',
+          payload: {
+            courseId: 'canvas:course:1',
+            courseLabel: 'Canvas · CSE 142',
+            excerpt: 'The lecture focuses on asymptotic notation, loop invariants, and binary search.',
+          },
+        },
+      ],
+    });
+
+    expect(messages.systemPrompt).toContain('explicitly opted in to advanced material analysis');
+    expect(messages.systemPrompt).toContain('Use only the supplied user-pasted excerpt');
+    expect(messages.userPrompt).toContain('Canvas · CSE 142');
+    expect(messages.userPrompt).toContain('binary search');
   });
 
   it('parses structured answers from fenced json blocks', () => {

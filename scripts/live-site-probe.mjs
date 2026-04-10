@@ -279,6 +279,7 @@ function probeCdpTargetTabs(targets, cdpSummary, attachInput) {
     tabs,
     targets.map(([, requestedUrl]) => requestedUrl),
     (tab) => tab?.url,
+    (tab) => tab?.title ?? '',
   );
 
   return targets.map(([name, requestedUrl], index) => {
@@ -306,6 +307,25 @@ function probeCdpTargetTabs(targets, cdpSummary, attachInput) {
 
 async function probeSitesWithContext(context, attachModeResolved, allowExistingPages) {
   const results = [];
+
+  async function findBestExistingPageMatch(requestedUrl) {
+    const pages = context.pages();
+    const candidates = await Promise.all(
+      pages.map(async (page) => ({
+        page,
+        url: page.url(),
+        title: await page.title().catch(() => ''),
+      })),
+    );
+
+    const match = findBestRequestedUrlMatch(
+      candidates,
+      requestedUrl,
+      (candidate) => candidate.url,
+      (candidate) => candidate.title,
+    );
+    return match?.page;
+  }
 
   function createPageEvidenceCollector() {
     const consoleSamples = [];
@@ -469,7 +489,7 @@ async function probeSitesWithContext(context, attachModeResolved, allowExistingP
 
   for (const [name, url] of SITE_TARGETS) {
     const existingPage = allowExistingPages
-      ? findBestRequestedUrlMatch(context.pages(), url, (candidate) => candidate.url())
+      ? await findBestExistingPageMatch(url)
       : undefined;
     const page = existingPage ?? (await context.newPage());
     const evidenceCollector = createPageEvidenceCollector();

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
 import { browser } from 'wxt/browser';
 
 vi.mock('wxt/utils/define-background', () => ({
@@ -32,8 +33,52 @@ describe('background site dispatch', () => {
     vi.clearAllMocks();
   });
 
-  it('registers all four site handlers in the extension runtime', () => {
-    expect(Object.keys(SITE_SYNC_HANDLERS).sort()).toEqual(['canvas', 'edstem', 'gradescope', 'myuw']);
+  it('registers all five site handlers in the extension runtime', () => {
+    expect(Object.keys(SITE_SYNC_HANDLERS).sort()).toEqual(['canvas', 'edstem', 'gradescope', 'myuw', 'time-schedule']);
+  });
+
+  it('syncs Time Schedule from a public course offerings page in the active tab', async () => {
+    const executeScriptMock = vi.spyOn(
+      browser.scripting as {
+        executeScript: (...args: unknown[]) => Promise<ExecuteScriptMockResult>;
+      },
+      'executeScript',
+    );
+    executeScriptMock.mockResolvedValueOnce([
+      {
+        result: readFileSync(
+          new URL('../../../packages/adapters-time-schedule/src/__fixtures__/public-course-offerings-cse.html', import.meta.url),
+          'utf8',
+        ),
+      },
+    ]);
+
+    const result = await SITE_SYNC_HANDLERS['time-schedule']({
+      activeTab: {
+        tabId: 1,
+        url: 'https://www.washington.edu/students/timeschd/pub/SPR2026/cse.html',
+      },
+      now: '2026-04-10T06:10:00Z',
+      config: getDefaultExtensionConfig(),
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.outcome).toBe('success');
+      expect(result.snapshot.courses?.[0]).toEqual(
+        expect.objectContaining({
+          site: 'time-schedule',
+          code: 'CSE 121',
+          title: 'COMP PROGRAMMING I',
+        }),
+      );
+      expect(result.snapshot.events?.[0]).toEqual(
+        expect.objectContaining({
+          site: 'time-schedule',
+          eventKind: 'class',
+        }),
+      );
+    }
   });
 
   it('falls back to EdStem dashboard DOM when path config is missing but the active tab still exposes course cards', async () => {

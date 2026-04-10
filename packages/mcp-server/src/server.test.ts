@@ -18,7 +18,7 @@ test('mcp-server registers the expected read-only tool surface', async () => {
   const listedTools = await client.listTools();
 
   assert.deepEqual(listedTools.tools.map((tool) => tool.name).sort(), [...CAMPUS_MCP_SERVER_TOOL_NAMES].sort());
-  assert.equal(CAMPUS_MCP_SERVER_TOOL_NAMES.length, 8);
+  assert.equal(CAMPUS_MCP_SERVER_TOOL_NAMES.length, 9);
 
   await client.close();
   await server.close();

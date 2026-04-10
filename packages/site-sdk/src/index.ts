@@ -17,7 +17,7 @@ export async function getMyUwOverview(snapshot: ImportedWorkbenchSnapshot) {
   return buildSiteOverview(snapshot, 'myuw');
 }
 
-export const SITE_TOOLBOX_ORDER = ['canvas', 'gradescope', 'edstem', 'myuw'] as const;
+export const SITE_TOOLBOX_ORDER = ['canvas', 'gradescope', 'edstem', 'myuw', 'time-schedule'] as const;
 export type SiteToolboxSite = (typeof SITE_TOOLBOX_ORDER)[number];
 
 export async function getSiteOverview(

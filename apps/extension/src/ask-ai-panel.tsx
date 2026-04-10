@@ -4,6 +4,7 @@ import {
   type SwitchyardLane,
   type SwitchyardRuntimeProvider,
 } from '@campus-copilot/ai';
+import { getAcademicAiCallerGuardrails } from './academic-safety-guards';
 import { formatProviderReason, formatProviderStatusError, type ProviderStatusLike } from './diagnostics';
 import { formatRelativeTime, type ResolvedUiLanguage } from './i18n';
 import { PROVIDER_OPTIONS } from './surface-shell-model';
@@ -26,6 +27,11 @@ export function AskAiPanel(props: {
   aiStructuredAnswer?: unknown;
   aiNotice?: string;
   aiError?: string;
+  availableCourses: Array<{ id: string; label: string }>;
+  advancedMaterialEnabled: boolean;
+  advancedMaterialCourseId: string;
+  advancedMaterialExcerpt: string;
+  advancedMaterialAcknowledged: boolean;
   structuredInputSummary: {
     totalAssignments: number;
     dueSoonAssignments: number;
@@ -42,6 +48,10 @@ export function AskAiPanel(props: {
   onSwitchyardProviderChange: (value: SwitchyardRuntimeProvider) => void;
   onSwitchyardLaneChange: (value: SwitchyardLane) => void;
   onQuestionChange: (value: string) => void;
+  onAdvancedMaterialEnabledChange: (value: boolean) => void;
+  onAdvancedMaterialCourseChange: (value: string) => void;
+  onAdvancedMaterialExcerptChange: (value: string) => void;
+  onAdvancedMaterialAcknowledgedChange: (value: boolean) => void;
   onAskAi: () => Promise<void>;
   onRefreshProviderStatus: () => Promise<void>;
   onOpenConfiguration?: () => void;
@@ -62,12 +72,21 @@ export function AskAiPanel(props: {
     aiStructuredAnswer,
     aiNotice,
     aiError,
+    availableCourses,
+    advancedMaterialEnabled,
+    advancedMaterialCourseId,
+    advancedMaterialExcerpt,
+    advancedMaterialAcknowledged,
     structuredInputSummary,
     onProviderChange,
     onModelChange,
     onSwitchyardProviderChange,
     onSwitchyardLaneChange,
     onQuestionChange,
+    onAdvancedMaterialEnabledChange,
+    onAdvancedMaterialCourseChange,
+    onAdvancedMaterialExcerptChange,
+    onAdvancedMaterialAcknowledgedChange,
     onAskAi,
     onRefreshProviderStatus,
     onOpenConfiguration,
@@ -82,118 +101,156 @@ export function AskAiPanel(props: {
     ready: Boolean(providerStatus.providers[option.value]?.ready),
     reason: formatProviderReason(providerStatus.providers[option.value]?.reason, uiLanguage),
   }));
+  const aiGuardrails = getAcademicAiCallerGuardrails();
+  const redZoneHardStop = aiGuardrails.redZone.primaryHardStop;
+  const advancedMaterialGuard = aiGuardrails.advancedMaterial;
   const structuredInputs = [
-    `${text.askAi.structuredInputLabels.todaySnapshot} · ${text.metrics.openAssignments} ${structuredInputSummary.totalAssignments} · ${text.metrics.dueWithin48Hours} ${structuredInputSummary.dueSoonAssignments} · ${text.metrics.newGrades} ${structuredInputSummary.newGrades}`,
-    `${text.askAi.structuredInputLabels.recentUpdates} · ${structuredInputSummary.recentUpdatesCount}`,
-    `${text.askAi.structuredInputLabels.priorityAlerts} · ${structuredInputSummary.priorityAlertsCount}`,
-    `${text.askAi.structuredInputLabels.focusQueue} · ${structuredInputSummary.focusQueueCount}`,
-    `${text.askAi.structuredInputLabels.weeklyLoad} · ${structuredInputSummary.weeklyLoadCount}`,
-    `${text.askAi.structuredInputLabels.changeJournal} · ${structuredInputSummary.changeJournalCount}`,
-    `${text.askAi.structuredInputLabels.currentView} · ${structuredInputSummary.currentViewFormat.toUpperCase()}`,
+    {
+      label: text.askAi.structuredInputLabels.todaySnapshot,
+      value: `${text.metrics.openAssignments} ${structuredInputSummary.totalAssignments} · ${text.metrics.dueWithin48Hours} ${structuredInputSummary.dueSoonAssignments} · ${text.metrics.newGrades} ${structuredInputSummary.newGrades}`,
+    },
+    {
+      label: text.askAi.structuredInputLabels.recentUpdates,
+      value: `${structuredInputSummary.recentUpdatesCount}`,
+    },
+    {
+      label: text.askAi.structuredInputLabels.priorityAlerts,
+      value: `${structuredInputSummary.priorityAlertsCount}`,
+    },
+    {
+      label: text.askAi.structuredInputLabels.focusQueue,
+      value: `${structuredInputSummary.focusQueueCount}`,
+    },
+    {
+      label: text.askAi.structuredInputLabels.weeklyLoad,
+      value: `${structuredInputSummary.weeklyLoadCount}`,
+    },
+    {
+      label: text.askAi.structuredInputLabels.changeJournal,
+      value: `${structuredInputSummary.changeJournalCount}`,
+    },
+    {
+      label: text.askAi.structuredInputLabels.currentView,
+      value: structuredInputSummary.currentViewFormat.toUpperCase(),
+    },
   ];
 
   return (
     <article className="surface__panel">
       <h2>{text.askAi.title}</h2>
       <p>{text.askAi.description}</p>
-      <div className="surface__grid surface__grid--split">
-        <label className="surface__field">
-          <span>{text.askAi.provider}</span>
-          <select value={aiProvider} onChange={(event) => onProviderChange(event.target.value as ProviderId)}>
-            {PROVIDER_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="surface__field">
-          <span>{text.askAi.model}</span>
-          <input value={aiModel} onChange={(event) => onModelChange(event.target.value)} />
-        </label>
+      <div className="surface__status-intro surface__status-intro--compact">
+        <div>
+          <p className="surface__meta-label">{text.askAi.runtimeSummary}</p>
+          <p className="surface__item-lead">
+            {selectedProviderLabel} · {selectedProviderReady ? text.meta.ready : text.meta.notReady}
+          </p>
+          <p className="surface__meta">
+            {formatProviderReason(selectedProviderStatus?.reason, uiLanguage)} · {text.meta.lastChecked}:{' '}
+            {formatRelativeTime(uiLanguage, providerStatus.checkedAt)}
+            {providerStatus.error ? ` · ${formatProviderStatusError(providerStatus.error, uiLanguage)}` : ''}
+          </p>
+        </div>
+        <span className={`surface__badge surface__badge--${selectedProviderReady ? 'success' : 'danger'}`}>
+          {selectedProviderReady ? text.meta.ready : text.meta.notReady}
+        </span>
       </div>
-      {aiProvider === 'switchyard' ? (
-        <div className="surface__grid surface__grid--split">
-          <label className="surface__field">
-            <span>{text.options.switchyardRuntimeProvider}</span>
-            <select
-              value={switchyardProvider}
-              onChange={(event) => onSwitchyardProviderChange(event.target.value as SwitchyardRuntimeProvider)}
-            >
-              <option value="chatgpt">ChatGPT</option>
-              <option value="gemini">Gemini</option>
-              <option value="claude">Claude</option>
-              <option value="grok">Grok</option>
-              <option value="qwen">Qwen</option>
-            </select>
-          </label>
-          <label className="surface__field">
-            <span>{text.options.switchyardLane}</span>
-            <select value={switchyardLane} onChange={(event) => onSwitchyardLaneChange(event.target.value as SwitchyardLane)}>
-              <option value="web">web</option>
-              <option value="byok">byok</option>
-            </select>
-          </label>
-        </div>
-      ) : null}
-      <div className="surface__stack">
-        <div className="surface__status-intro">
+      <div className="surface__group">
+        <div className="surface__section-head">
           <div>
-            <p className="surface__meta-label">{text.meta.currentStatus}</p>
-            <p className="surface__item-lead">
-              {selectedProviderLabel} · {selectedProviderReady ? text.meta.ready : text.meta.notReady}
-            </p>
-            <p className="surface__meta">
-              {formatProviderReason(selectedProviderStatus?.reason, uiLanguage)} · {text.meta.lastChecked}:{' '}
-              {formatRelativeTime(uiLanguage, providerStatus.checkedAt)}
-              {providerStatus.error ? ` · ${formatProviderStatusError(providerStatus.error, uiLanguage)}` : ''}
-            </p>
+            <h3>{text.askAi.whatAiCanSee}</h3>
+            <p className="surface__meta">{text.askAi.structuredInputsDescription}</p>
           </div>
-          <span className={`surface__badge surface__badge--${selectedProviderReady ? 'success' : 'danger'}`}>
-            {selectedProviderReady ? text.meta.ready : text.meta.notReady}
-          </span>
         </div>
-        <div className="surface__status-grid">
-          {providerCards.map((providerCard) => (
-            <article
-              className={`surface__status-card surface__status-card--${providerCard.ready ? 'success' : 'danger'}`}
-              key={providerCard.value}
-            >
-              <div className="surface__item-header">
-                <strong>{providerCard.label}</strong>
-                <span className={`surface__badge surface__badge--${providerCard.ready ? 'success' : 'danger'}`}>
-                  {providerCard.ready ? text.meta.ready : text.meta.notReady}
-                </span>
-              </div>
-              <p className="surface__meta">{providerCard.reason}</p>
+        <div className="surface__evidence-grid">
+          {structuredInputs.map((item) => (
+            <article className="surface__evidence-card" key={item.label}>
+              <p className="surface__meta-label">{item.label}</p>
+              <p className="surface__item-lead">{item.value}</p>
             </article>
           ))}
         </div>
       </div>
-      <div className="surface__actions">
-        <button className="surface__button surface__button--ghost" disabled={providerStatusPending} onClick={() => void onRefreshProviderStatus()}>
-          {providerStatusPending ? text.askAi.refreshingProviderStatus : text.askAi.refreshProviderStatus}
-        </button>
-      </div>
       <div className="surface__group">
-        <h3>{text.askAi.structuredInputs}</h3>
-        <p className="surface__meta">{text.askAi.structuredInputsDescription}</p>
-        <ul className="surface__list">
-          {structuredInputs.map((item) => (
-            <li key={item}>{item}</li>
-          ))}
-        </ul>
+        <div className="surface__section-head">
+          <div>
+            <h3>{text.askAi.guardrailsTitle}</h3>
+            <p className="surface__item-lead">{text.askAi.whatAiCannotDo}</p>
+            <p className="surface__meta">{text.askAi.redZoneDescription}</p>
+          </div>
+        </div>
+        <article className="surface__status-card surface__status-card--danger">
+          <div className="surface__item-header">
+            <strong>{redZoneHardStop.title}</strong>
+            <span className="surface__badge surface__badge--danger">{text.askAi.manualOnlyBadge}</span>
+          </div>
+          <p className="surface__meta">{aiGuardrails.redZone.summary}</p>
+          <button
+            className="surface__button surface__button--ghost"
+            type="button"
+            disabled={redZoneHardStop.ctaDisabled}
+          >
+            {redZoneHardStop.actionLabel}
+          </button>
+          <p className="surface__meta">{redZoneHardStop.manualOnlyNote}</p>
+        </article>
+        <article className="surface__status-card surface__status-card--danger">
+          <div className="surface__item-header">
+            <strong>{text.askAi.advancedMaterialTitle}</strong>
+            <span className={`surface__badge surface__badge--${advancedMaterialEnabled ? 'warning' : 'danger'}`}>
+              {advancedMaterialEnabled ? text.askAi.manualOnlyBadge : text.askAi.defaultDisabledBadge}
+            </span>
+          </div>
+          <label className="surface__field">
+            <span>{text.askAi.advancedMaterialEnableLabel}</span>
+            <input
+              type="checkbox"
+              checked={advancedMaterialEnabled}
+              onChange={(event) => onAdvancedMaterialEnabledChange(event.target.checked)}
+            />
+          </label>
+          <p className="surface__meta">{text.askAi.advancedMaterialDescription}</p>
+          <p className="surface__meta">{text.askAi.advancedMaterialOptInSummary}</p>
+          {advancedMaterialEnabled ? (
+            <div className="surface__stack">
+              <label className="surface__field">
+                <span>{text.askAi.advancedMaterialCourseLabel}</span>
+                <select
+                  value={advancedMaterialCourseId}
+                  onChange={(event) => onAdvancedMaterialCourseChange(event.target.value)}
+                >
+                  <option value="">{text.askAi.advancedMaterialCoursePlaceholder}</option>
+                  {availableCourses.map((course) => (
+                    <option key={course.id} value={course.id}>
+                      {course.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="surface__field">
+                <span>{text.askAi.advancedMaterialExcerptLabel}</span>
+                <textarea
+                  rows={5}
+                  value={advancedMaterialExcerpt}
+                  onChange={(event) => onAdvancedMaterialExcerptChange(event.target.value)}
+                  placeholder={text.askAi.advancedMaterialExcerptPlaceholder}
+                />
+              </label>
+              <label className="surface__field">
+                <span>{text.askAi.advancedMaterialAcknowledgement}</span>
+                <input
+                  type="checkbox"
+                  checked={advancedMaterialAcknowledged}
+                  onChange={(event) => onAdvancedMaterialAcknowledgedChange(event.target.checked)}
+                />
+              </label>
+            </div>
+          ) : null}
+          <p className="surface__meta">
+            {advancedMaterialEnabled ? advancedMaterialGuard.requirements.join(' · ') : advancedMaterialGuard.note}
+          </p>
+        </article>
       </div>
-      <label className="surface__field">
-        <span>{text.askAi.question}</span>
-        <textarea
-          rows={4}
-          value={aiQuestion}
-          onChange={(event) => onQuestionChange(event.target.value)}
-          placeholder={text.askAi.placeholder}
-        />
-      </label>
       <div className="surface__group">
         <h3>{text.askAi.suggestedPrompts}</h3>
         <div className="surface__actions surface__actions--wrap">
@@ -208,21 +265,133 @@ export function AskAiPanel(props: {
           ))}
         </div>
       </div>
+      <div className="surface__group">
+        <h3>{text.askAi.questionBox}</h3>
+        <label className="surface__field">
+          <span>{text.askAi.question}</span>
+          <textarea
+            rows={4}
+            value={aiQuestion}
+            onChange={(event) => onQuestionChange(event.target.value)}
+            placeholder={text.askAi.placeholder}
+          />
+        </label>
+      </div>
       <div className="surface__actions surface__actions--wrap">
         <button className="surface__button" disabled={aiPending} onClick={() => void onAskAi()}>
           {aiPending ? `${text.askAi.ask}…` : text.askAi.ask}
         </button>
-        {onOpenConfiguration ? (
-          <button className="surface__button surface__button--ghost" onClick={() => onOpenConfiguration()}>
-            {text.askAi.configure}
-          </button>
-        ) : null}
       </div>
-      {!config.ai.bffBaseUrl ? <p className="surface__feedback">{text.askAi.missingBffFeedback}</p> : null}
-      {aiNotice ? <p className="surface__feedback">{aiNotice}</p> : null}
-      {aiError ? <p className="surface__feedback surface__feedback--error">{aiError}</p> : null}
+      <details className="surface__advanced-settings">
+        <summary className="surface__advanced-settings-summary">
+          <span>{text.askAi.advancedRuntimeSettings}</span>
+          <span className="surface__badge surface__badge--neutral">{selectedProviderLabel}</span>
+        </summary>
+        <div className="surface__advanced-settings-body">
+          <p className="surface__meta">{text.askAi.advancedRuntimeDescription}</p>
+          <div className="surface__grid surface__grid--split">
+            <label className="surface__field">
+              <span>{text.askAi.provider}</span>
+              <select value={aiProvider} onChange={(event) => onProviderChange(event.target.value as ProviderId)}>
+                {PROVIDER_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="surface__field">
+              <span>{text.askAi.model}</span>
+              <input value={aiModel} onChange={(event) => onModelChange(event.target.value)} />
+            </label>
+          </div>
+          {aiProvider === 'switchyard' ? (
+            <div className="surface__grid surface__grid--split">
+              <label className="surface__field">
+                <span>{text.options.switchyardRuntimeProvider}</span>
+                <select
+                  value={switchyardProvider}
+                  onChange={(event) => onSwitchyardProviderChange(event.target.value as SwitchyardRuntimeProvider)}
+                >
+                  <option value="chatgpt">ChatGPT</option>
+                  <option value="gemini">Gemini</option>
+                  <option value="claude">Claude</option>
+                  <option value="grok">Grok</option>
+                  <option value="qwen">Qwen</option>
+                </select>
+              </label>
+              <label className="surface__field">
+                <span>{text.options.switchyardLane}</span>
+                <select
+                  value={switchyardLane}
+                  onChange={(event) => onSwitchyardLaneChange(event.target.value as SwitchyardLane)}
+                >
+                  <option value="web">web</option>
+                  <option value="byok">byok</option>
+                </select>
+              </label>
+            </div>
+          ) : null}
+          <div className="surface__status-grid">
+            {providerCards.map((providerCard) => (
+              <article
+                className={`surface__status-card surface__status-card--${providerCard.ready ? 'success' : 'danger'}`}
+                key={providerCard.value}
+              >
+                <div className="surface__item-header">
+                  <strong>{providerCard.label}</strong>
+                  <span className={`surface__badge surface__badge--${providerCard.ready ? 'success' : 'danger'}`}>
+                    {providerCard.ready ? text.meta.ready : text.meta.notReady}
+                  </span>
+                </div>
+                <p className="surface__meta">{providerCard.reason}</p>
+              </article>
+            ))}
+          </div>
+          <div className="surface__actions surface__actions--wrap">
+            <button
+              className="surface__button surface__button--ghost"
+              disabled={providerStatusPending}
+              onClick={() => void onRefreshProviderStatus()}
+            >
+              {providerStatusPending ? text.askAi.refreshingProviderStatus : text.askAi.refreshProviderStatus}
+            </button>
+            {onOpenConfiguration ? (
+              <button className="surface__button surface__button--secondary" onClick={() => onOpenConfiguration()}>
+                {text.askAi.configure}
+              </button>
+            ) : null}
+          </div>
+        </div>
+      </details>
+      {!config.ai.bffBaseUrl ? <p aria-live="polite" className="surface__feedback">{text.askAi.missingBffFeedback}</p> : null}
+      {aiNotice ? <p aria-live="polite" className="surface__feedback">{aiNotice}</p> : null}
+      {aiError ? <p aria-live="polite" className="surface__feedback surface__feedback--error">{aiError}</p> : null}
       {parsedStructuredAnswer.success ? (
-        <div className="surface__answer">
+        <div aria-live="polite" className="surface__answer">
+          {parsedStructuredAnswer.data.citations.length ? (
+            <div className="surface__group">
+              <div className="surface__item-header">
+                <h3>{text.askAi.answerWithCitations}</h3>
+                <span className="surface__badge surface__badge--success">{text.askAi.citations}</span>
+              </div>
+              <ul className="surface__list">
+                {parsedStructuredAnswer.data.citations.map((citation) => (
+                  <li key={`${citation.entityId}:${citation.title}`}>
+                    {citation.url ? (
+                      <a href={citation.url} target="_blank" rel="noreferrer">
+                        {citation.title}
+                      </a>
+                    ) : (
+                      citation.title
+                    )}{' '}
+                    · {citation.site} · {citation.kind}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
           <p>{parsedStructuredAnswer.data.summary}</p>
           {parsedStructuredAnswer.data.bullets.length ? (
             <div className="surface__group">
@@ -254,27 +423,16 @@ export function AskAiPanel(props: {
               </ul>
             </div>
           ) : null}
-          {parsedStructuredAnswer.data.citations.length ? (
-            <div className="surface__group">
-              <h3>{text.askAi.citations}</h3>
-              <ul className="surface__list">
-                {parsedStructuredAnswer.data.citations.map((citation) => (
-                  <li key={`${citation.entityId}:${citation.title}`}>
-                    {citation.url ? (
-                      <a href={citation.url} target="_blank" rel="noreferrer">
-                        {citation.title}
-                      </a>
-                    ) : (
-                      citation.title
-                    )}{' '}
-                    · {citation.site} · {citation.kind}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
         </div>
-      ) : aiAnswer ? <div className="surface__answer">{aiAnswer}</div> : null}
+      ) : aiAnswer ? (
+        <div aria-live="polite" className="surface__answer">
+          <div className="surface__item-header">
+            <h3>{text.askAi.answerWithCitations}</h3>
+            <span className="surface__badge surface__badge--warning">{text.askAi.uncitedAnswerWarning}</span>
+          </div>
+          <p>{aiAnswer}</p>
+        </div>
+      ) : null}
     </article>
   );
 }

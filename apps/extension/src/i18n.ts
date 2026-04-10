@@ -109,8 +109,10 @@ type UiText = {
     selectSiteBeforeSync: string;
     syncInProgress: (site: string) => string;
     openExport: string;
+    exportCurrentView: string;
     markUpdatesSeen: string;
     openOptions: string;
+    openMainWorkbench: string;
   };
   nextUp: {
     title: string;
@@ -126,6 +128,25 @@ type UiText = {
     title: string;
     description: string;
     none: string;
+    readOnlyBadge: string;
+    summary: (entry: {
+      termCount: number;
+      plannedCourseCount: number;
+      backupCourseCount: number;
+      scheduleOptionCount: number;
+    }) => string;
+    requirementGroups: (count: number) => string;
+    programExploration: (count: number) => string;
+    capturedAt: (value: string) => string;
+    updatedAt: (value: string) => string;
+    degreeProgressLabel: string;
+    transferPlanningLabel: string;
+    termSummary: (entry: {
+      termLabel: string;
+      plannedCourseCount: number;
+      backupCourseCount: number;
+      scheduleOptionCount: number;
+    }) => string;
   };
   trustSummary: {
     title: string;
@@ -273,6 +294,22 @@ type UiText = {
   askAi: {
     title: string;
     description: string;
+    runtimeSummary: string;
+    whatAiCanSee: string;
+    whatAiCannotDo: string;
+    guardrailsTitle: string;
+    manualOnlyBadge: string;
+    defaultDisabledBadge: string;
+    redZoneDescription: string;
+    advancedMaterialTitle: string;
+    advancedMaterialDescription: string;
+    advancedMaterialOptInSummary: string;
+    advancedMaterialEnableLabel: string;
+    advancedMaterialCourseLabel: string;
+    advancedMaterialCoursePlaceholder: string;
+    advancedMaterialExcerptLabel: string;
+    advancedMaterialExcerptPlaceholder: string;
+    advancedMaterialAcknowledgement: string;
     structuredInputs: string;
     structuredInputsDescription: string;
     structuredInputLabels: {
@@ -287,7 +324,12 @@ type UiText = {
     provider: string;
     model: string;
     question: string;
+    questionBox: string;
     suggestedPrompts: string;
+    answerWithCitations: string;
+    advancedRuntimeSettings: string;
+    advancedRuntimeDescription: string;
+    uncitedAnswerWarning: string;
     suggestions: {
       nextStep: string;
       recentChanges: string;
@@ -305,14 +347,29 @@ type UiText = {
     citations: string;
   };
   popup: {
-    quickExport: string;
+    pulseSummaryTitle: string;
+    pulseSummaryDescription: string;
+    fastActionsTitle: string;
+    fastActionsDescription: string;
+    latestReceipt: string;
+    noRecentReceipt: string;
+    quickPulse: string;
+    quickPulseDescription: string;
+    readOnlyBadge: string;
     weeklyAssignments: string;
+    weeklyAssignmentsDescription: string;
     recentUpdates: string;
+    recentUpdatesDescription: string;
     allDeadlines: string;
+    allDeadlinesDescription: string;
     focusQueue: string;
+    focusQueueDescription: string;
     weeklyLoad: string;
+    weeklyLoadDescription: string;
     changeJournal: string;
+    changeJournalDescription: string;
     currentView: string;
+    currentViewDescription: string;
   };
   options: {
     siteConfiguration: string;
@@ -565,8 +622,10 @@ const TEXT: Record<ResolvedUiLanguage, UiText> = {
       selectSiteBeforeSync: 'Select a site before syncing',
       syncInProgress: (site) => `Syncing ${site}...`,
       openExport: 'Open export',
+      exportCurrentView: 'Export current view',
       markUpdatesSeen: 'Mark updates as seen',
       openOptions: 'Open Options',
+      openMainWorkbench: 'Open full workbench',
     },
     nextUp: {
       title: 'Next Up',
@@ -580,8 +639,20 @@ const TEXT: Record<ResolvedUiLanguage, UiText> = {
     },
     planningPulse: {
       title: 'Planning Pulse',
-      description: 'This keeps the busiest near-term day in the first screen so weekly load feels actionable instead of hidden below the fold.',
-      none: 'No near-term day stands out yet.',
+      description:
+        'This keeps the latest MyPlan planning snapshot in the decision workspace so term load, backups, and planning gaps stay visible without implying registration automation.',
+      none: 'No shared MyPlan planning snapshot is visible yet.',
+      readOnlyBadge: 'Read-only',
+      summary: ({ termCount, plannedCourseCount, backupCourseCount, scheduleOptionCount }) =>
+        `${termCount} term(s) · ${plannedCourseCount} planned course(s) · ${backupCourseCount} backup course(s) · ${scheduleOptionCount} schedule option(s)`,
+      requirementGroups: (count) => `${count} requirement group(s)`,
+      programExploration: (count) => `${count} exploration path(s)`,
+      capturedAt: (value) => `Captured ${value}`,
+      updatedAt: (value) => `Updated ${value}`,
+      degreeProgressLabel: 'Degree progress',
+      transferPlanningLabel: 'Transfer planning',
+      termSummary: ({ termLabel, plannedCourseCount, backupCourseCount, scheduleOptionCount }) =>
+        `${termLabel}: ${plannedCourseCount} planned · ${backupCourseCount} backup · ${scheduleOptionCount} option(s)`,
     },
     trustSummary: {
       title: 'Trust Summary',
@@ -728,9 +799,30 @@ const TEXT: Record<ResolvedUiLanguage, UiText> = {
         `Courses ${courses} · Resources ${resources} · Assignments ${assignments} · Announcements ${announcements} · Grades ${grades} · Messages ${messages} · Events ${events}`,
     },
     askAi: {
-      title: 'Ask AI',
+      title: 'Ask AI about this workspace',
       description:
         'AI acts like a study copilot here. It explains the current Focus Queue, Weekly Load, Change Journal, and recent updates after structure instead of reading raw pages or DOM.',
+      runtimeSummary: 'Current runtime',
+      whatAiCanSee: 'What AI can see',
+      whatAiCannotDo: 'What AI cannot do',
+      guardrailsTitle: 'Academic safety guardrails',
+      manualOnlyBadge: 'Manual only',
+      defaultDisabledBadge: 'Default off',
+      redZoneDescription:
+        'Register.UW, Notify.UW, seat watching, and registration-related polling stay outside the current product path. Use the original site if you need to continue manually.',
+      advancedMaterialTitle: 'Advanced material analysis',
+      advancedMaterialDescription:
+        'Raw course files, lecture slides, instructor-authored notes, exams, quizzes, assignment PDFs, and solution documents stay outside the default AI path unless a later per-course opt-in contract explicitly promotes them.',
+      advancedMaterialOptInSummary:
+        'The only supported advanced path is a course-scoped opt-in with a user-pasted excerpt. Campus Copilot still does not fetch or upload raw files for you.',
+      advancedMaterialEnableLabel: 'Enable excerpt analysis for one course',
+      advancedMaterialCourseLabel: 'Opt-in course',
+      advancedMaterialCoursePlaceholder: 'Select one visible course',
+      advancedMaterialExcerptLabel: 'Paste the excerpt you want analyzed',
+      advancedMaterialExcerptPlaceholder:
+        'Paste only the passage you want help with. Do not rely on hidden files, raw downloads, or content you do not have the right to use.',
+      advancedMaterialAcknowledgement:
+        'I confirm this excerpt is for my own course context, I am choosing this one course explicitly, and rights/policy compliance remain my responsibility.',
       structuredInputs: 'Structured inputs',
       structuredInputsDescription:
         'Every answer is grounded in the visible workbench state below, so the model is explaining this study desk rather than inventing context from raw pages, cookies, or hidden browser state.',
@@ -746,7 +838,13 @@ const TEXT: Record<ResolvedUiLanguage, UiText> = {
       provider: 'Provider',
       model: 'Model',
       question: 'Question',
+      questionBox: 'Question box',
       suggestedPrompts: 'Suggested prompts',
+      answerWithCitations: 'Answer with citations',
+      advancedRuntimeSettings: 'Advanced runtime settings',
+      advancedRuntimeDescription:
+        'Provider, model, and Switchyard controls stay here as runtime details. The workspace should stay the main character on the first screen.',
+      uncitedAnswerWarning: 'Needs citations',
       suggestions: {
         nextStep: 'What should I do first today, and why?',
         recentChanges: 'What changed since the latest sync that I should care about?',
@@ -764,14 +862,32 @@ const TEXT: Record<ResolvedUiLanguage, UiText> = {
       citations: 'Citations',
     },
     popup: {
-      quickExport: 'Quick export',
+      pulseSummaryTitle: 'Pulse summary',
+      pulseSummaryDescription:
+        'Use this like a thermometer, not a second dashboard. Check the smallest useful facts here, then move into the full workbench when you need detail.',
+      fastActionsTitle: 'Fast actions',
+      fastActionsDescription:
+        'Keep the popup honest: open the full workbench, sync the current site, or export the current slice without pretending this is the whole product.',
+      latestReceipt: 'Latest receipt',
+      noRecentReceipt: 'No sync receipt is recorded yet.',
+      quickPulse: 'Quick pulse exports',
+      quickPulseDescription:
+        'Use this lightweight panel like a temperature check. Take one small export slice, then move into the sidepanel for the full workbench.',
+      readOnlyBadge: 'Read-only',
       weeklyAssignments: 'Weekly assignments',
+      weeklyAssignmentsDescription: 'Carry this week’s assignment pulse into notes or a planner.',
       recentUpdates: 'Recent updates',
+      recentUpdatesDescription: 'Grab the newest deltas before you open the full workspace.',
       allDeadlines: 'All deadlines',
+      allDeadlinesDescription: 'Pull a complete deadline sweep when you need the whole horizon.',
       focusQueue: 'Focus queue',
+      focusQueueDescription: 'Export the next-up sequence that deserves attention first.',
       weeklyLoad: 'Weekly load',
+      weeklyLoadDescription: 'Take the current load snapshot without opening the full desk.',
       changeJournal: 'Change journal',
+      changeJournalDescription: 'Export what changed recently so you can scan it offline.',
       currentView: 'Current view',
+      currentViewDescription: 'Capture the exact workbench slice that is already in front of you.',
     },
     options: {
       siteConfiguration: 'Site configuration',
@@ -1086,8 +1202,10 @@ const TEXT: Record<ResolvedUiLanguage, UiText> = {
       selectSiteBeforeSync: '先选择站点再同步',
       syncInProgress: (site) => `同步 ${site} 中…`,
       openExport: '打开导出',
+      exportCurrentView: '导出当前视图',
       markUpdatesSeen: '标记更新已查看',
       openOptions: '打开设置',
+      openMainWorkbench: '打开完整工作台',
     },
     nextUp: {
       title: '现在先做什么',
@@ -1101,8 +1219,20 @@ const TEXT: Record<ResolvedUiLanguage, UiText> = {
     },
     planningPulse: {
       title: '计划脉冲',
-      description: '这里把最近最忙的一天提前到首屏，让本周负荷更像行动计划，而不是藏在下面的次级面板。',
-      none: '当前还没有明显突出的近期日期。',
+      description:
+        '这里把最新的 MyPlan 规划快照放进决策工作台，让学期负荷、备选课和规划缺口持续可见，但不把它包装成注册自动化。',
+      none: '当前还没有可见的共享 MyPlan 规划快照。',
+      readOnlyBadge: '只读',
+      summary: ({ termCount, plannedCourseCount, backupCourseCount, scheduleOptionCount }) =>
+        `${termCount} 个学期 · ${plannedCourseCount} 门计划课程 · ${backupCourseCount} 门备选课程 · ${scheduleOptionCount} 个排课选项`,
+      requirementGroups: (count) => `${count} 个要求分组`,
+      programExploration: (count) => `${count} 条项目探索线`,
+      capturedAt: (value) => `抓取于 ${value}`,
+      updatedAt: (value) => `更新于 ${value}`,
+      degreeProgressLabel: '学位进度',
+      transferPlanningLabel: '转学规划',
+      termSummary: ({ termLabel, plannedCourseCount, backupCourseCount, scheduleOptionCount }) =>
+        `${termLabel}：${plannedCourseCount} 门计划 · ${backupCourseCount} 门备选 · ${scheduleOptionCount} 个排课选项`,
     },
     trustSummary: {
       title: '可信度摘要',
@@ -1249,9 +1379,30 @@ const TEXT: Record<ResolvedUiLanguage, UiText> = {
         `课程 ${courses} · 资料 ${resources} · 作业 ${assignments} · 公告 ${announcements} · 成绩 ${grades} · 消息 ${messages} · 事件 ${events}`,
     },
     askAi: {
-      title: '问 AI',
+      title: '围绕这张工作台来问 AI',
       description:
         'AI 在这里更像学习副驾驶，专门解释当前的专注队列、本周负荷、变化账本和最近更新。它只吃结构化工作台结果，不碰网页和 DOM。',
+      runtimeSummary: '当前运行时',
+      whatAiCanSee: 'AI 当前能看见什么',
+      whatAiCannotDo: 'AI 当前不能做什么',
+      guardrailsTitle: '学业安全护栏',
+      manualOnlyBadge: '仅手动',
+      defaultDisabledBadge: '默认关闭',
+      redZoneDescription:
+        'Register.UW、Notify.UW、抢位监控和与注册相关的自动轮询都不在当前产品路径里。如果你真要继续，只能手动回到原站点。',
+      advancedMaterialTitle: '高级课程材料分析',
+      advancedMaterialDescription:
+        'raw course files、lecture slides、instructor-authored notes、exams、quizzes、assignment PDFs 和 solution documents 默认都不会进入 AI 路径；除非后续合同把它们提升成按课程显式 opt-in 的独立能力。',
+      advancedMaterialOptInSummary:
+        '当前唯一允许的高级路径，是你自己按课程显式开启，并手工粘贴一段摘录给 AI。Campus Copilot 仍然不会替你抓原始文件或上传 raw materials。',
+      advancedMaterialEnableLabel: '为单门课程开启摘录分析',
+      advancedMaterialCourseLabel: '选择要 opt-in 的课程',
+      advancedMaterialCoursePlaceholder: '先选择一门当前可见课程',
+      advancedMaterialExcerptLabel: '粘贴你要分析的摘录',
+      advancedMaterialExcerptPlaceholder:
+        '只粘贴你明确想分析的那一段，不要依赖隐藏文件、原始下载内容，或你无权使用的课程材料。',
+      advancedMaterialAcknowledgement:
+        '我确认这段摘录只对应我自己的课程上下文，而且是我为这门课主动开启；版权、课程政策和使用责任由我自己承担。',
       structuredInputs: '结构化输入',
       structuredInputsDescription:
         '每次回答都会明确建立在下面这张学习桌面的事实之上，不会偷偷读取网页、cookie 或隐藏浏览器上下文。',
@@ -1267,7 +1418,13 @@ const TEXT: Record<ResolvedUiLanguage, UiText> = {
       provider: '服务商',
       model: '模型',
       question: '问题',
+      questionBox: '提问框',
       suggestedPrompts: '建议问题',
+      answerWithCitations: '带引用的回答',
+      advancedRuntimeSettings: '高级运行时设置',
+      advancedRuntimeDescription:
+        '服务商、模型和 Switchyard 控件都下沉到这里，作为运行时细节存在。第一屏主角应该始终是学习工作台，不是调参面板。',
+      uncitedAnswerWarning: '需要引用',
       suggestions: {
         nextStep: '我今天现在最该先做什么，为什么？',
         recentChanges: '最近一次同步之后，有哪些变化值得我优先注意？',
@@ -1285,14 +1442,29 @@ const TEXT: Record<ResolvedUiLanguage, UiText> = {
       citations: '引用',
     },
     popup: {
-      quickExport: '快速导出',
+      pulseSummaryTitle: '脉冲摘要',
+      pulseSummaryDescription: '把它当体温计，不当第二块仪表盘。先看最小但有用的事实，再决定要不要进完整工作台。',
+      fastActionsTitle: '快速动作',
+      fastActionsDescription: 'Popup 里只保留三步诚实路径：打开完整工作台、同步当前站点、导出当前切片。',
+      latestReceipt: '最近收据',
+      noRecentReceipt: '还没有同步收据。',
+      quickPulse: '快速脉冲导出',
+      quickPulseDescription: '把它当成体温计用。先拿走一小片工作台结果，再进入侧边栏看完整学习桌面。',
+      readOnlyBadge: '只读',
       weeklyAssignments: '本周作业',
+      weeklyAssignmentsDescription: '把本周作业这条短脉冲带走，方便记到笔记或计划里。',
       recentUpdates: '最近更新',
+      recentUpdatesDescription: '先抓最近变化，再决定要不要打开完整工作台。',
       allDeadlines: '全部截止日期',
+      allDeadlinesDescription: '当你需要完整时间线时，拉一份全量截止日期清单。',
       focusQueue: '专注队列',
+      focusQueueDescription: '导出最该先处理的顺序，而不是整张桌面。',
       weeklyLoad: '本周负荷',
+      weeklyLoadDescription: '快速带走这一周的负荷快照，不必展开完整工作台。',
       changeJournal: '变化账本',
+      changeJournalDescription: '把最近发生的变化导出来，方便离线扫一眼。',
       currentView: '当前视图',
+      currentViewDescription: '直接导出你眼前这块工作台切片。',
     },
     options: {
       siteConfiguration: '站点配置',

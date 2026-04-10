@@ -3,6 +3,7 @@ export const SITE_MCP_BINARIES = {
   gradescope: 'campus-copilot-mcp-gradescope',
   edstem: 'campus-copilot-mcp-edstem',
   myuw: 'campus-copilot-mcp-myuw',
+  'time-schedule': 'campus-copilot-mcp-time-schedule',
 };
 
 export const SITE_MCP_START_SCRIPTS = {
@@ -10,6 +11,7 @@ export const SITE_MCP_START_SCRIPTS = {
   gradescope: 'start:gradescope',
   edstem: 'start:edstem',
   myuw: 'start:myuw',
+  'time-schedule': 'start:time-schedule',
 };
 
 export function listSupportedSiteMcpServers() {

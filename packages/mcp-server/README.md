@@ -111,6 +111,13 @@ docker run --rm -p 8787:8787 campus-copilot-api:local
 - not a hosted MCP service
 - not a hosted API
 - not a live-browser control plane
+- not a campus-site mutation surface
+- not a registration-automation surface
+- not a raw course-file AI upload surface
+
+Use the same academic safety contract here as everywhere else:
+
+- [`../../docs/17-academic-expansion-and-safety-contract.md`](../../docs/17-academic-expansion-and-safety-contract.md)
 
 ## See also
 

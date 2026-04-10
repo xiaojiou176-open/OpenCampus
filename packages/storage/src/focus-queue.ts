@@ -13,13 +13,13 @@ import {
   type FocusQueueItem,
   type LocalEntityOverlay,
   type SyncState,
-} from './contracts';
-import { campusCopilotDb, type CampusCopilotDB } from './db';
+} from './contracts.ts';
+import { campusCopilotDb, type CampusCopilotDB } from './db.ts';
 import {
   buildSiteSyncContext,
   formatBlockedResource,
   formatReasonDetail,
-} from './focus-queue-shared';
+} from './focus-queue-shared.ts';
 import {
   buildRecentChangeMap,
   compareFocusQueueItems,
@@ -34,7 +34,7 @@ import {
   isWithinUpcomingHours,
   makePriorityReason,
   toEntityRef,
-} from './storage-shared';
+} from './storage-shared.ts';
 
 function buildAssignmentFocusItem(
   assignment: Assignment,

@@ -39,7 +39,7 @@ import {
 import type { ChangeEvent, ImportedWorkbenchSnapshot, SyncRun } from '@campus-copilot/storage';
 export type { ImportedWorkbenchSnapshot } from '@campus-copilot/storage';
 
-export const SnapshotSiteSchema = z.enum(['all', 'canvas', 'gradescope', 'edstem', 'myuw']);
+export const SnapshotSiteSchema = z.enum(['all', 'canvas', 'gradescope', 'edstem', 'myuw', 'time-schedule']);
 export type SnapshotSite = z.infer<typeof SnapshotSiteSchema>;
 
 export const CampusClientProviderSchema = z.union([ProviderIdSchema, z.literal('auto')]);

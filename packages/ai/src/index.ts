@@ -21,11 +21,119 @@ export type AiRuntimeMode = z.infer<typeof AiRuntimeModeSchema>;
 export const AiRuntimePathSchema = z.enum(['direct', 'switchyard']);
 export type AiRuntimePath = z.infer<typeof AiRuntimePathSchema>;
 
+export const AcademicRedZoneSurfaceSchema = z.enum([
+  'register-uw',
+  'notify-uw',
+  'registration-related-resources',
+  'seat-watcher-waitlist-polling',
+  'add-drop-submission',
+  'seat-swap-hold-seat',
+  'registration-query-loop',
+]);
+export type AcademicRedZoneSurface = z.infer<typeof AcademicRedZoneSurfaceSchema>;
+
+export const AcademicRedZoneHardStopSchema = z
+  .object({
+    surface: AcademicRedZoneSurfaceSchema,
+    title: z.literal('Not supported in the current product path'),
+    reason: z.literal('This surface crosses the current read-only academic safety boundary.'),
+    actionLabel: z.literal('Registration automation stays off'),
+    manualOnlyNote: z.literal('Open the original site if you need to continue manually.'),
+    docsLabel: z.literal('Academic Safety Contract'),
+  })
+  .strict();
+export type AcademicRedZoneHardStop = z.infer<typeof AcademicRedZoneHardStopSchema>;
+
+export const AdvancedMaterialAnalysisGuardSchema = z
+  .object({
+    status: z.literal('default_disabled'),
+    enabled: z.literal(false),
+    toggleLabel: z.literal('Advanced material analysis'),
+    note: z.literal(
+      'Default off. Raw course files, lecture slides, instructor-authored notes, exams, quizzes, assignment PDFs, and solution documents stay outside the default AI path.',
+    ),
+    requirements: z
+      .tuple([
+        z.literal('explicit per-course opt-in'),
+        z.literal('separate UX'),
+        z.literal('separate review'),
+        z.literal('user-responsibility language'),
+      ]),
+  })
+  .strict();
+export type AdvancedMaterialAnalysisGuard = z.infer<typeof AdvancedMaterialAnalysisGuardSchema>;
+
+export const AdvancedMaterialAnalysisDefaultSchema = z
+  .object({
+    enabled: z.literal(false),
+    policy: z.literal('default_disabled'),
+  })
+  .strict();
+export type AdvancedMaterialAnalysisDefault = z.infer<typeof AdvancedMaterialAnalysisDefaultSchema>;
+
+export const AdvancedMaterialAnalysisPerCourseOptInSchema = z
+  .object({
+    enabled: z.literal(true),
+    policy: z.literal('per_course_opt_in'),
+    courseId: z.string().trim().min(1),
+    courseLabel: z.string().trim().min(1),
+    excerpt: z.string().trim().min(1),
+    userAcknowledgedResponsibility: z.literal(true),
+  })
+  .strict();
+export type AdvancedMaterialAnalysisPerCourseOptIn = z.infer<typeof AdvancedMaterialAnalysisPerCourseOptInSchema>;
+
+export const AdvancedMaterialAnalysisRequestSchema = z.union([
+  AdvancedMaterialAnalysisDefaultSchema,
+  AdvancedMaterialAnalysisPerCourseOptInSchema,
+]);
+export type AdvancedMaterialAnalysisRequest = z.infer<typeof AdvancedMaterialAnalysisRequestSchema>;
+
+const DEFAULT_ADVANCED_MATERIAL_ANALYSIS: AdvancedMaterialAnalysisDefault = {
+  enabled: false,
+  policy: 'default_disabled',
+};
+
+export const AcademicRedZoneUiGuardSchema = z
+  .object({
+    surface: AcademicRedZoneSurfaceSchema,
+    surfaceLabel: z.string().trim().min(1),
+    title: z.literal('Not supported in the current product path'),
+    reason: z.literal('This surface crosses the current read-only academic safety boundary.'),
+    actionLabel: z.literal('Registration automation stays off'),
+    manualOnlyNote: z.literal('Open the original site if you need to continue manually.'),
+    docsLabel: z.literal('Academic Safety Contract'),
+    docsPath: z.literal('/docs/17-academic-expansion-and-safety-contract.md'),
+    manualUrl: z.string().url().optional(),
+    ctaDisabled: z.literal(true),
+    manualPathOnly: z.literal(true),
+  })
+  .strict();
+export type AcademicRedZoneUiGuard = z.infer<typeof AcademicRedZoneUiGuardSchema>;
+
+export const AcademicAiCallerGuardrailsSchema = z
+  .object({
+    redZone: z
+      .object({
+        primaryHardStop: AcademicRedZoneUiGuardSchema,
+        summary: z.literal(
+          'Register.UW, Notify.UW, seat watching, and registration-related polling stay outside the current product path.',
+        ),
+        badge: z.literal('manual_only'),
+      })
+      .strict(),
+    advancedMaterial: AdvancedMaterialAnalysisGuardSchema,
+  })
+  .strict();
+export type AcademicAiCallerGuardrails = z.infer<typeof AcademicAiCallerGuardrailsSchema>;
+
 export const ToolNameSchema = z.enum([
   'get_today_snapshot',
   'get_recent_updates',
   'get_priority_alerts',
   'export_current_view',
+  'get_planning_substrates',
+  'get_opted_in_course_material_excerpt',
 ]);
 export type ToolName = z.infer<typeof ToolNameSchema>;
 
@@ -102,6 +210,7 @@ export const AiRuntimeRequestSchema = z.object({
   question: z.string().min(1),
   switchyardProvider: SwitchyardRuntimeProviderSchema.optional(),
   switchyardLane: SwitchyardLaneSchema.optional(),
+  advancedMaterialAnalysis: AdvancedMaterialAnalysisRequestSchema.default(DEFAULT_ADVANCED_MATERIAL_ANALYSIS),
   toolResults: z.array(ToolResultSchema).default([]),
 });
 export type AiRuntimeRequest = z.infer<typeof AiRuntimeRequestSchema>;
@@ -114,6 +223,7 @@ export const CampusAiAskRequestSchema = z
     runtimeMode: AiRuntimeModeSchema.default('switchyard_first'),
     switchyardProvider: SwitchyardRuntimeProviderSchema.optional(),
     lane: SwitchyardLaneSchema.optional(),
+    advancedMaterialAnalysis: AdvancedMaterialAnalysisRequestSchema.default(DEFAULT_ADVANCED_MATERIAL_ANALYSIS),
   })
   .strict();
 export type CampusAiAskRequest = z.infer<typeof CampusAiAskRequestSchema>;
@@ -167,6 +277,61 @@ export interface ResolvedAiAnswer {
   structuredAnswer?: AiStructuredAnswer;
   citationCoverage: AiCitationCoverage;
 }
+
+export interface AiMaterialBoundaryVerdict {
+  allowed: boolean;
+  matchedInputs: string[];
+  denialReason?: string;
+}
+
+const ACADEMIC_RED_ZONE_HARD_STOP_COPY = {
+  title: 'Not supported in the current product path',
+  reason: 'This surface crosses the current read-only academic safety boundary.',
+  actionLabel: 'Registration automation stays off',
+  manualOnlyNote: 'Open the original site if you need to continue manually.',
+  docsLabel: 'Academic Safety Contract',
+} as const;
+
+const ACADEMIC_RED_ZONE_DOC_PATH = '/docs/17-academic-expansion-and-safety-contract.md' as const;
+
+const ACADEMIC_RED_ZONE_SURFACE_LABELS: Record<AcademicRedZoneSurface, string> = {
+  'register-uw': 'Register.UW',
+  'notify-uw': 'Notify.UW',
+  'registration-related-resources': 'Registration-related resources',
+  'seat-watcher-waitlist-polling': 'Seat watcher / waitlist polling',
+  'add-drop-submission': 'Add/drop submission',
+  'seat-swap-hold-seat': 'Seat swap / hold-seat helpers',
+  'registration-query-loop': 'Registration-related query loop',
+};
+
+const ACADEMIC_AI_CALLER_RED_ZONE_SUMMARY =
+  'Register.UW, Notify.UW, seat watching, and registration-related polling stay outside the current product path.';
+
+const ADVANCED_MATERIAL_ANALYSIS_GUARD = {
+  status: 'default_disabled',
+  enabled: false,
+  toggleLabel: 'Advanced material analysis',
+  note: 'Default off. Raw course files, lecture slides, instructor-authored notes, exams, quizzes, assignment PDFs, and solution documents stay outside the default AI path.',
+  requirements: [
+    'explicit per-course opt-in',
+    'separate UX',
+    'separate review',
+    'user-responsibility language',
+  ],
+} as const;
+
+const MATERIAL_REQUEST_PATTERNS = [
+  { label: 'raw course files', pattern: /\b(raw\s+)?course files?\b/i },
+  { label: 'lecture slides', pattern: /\blecture slides?\b|课件|幻灯片/iu },
+  { label: 'instructor-authored notes', pattern: /\binstructor-authored notes?\b|老师(?:笔记|讲义)|教师(?:笔记|讲义)/iu },
+  { label: 'assignment PDFs', pattern: /\bassignment pdfs?\b|作业\s*pdf/iu },
+  { label: 'solution documents', pattern: /\bsolution documents?\b|\bsolution pdfs?\b|题解|答案文档/iu },
+  { label: 'exam files', pattern: /\bexam (pdfs?|files?)\b|试卷(?:文件|pdf)?/iu },
+  { label: 'quiz files', pattern: /\bquiz (pdfs?|files?)\b|测验(?:文件|pdf)?/iu },
+] as const;
+
+const ADVANCED_MATERIAL_ANALYSIS_DISABLED_MESSAGE =
+  'Advanced material analysis is not supported in the current product path.';
 
 function extractCodeFenceBody(raw: string) {
   const openingFenceIndex = raw.indexOf('```');
@@ -330,18 +495,118 @@ export function getToolDefinitions() {
   return [...TOOL_DEFINITIONS];
 }
 
-export function buildAiRuntimeMessages(input: AiRuntimeRequest): AiRuntimeMessages {
+export function getAcademicRedZoneHardStop(surface: AcademicRedZoneSurface): AcademicRedZoneHardStop {
+  return AcademicRedZoneHardStopSchema.parse({
+    surface,
+    ...ACADEMIC_RED_ZONE_HARD_STOP_COPY,
+  });
+}
+
+export function getAcademicRedZoneHardStops(
+  surfaces: readonly AcademicRedZoneSurface[],
+): AcademicRedZoneHardStop[] {
+  return z.array(AcademicRedZoneSurfaceSchema).parse(surfaces).map((surface) => getAcademicRedZoneHardStop(surface));
+}
+
+export function getAdvancedMaterialAnalysisGuard(): AdvancedMaterialAnalysisGuard {
+  return AdvancedMaterialAnalysisGuardSchema.parse(ADVANCED_MATERIAL_ANALYSIS_GUARD);
+}
+
+export function getAcademicRedZoneUiGuard(surface: AcademicRedZoneSurface): AcademicRedZoneUiGuard {
+  const sharedGuard = getAcademicRedZoneHardStop(surface);
+  return AcademicRedZoneUiGuardSchema.parse({
+    ...sharedGuard,
+    surfaceLabel: ACADEMIC_RED_ZONE_SURFACE_LABELS[surface],
+    docsPath: ACADEMIC_RED_ZONE_DOC_PATH,
+    ctaDisabled: true,
+    manualPathOnly: true,
+  });
+}
+
+export function getAcademicRedZoneUiGuards(
+  surfaces: readonly AcademicRedZoneSurface[],
+): AcademicRedZoneUiGuard[] {
+  return z.array(AcademicRedZoneSurfaceSchema).parse(surfaces).map((surface) => getAcademicRedZoneUiGuard(surface));
+}
+
+export function getAcademicAiCallerGuardrails(): AcademicAiCallerGuardrails {
+  return AcademicAiCallerGuardrailsSchema.parse({
+    redZone: {
+      primaryHardStop: getAcademicRedZoneUiGuard('register-uw'),
+      summary: ACADEMIC_AI_CALLER_RED_ZONE_SUMMARY,
+      badge: 'manual_only',
+    },
+    advancedMaterial: getAdvancedMaterialAnalysisGuard(),
+  });
+}
+
+export function getAiMaterialBoundaryVerdict(
+  question: string,
+  advancedMaterialAnalysis: AdvancedMaterialAnalysisRequest = DEFAULT_ADVANCED_MATERIAL_ANALYSIS,
+): AiMaterialBoundaryVerdict {
+  const matchedInputs = MATERIAL_REQUEST_PATTERNS.filter(({ pattern }) => pattern.test(question)).map(
+    ({ label }) => label,
+  );
+
+  if (matchedInputs.length === 0) {
+    return {
+      allowed: true,
+      matchedInputs: [],
+    };
+  }
+
+  const uniqueInputs = Array.from(new Set(matchedInputs));
+
+  if (advancedMaterialAnalysis.enabled) {
+    return {
+      allowed: true,
+      matchedInputs: uniqueInputs,
+    };
+  }
+
+  return {
+    allowed: false,
+    matchedInputs: uniqueInputs,
+    denialReason: `${ADVANCED_MATERIAL_ANALYSIS_DISABLED_MESSAGE} Matched raw-material request categories: ${uniqueInputs.join(', ')}.`,
+  };
+}
+
+export function assertAiQuestionWithinAcademicBoundary(
+  question: string,
+  advancedMaterialAnalysis: AdvancedMaterialAnalysisRequest = DEFAULT_ADVANCED_MATERIAL_ANALYSIS,
+) {
+  const verdict = getAiMaterialBoundaryVerdict(question, advancedMaterialAnalysis);
+  if (verdict.allowed) {
+    return;
+  }
+
+  throw new Error(verdict.denialReason);
+}
+
+export function buildAiRuntimeMessages(input: z.input<typeof AiRuntimeRequestSchema>): AiRuntimeMessages {
   const request = AiRuntimeRequestSchema.parse(input);
+  assertAiQuestionWithinAcademicBoundary(request.question, request.advancedMaterialAnalysis);
   const toolSummary =
     request.toolResults.length === 0
       ? 'No tool results have been provided yet.'
       : request.toolResults.map((result) => `- ${result.name}: ${JSON.stringify(result.payload)}`).join('\n');
+  const advancedMaterialPromptLines = request.advancedMaterialAnalysis.enabled
+    ? [
+        `The user explicitly opted in to advanced material analysis for the course "${request.advancedMaterialAnalysis.courseLabel}".`,
+        'Use only the supplied user-pasted excerpt for that one course; do not infer, fetch, upload, or request any additional raw course files, URLs, or hidden page content.',
+        "Keep the answer scoped to what the excerpt says and make any uncertainty explicit in 'trustGaps'.",
+      ]
+    : [
+        'Never request or consume raw course files, lecture slides, instructor-authored notes, exams, quizzes, assignment PDFs, solution documents, or copyright-sensitive or sharing-unclear course materials.',
+        'Advanced material analysis stays default-disabled; do not promote raw course-material analysis unless a future per-course opt-in contract explicitly enables it.',
+      ];
 
   return {
     systemPrompt: [
       'You are Campus Copilot AI.',
       'You operate strictly after structure: use only unified schema, read-model, and export results.',
       'Never request raw DOM, raw HTML, cookies, or site-specific payloads.',
+      ...advancedMaterialPromptLines,
       'Return a JSON object with keys "summary", "bullets", "nextActions", "trustGaps", and "citations".',
       'Use "nextActions" for concrete operator next steps and "trustGaps" for uncertainty, blockers, or evidence gaps. Use empty arrays when there is nothing to list.',
       'Each citation must include "entityId", "kind", "site", "title", and optional "url".',

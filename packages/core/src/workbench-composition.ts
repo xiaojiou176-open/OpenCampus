@@ -1,4 +1,6 @@
 import {
+  type AiRuntimeRequest,
+  type AdvancedMaterialAnalysisRequest,
   buildAiRuntimeMessages,
   createProviderProxyRequest,
   type ProviderId,
@@ -15,6 +17,7 @@ import type {
   TodaySnapshot,
   WeeklyLoadEntry,
   WorkbenchFilter,
+  WorkbenchView,
 } from '@campus-copilot/storage';
 
 export interface WorkbenchPresentationOverrides {
@@ -51,6 +54,7 @@ export interface BuildWorkbenchAiProxyRequestArgs {
   switchyardProvider?: SwitchyardRuntimeProvider;
   switchyardLane?: SwitchyardLane;
   question: string;
+  advancedMaterialAnalysis?: AdvancedMaterialAnalysisRequest;
   todaySnapshot: TodaySnapshot;
   recentUpdates: TimelineEntry[];
   alerts: Alert[];
@@ -59,6 +63,8 @@ export interface BuildWorkbenchAiProxyRequestArgs {
   syncRuns: SyncRun[];
   recentChanges: ChangeEvent[];
   currentViewExport: ExportArtifact;
+  planningSubstrates?: WorkbenchView['planningSubstrates'];
+  workbenchView?: Pick<WorkbenchView, 'planningSubstrates'>;
   presentation?: Omit<WorkbenchPresentationOverrides, 'viewTitle'>;
 }
 
@@ -108,40 +114,64 @@ export function buildWorkbenchExportInput(args: BuildWorkbenchExportInputArgs): 
 
 export function buildWorkbenchAiProxyRequest(args: BuildWorkbenchAiProxyRequestArgs) {
   const presentation = args.presentation;
+  const advancedMaterialAnalysis = args.advancedMaterialAnalysis ?? {
+    enabled: false,
+    policy: 'default_disabled',
+  };
+  const toolResults: AiRuntimeRequest['toolResults'] = [
+    {
+      name: 'get_today_snapshot' as const,
+      payload: args.todaySnapshot,
+    },
+    {
+      name: 'get_recent_updates' as const,
+      payload: presentation?.recentUpdates ?? args.recentUpdates,
+    },
+    {
+      name: 'get_priority_alerts' as const,
+      payload: presentation?.alerts ?? args.alerts,
+    },
+    {
+      name: 'export_current_view' as const,
+      payload: {
+        filename: args.currentViewExport.filename,
+        format: args.currentViewExport.format,
+        content: args.currentViewExport.content,
+        decisionContext: {
+          focusQueue: presentation?.focusQueue ?? args.focusQueue,
+          weeklyLoad: presentation?.weeklyLoad ?? args.weeklyLoad,
+          syncRuns: args.syncRuns,
+          recentChanges: presentation?.changeEvents ?? args.recentChanges,
+        },
+      },
+    },
+    {
+      name: 'get_planning_substrates' as const,
+      payload: args.planningSubstrates ?? args.workbenchView?.planningSubstrates ?? [],
+    },
+  ];
+
+  if (advancedMaterialAnalysis.enabled) {
+    toolResults.push({
+      name: 'get_opted_in_course_material_excerpt' as const,
+      payload: {
+        courseId: advancedMaterialAnalysis.courseId,
+        courseLabel: advancedMaterialAnalysis.courseLabel,
+        excerpt: advancedMaterialAnalysis.excerpt,
+        policy: advancedMaterialAnalysis.policy,
+        userAcknowledgedResponsibility: advancedMaterialAnalysis.userAcknowledgedResponsibility,
+      },
+    });
+  }
+
   const runtimeMessages = buildAiRuntimeMessages({
     provider: args.provider,
     model: args.model,
     switchyardProvider: args.switchyardProvider,
     switchyardLane: args.switchyardLane,
     question: args.question,
-    toolResults: [
-      {
-        name: 'get_today_snapshot',
-        payload: args.todaySnapshot,
-      },
-      {
-        name: 'get_recent_updates',
-        payload: presentation?.recentUpdates ?? args.recentUpdates,
-      },
-      {
-        name: 'get_priority_alerts',
-        payload: presentation?.alerts ?? args.alerts,
-      },
-      {
-        name: 'export_current_view',
-        payload: {
-          filename: args.currentViewExport.filename,
-          format: args.currentViewExport.format,
-          content: args.currentViewExport.content,
-          decisionContext: {
-            focusQueue: presentation?.focusQueue ?? args.focusQueue,
-            weeklyLoad: presentation?.weeklyLoad ?? args.weeklyLoad,
-            syncRuns: args.syncRuns,
-            recentChanges: presentation?.changeEvents ?? args.recentChanges,
-          },
-        },
-      },
-    ],
+    advancedMaterialAnalysis,
+    toolResults,
   });
 
   return createProviderProxyRequest({

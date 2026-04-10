@@ -147,11 +147,87 @@ describe('ai request wiring', () => {
 
     expect(request.route).toBe('/api/providers/openai/chat');
     expect(request.body.messages[0]?.content).toContain('Never request raw DOM');
+    expect(request.body.messages[0]?.content).toContain('raw course files');
+    expect(request.body.messages[0]?.content).toContain('Advanced material analysis stays default-disabled');
     expect(request.body.messages[1]?.content).toContain('Homework 5 is due soon');
     expect(request.body.messages[1]?.content).toContain('Due date changed from empty to empty.');
     expect(request.body.messages[1]?.content).toContain('current-view.md');
     expect(request.body.messages[1]?.content).toContain('Finish this before lunch');
     expect(request.body.messages[1]?.content).toContain('"syncRuns"');
     expect(request.body.messages[1]?.content).toContain('"changeCount":2');
+  });
+
+  it('rejects raw material questions before the extension can proxy them to the shared AI seam', () => {
+    expect(() =>
+      buildAiProxyRequest({
+        provider: 'openai',
+        model: 'gpt-4.1-mini',
+        uiLanguage: 'en',
+        question: 'Please summarize my lecture slides and assignment PDF.',
+        todaySnapshot: {
+          totalAssignments: 0,
+          dueSoonAssignments: 0,
+          recentUpdates: 0,
+          newGrades: 0,
+          riskAlerts: 0,
+          syncedSites: 0,
+        },
+        recentUpdates: [],
+        alerts: [],
+        focusQueue: [],
+        weeklyLoad: [],
+        syncRuns: [],
+        recentChanges: [],
+        currentViewExport: {
+          preset: 'current_view',
+          format: 'markdown',
+          filename: 'current-view.md',
+          mimeType: 'text/markdown',
+          content: '# Current view',
+        },
+      }),
+    ).toThrow('Advanced material analysis is not supported in the current product path.');
+  });
+
+  it('passes a per-course opt-in excerpt through the shared AI seam', () => {
+    const request = buildAiProxyRequest({
+      provider: 'gemini',
+      model: 'gemini-2.5-flash',
+      uiLanguage: 'en',
+      question: 'Please summarize these lecture slides for the midterm.',
+      advancedMaterialAnalysis: {
+        enabled: true,
+        policy: 'per_course_opt_in',
+        courseId: 'canvas:course:1',
+        courseLabel: 'Canvas · CSE 142',
+        excerpt: 'The lecture focuses on asymptotic notation and binary search.',
+        userAcknowledgedResponsibility: true,
+      },
+      todaySnapshot: {
+        totalAssignments: 0,
+        dueSoonAssignments: 0,
+        recentUpdates: 0,
+        newGrades: 0,
+        riskAlerts: 0,
+        syncedSites: 0,
+      },
+      recentUpdates: [],
+      alerts: [],
+      focusQueue: [],
+      weeklyLoad: [],
+      syncRuns: [],
+      recentChanges: [],
+      currentViewExport: {
+        preset: 'current_view',
+        format: 'markdown',
+        filename: 'current-view.md',
+        mimeType: 'text/markdown',
+        content: '# Current view',
+      },
+    });
+
+    expect(request.body.messages[0]?.content).toContain('explicitly opted in to advanced material analysis');
+    expect(request.body.messages[1]?.content).toContain('Canvas · CSE 142');
+    expect(request.body.messages[1]?.content).toContain('binary search');
   });
 });

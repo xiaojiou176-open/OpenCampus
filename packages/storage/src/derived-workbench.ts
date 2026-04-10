@@ -5,16 +5,17 @@ import {
   type TodaySnapshot,
   type WorkbenchFilter,
   type WorkbenchView,
-} from './contracts';
-import { campusCopilotDb, type CampusCopilotDB } from './db';
-import { getPriorityAlerts, getRecentUpdates } from './derived-alerts-and-updates';
+} from './contracts.ts';
+import { campusCopilotDb, type CampusCopilotDB } from './db.ts';
+import { getPriorityAlerts, getRecentUpdates } from './derived-alerts-and-updates.ts';
 import {
   isAssignmentOpen,
   isEntryUnseen,
   isWithinHours,
   isWithinUpcomingHours,
   matchesSiteFilter,
-} from './storage-shared';
+} from './storage-shared.ts';
+import { getPlanningSubstratesBySource } from './planning-substrate.ts';
 
 export async function getTodaySnapshot(now: string, db: CampusCopilotDB = campusCopilotDb): Promise<TodaySnapshot> {
   const [assignments, grades, syncStates, recentUpdates, alerts] = await Promise.all([
@@ -46,17 +47,19 @@ export async function getWorkbenchView(
   db: CampusCopilotDB = campusCopilotDb,
 ): Promise<WorkbenchView> {
   const parsedFilters = WorkbenchFilterSchema.parse(filters);
-  const [resources, assignments, announcements, messages, grades, events, alerts, recentUpdates, entityStates] = await Promise.all([
-    db.resources.toArray(),
-    db.assignments.toArray(),
-    db.announcements.toArray(),
-    db.messages.toArray(),
-    db.grades.toArray(),
-    db.events.toArray(),
-    getPriorityAlerts(now, db),
-    getRecentUpdates(now, 20, db),
-    db.entity_state.toArray(),
-  ]);
+  const [resources, assignments, announcements, messages, grades, events, alerts, recentUpdates, planningSubstrates, entityStates] =
+    await Promise.all([
+      db.resources.toArray(),
+      db.assignments.toArray(),
+      db.announcements.toArray(),
+      db.messages.toArray(),
+      db.grades.toArray(),
+      db.events.toArray(),
+      getPriorityAlerts(now, db),
+      getRecentUpdates(now, 20, db),
+      parsedFilters.site === 'all' ? getPlanningSubstratesBySource('myplan', db) : Promise.resolve([]),
+      db.entity_state.toArray(),
+    ]);
 
   const stateMap = new Map(entityStates.map((state) => [state.entityId, state]));
   const filteredRecentUpdates = recentUpdates.items.filter((entry) => {
@@ -67,6 +70,9 @@ export async function getWorkbenchView(
 
     return parsedFilters.onlyUnseenUpdates ? isEntryUnseen(entry, stateMap) : true;
   });
+  const orderedPlanningSubstrates = [...planningSubstrates].sort((left, right) =>
+    right.capturedAt.localeCompare(left.capturedAt),
+  );
 
   return WorkbenchViewSchema.parse({
     filters: parsedFilters,
@@ -77,6 +83,7 @@ export async function getWorkbenchView(
     grades: matchesSiteFilter(grades, parsedFilters.site),
     events: matchesSiteFilter(events, parsedFilters.site),
     alerts: matchesSiteFilter(alerts, parsedFilters.site),
+    planningSubstrates: orderedPlanningSubstrates,
     recentUpdates: {
       items: filteredRecentUpdates,
       unseenCount: filteredRecentUpdates.filter((entry) => isEntryUnseen(entry, stateMap)).length,

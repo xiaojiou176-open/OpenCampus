@@ -3,13 +3,19 @@ import type { Alert, Announcement, Assignment, Event, Grade, Message, Resource, 
 import type {
   ChangeEvent,
   FocusQueueItem,
+  PlanningSubstrateOwner,
   RecentUpdatesFeed,
   SyncRun,
   TodaySnapshot,
   WeeklyLoadEntry,
   WorkbenchFilter,
 } from '@campus-copilot/storage';
-import type { ProviderId, SwitchyardLane, SwitchyardRuntimeProvider } from '@campus-copilot/ai';
+import type {
+  AdvancedMaterialAnalysisRequest,
+  ProviderId,
+  SwitchyardLane,
+  SwitchyardRuntimeProvider,
+} from '@campus-copilot/ai';
 import { buildAiProxyRequest } from './ai-request';
 import { buildWorkbenchExportInput } from './export-input';
 import type { ResolvedUiLanguage } from './i18n';
@@ -34,6 +40,7 @@ export interface SurfaceCompositionState {
   workbenchEvents: Event[];
   priorityAlerts: Alert[];
   focusQueue: FocusQueueItem[];
+  planningSubstrates: PlanningSubstrateOwner[];
   weeklyLoad: WeeklyLoadEntry[];
   latestSyncRuns: SyncRun[];
   recentChangeEvents: ChangeEvent[];
@@ -80,6 +87,7 @@ export function buildSurfaceAiRequest(input: {
   switchyardProvider?: SwitchyardRuntimeProvider;
   switchyardLane?: SwitchyardLane;
   question: string;
+  advancedMaterialAnalysis?: AdvancedMaterialAnalysisRequest;
   todaySnapshot: TodaySnapshot;
   state: SurfaceCompositionState;
 }): {
@@ -101,6 +109,7 @@ export function buildSurfaceAiRequest(input: {
       switchyardLane: input.switchyardLane,
       uiLanguage: input.state.uiLanguage,
       question: input.question,
+      advancedMaterialAnalysis: input.advancedMaterialAnalysis,
       todaySnapshot: input.todaySnapshot,
       recentUpdates: input.state.currentRecentUpdates?.items ?? [],
       alerts: input.state.currentAlerts,
@@ -108,6 +117,7 @@ export function buildSurfaceAiRequest(input: {
       weeklyLoad: input.state.weeklyLoad,
       syncRuns: input.state.latestSyncRuns,
       recentChanges: input.state.recentChangeEvents,
+      planningSubstrates: input.state.planningSubstrates,
       currentViewExport,
     }),
   };

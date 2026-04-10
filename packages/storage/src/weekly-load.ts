@@ -1,6 +1,6 @@
 import type { EntityRef } from '@campus-copilot/schema';
-import { WeeklyLoadEntrySchema, type WeeklyLoadEntry } from './contracts';
-import { campusCopilotDb, type CampusCopilotDB } from './db';
+import { WeeklyLoadEntrySchema, type WeeklyLoadEntry } from './contracts.ts';
+import { campusCopilotDb, type CampusCopilotDB } from './db.ts';
 import {
   endOfUtcDay,
   isAssignmentOpen,
@@ -11,7 +11,7 @@ import {
   startOfUtcDay,
   toDateKey,
   toEntityRef,
-} from './storage-shared';
+} from './storage-shared.ts';
 
 export async function getWeeklyLoad(now: string, db: CampusCopilotDB = campusCopilotDb): Promise<WeeklyLoadEntry[]> {
   const [assignments, events, overlays] = await Promise.all([

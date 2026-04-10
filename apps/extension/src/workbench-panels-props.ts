@@ -5,6 +5,7 @@ import type { Alert, Announcement, Assignment, EntityKind, Event, Message, Resou
 import type {
   ChangeEvent,
   FocusQueueItem,
+  PlanningSubstrateOwner,
   RecentUpdatesFeed,
   SyncRun,
   TodaySnapshot,
@@ -40,10 +41,12 @@ export interface WorkbenchPanelsProps {
   onSyncSite: (site: Site) => Promise<void>;
   onExport: (preset: ExportPreset) => Promise<void>;
   onOpenConfiguration: () => void;
+  onOpenMainWorkbench?: () => Promise<void>;
   onMarkVisibleUpdatesSeen: () => Promise<void>;
   onExportDiagnostics: () => Promise<void>;
   diagnostics: DiagnosticsSummary;
   focusQueue: FocusQueueItem[];
+  planningSubstrates: PlanningSubstrateOwner[];
   weeklyLoad: WeeklyLoadEntry[];
   priorityAlerts: Alert[];
   criticalAlerts: Alert[];

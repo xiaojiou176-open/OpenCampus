@@ -246,10 +246,54 @@ export const WorkbenchViewSchema = z
     grades: z.array(GradeSchema),
     events: z.array(EventSchema),
     alerts: z.array(AlertSchema),
+    // Planning substrates stay a limited read-only summary lane on the shared workbench,
+    // not a promotion to site-parity or registration semantics.
+    planningSubstrates: z.array(z.lazy(() => PlanningSubstrateOwnerSchema)).default([]),
     recentUpdates: RecentUpdatesFeedSchema,
   })
   .strict();
 export type WorkbenchView = z.infer<typeof WorkbenchViewSchema>;
+
+export const PlanningSubstrateSourceSchema = z.enum(['myplan']);
+export type PlanningSubstrateSource = z.infer<typeof PlanningSubstrateSourceSchema>;
+
+export const PlanningSubstrateFitSchema = z.enum(['derived_planning_substrate']);
+export type PlanningSubstrateFit = z.infer<typeof PlanningSubstrateFitSchema>;
+
+export const PlanningSubstrateTermSummarySchema = z
+  .object({
+    termCode: z.string().min(1),
+    termLabel: z.string().min(1),
+    plannedCourseCount: z.number().int().nonnegative(),
+    backupCourseCount: z.number().int().nonnegative(),
+    scheduleOptionCount: z.number().int().nonnegative(),
+    summary: z.string().min(1).optional(),
+  })
+  .strict();
+export type PlanningSubstrateTermSummary = z.infer<typeof PlanningSubstrateTermSummarySchema>;
+
+export const PlanningSubstrateOwnerSchema = z
+  .object({
+    id: z.string().min(1),
+    source: PlanningSubstrateSourceSchema,
+    fit: PlanningSubstrateFitSchema,
+    readOnly: z.literal(true),
+    capturedAt: IsoDateTimeSchema,
+    planId: z.string().min(1),
+    planLabel: z.string().min(1),
+    lastUpdatedAt: IsoDateTimeSchema.optional(),
+    termCount: z.number().int().nonnegative(),
+    plannedCourseCount: z.number().int().nonnegative(),
+    backupCourseCount: z.number().int().nonnegative(),
+    scheduleOptionCount: z.number().int().nonnegative(),
+    requirementGroupCount: z.number().int().nonnegative(),
+    programExplorationCount: z.number().int().nonnegative(),
+    degreeProgressSummary: z.string().min(1).optional(),
+    transferPlanningSummary: z.string().min(1).optional(),
+    terms: z.array(PlanningSubstrateTermSummarySchema),
+  })
+  .strict();
+export type PlanningSubstrateOwner = z.infer<typeof PlanningSubstrateOwnerSchema>;
 
 export type SiteSnapshotRecords = {
   courses: Course[];

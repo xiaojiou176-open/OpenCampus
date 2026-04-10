@@ -9,8 +9,8 @@ import {
 import {
   RecentUpdatesFeedSchema,
   type RecentUpdatesFeed,
-} from './contracts';
-import { campusCopilotDb, type CampusCopilotDB } from './db';
+} from './contracts.ts';
+import { campusCopilotDb, type CampusCopilotDB } from './db.ts';
 import {
   compareNewest,
   getEventActionAt,
@@ -23,7 +23,7 @@ import {
   makePriorityReason,
   summarizeResourceFailures,
   toEntityRef,
-} from './storage-shared';
+} from './storage-shared.ts';
 
 export async function getPriorityAlerts(now: string, db: CampusCopilotDB = campusCopilotDb): Promise<Alert[]> {
   const [assignments, announcements, messages, grades, events, syncStates, entityStates] = await Promise.all([

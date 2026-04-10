@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const IsoDateTimeSchema = z.string().datetime({ offset: true });
 
-export const SiteSchema = z.enum(['canvas', 'gradescope', 'edstem', 'myuw']);
+export const SiteSchema = z.enum(['canvas', 'gradescope', 'edstem', 'myuw', 'time-schedule']);
 export type Site = z.infer<typeof SiteSchema>;
 
 export const EntityKindSchema = z.enum([

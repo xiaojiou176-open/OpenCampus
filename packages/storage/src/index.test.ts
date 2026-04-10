@@ -17,12 +17,16 @@ import {
   getWorkbenchView,
   getAssignmentsBySite,
   getEntityCounts,
+  getLatestPlanningSubstrateBySource,
+  getPlanningSubstratesBySource,
   getSiteEntityCounts,
   markEntitiesSeen,
   putAnnouncements,
   putAssignments,
+  putPlanningSubstrates,
   putCourses,
   recordSiteSyncError,
+  replacePlanningSubstratesBySource,
   replaceSiteSnapshot,
   upsertLocalEntityOverlay,
 } from './index';
@@ -47,6 +51,7 @@ describe('storage package', () => {
   it('keeps the public barrel explicit and does not leak internal storage helpers', () => {
     expect(storage).toHaveProperty('getFocusQueue');
     expect(storage).toHaveProperty('getPriorityAlerts');
+    expect(storage).toHaveProperty('PlanningSubstrateOwnerSchema');
     expect(storage).toHaveProperty('useWorkbenchView');
     expect(storage).toHaveProperty('putSyncState');
     expect(storage).not.toHaveProperty('compareNewest');
@@ -128,6 +133,164 @@ describe('storage package', () => {
     const assignments = await getAssignmentsBySite('canvas', db);
     expect(assignments).toHaveLength(1);
     expect(assignments[0]?.title).toBe('Homework 2');
+  });
+
+  it('exposes a strict shared planning substrate owner without protected MyPlan fields', () => {
+    const owner = storage.PlanningSubstrateOwnerSchema.parse({
+      id: 'myplan:student-plan',
+      source: 'myplan',
+      fit: 'derived_planning_substrate',
+      readOnly: true,
+      capturedAt: '2026-04-09T18:00:00.000Z',
+      planId: 'student-plan',
+      planLabel: 'Student Plan',
+      termCount: 2,
+      plannedCourseCount: 6,
+      backupCourseCount: 1,
+      scheduleOptionCount: 3,
+      requirementGroupCount: 4,
+      programExplorationCount: 2,
+      degreeProgressSummary: '90 of 180 credits planned or completed',
+      transferPlanningSummary: 'Transfer credits still need manual review.',
+      terms: [
+        {
+          termCode: '2026-spring',
+          termLabel: 'Spring 2026',
+          plannedCourseCount: 3,
+          backupCourseCount: 1,
+          scheduleOptionCount: 2,
+          summary: 'Core major classes stay on track.',
+        },
+      ],
+    });
+
+    expect(owner.fit).toBe('derived_planning_substrate');
+    expect(owner.source).toBe('myplan');
+    expect(owner.readOnly).toBe(true);
+    expect(owner.termCount).toBe(2);
+    expect(owner.terms[0]?.termCode).toBe('2026-spring');
+
+    expect(() =>
+      storage.PlanningSubstrateOwnerSchema.parse({
+        ...owner,
+        registrationHandoff: 'register now',
+      }),
+    ).toThrow();
+
+    expect(() =>
+      storage.PlanningSubstrateOwnerSchema.parse({
+        ...owner,
+        adviserShare: 'share this with adviser',
+      }),
+    ).toThrow();
+  });
+
+  it('persists and replaces shared planning substrates by source', async () => {
+    const springOwner = storage.PlanningSubstrateOwnerSchema.parse({
+      id: 'myplan:student-plan:spring',
+      source: 'myplan',
+      fit: 'derived_planning_substrate',
+      readOnly: true,
+      capturedAt: '2026-04-10T07:00:00.000Z',
+      planId: 'student-plan',
+      planLabel: 'Student Plan',
+      termCount: 1,
+      plannedCourseCount: 3,
+      backupCourseCount: 1,
+      scheduleOptionCount: 2,
+      requirementGroupCount: 4,
+      programExplorationCount: 1,
+      terms: [
+        {
+          termCode: '2026-spring',
+          termLabel: 'Spring 2026',
+          plannedCourseCount: 3,
+          backupCourseCount: 1,
+          scheduleOptionCount: 2,
+        },
+      ],
+    });
+    const autumnOwner = storage.PlanningSubstrateOwnerSchema.parse({
+      ...springOwner,
+      id: 'myplan:student-plan:autumn',
+      capturedAt: '2026-04-10T08:00:00.000Z',
+      termCount: 2,
+      plannedCourseCount: 6,
+      terms: [
+        ...springOwner.terms,
+        {
+          termCode: '2026-autumn',
+          termLabel: 'Autumn 2026',
+          plannedCourseCount: 3,
+          backupCourseCount: 0,
+          scheduleOptionCount: 1,
+        },
+      ],
+    });
+
+    await putPlanningSubstrates([springOwner], db);
+    await expect(getPlanningSubstratesBySource('myplan', db)).resolves.toHaveLength(1);
+
+    await replacePlanningSubstratesBySource('myplan', [autumnOwner], db);
+
+    const records = await getPlanningSubstratesBySource('myplan', db);
+    expect(records).toHaveLength(1);
+    expect(records[0]?.id).toBe('myplan:student-plan:autumn');
+
+    const latest = await getLatestPlanningSubstrateBySource('myplan', db);
+    expect(latest?.capturedAt).toBe('2026-04-10T08:00:00.000Z');
+    expect(latest?.plannedCourseCount).toBe(6);
+  });
+
+  it('surfaces planning substrates only on the shared all-sites workbench view', async () => {
+    const olderOwner = storage.PlanningSubstrateOwnerSchema.parse({
+      id: 'myplan:student-plan:older',
+      source: 'myplan',
+      fit: 'derived_planning_substrate',
+      readOnly: true,
+      capturedAt: '2026-04-10T07:00:00.000Z',
+      planId: 'student-plan',
+      planLabel: 'Student Plan',
+      termCount: 1,
+      plannedCourseCount: 3,
+      backupCourseCount: 1,
+      scheduleOptionCount: 2,
+      requirementGroupCount: 4,
+      programExplorationCount: 1,
+      terms: [],
+    });
+    const newerOwner = storage.PlanningSubstrateOwnerSchema.parse({
+      ...olderOwner,
+      id: 'myplan:student-plan:newer',
+      capturedAt: '2026-04-10T09:00:00.000Z',
+      termCount: 2,
+      plannedCourseCount: 6,
+    });
+
+    await putPlanningSubstrates([olderOwner, newerOwner], db);
+
+    const allSitesView = await getWorkbenchView(
+      '2026-04-10T09:30:00.000Z',
+      {
+        site: 'all',
+        onlyUnseenUpdates: false,
+      },
+      db,
+    );
+    expect(allSitesView.planningSubstrates.map((item) => item.id)).toEqual([
+      'myplan:student-plan:newer',
+      'myplan:student-plan:older',
+    ]);
+
+    const canvasOnlyView = await getWorkbenchView(
+      '2026-04-10T09:30:00.000Z',
+      {
+        site: 'canvas',
+        onlyUnseenUpdates: false,
+      },
+      db,
+    );
+    expect(canvasOnlyView.planningSubstrates).toEqual([]);
   });
 
   it('replaces a site snapshot atomically and tracks site counts', async () => {

@@ -1,12 +1,12 @@
 import { SiteSchema, type Site } from '@campus-copilot/schema';
-import { campusCopilotDb, type CampusCopilotDB } from './db';
+import { campusCopilotDb, type CampusCopilotDB } from './db.ts';
 import {
   EntityCountsSchema,
   SiteEntityCountsSchema,
   type EntityCounts,
   type SiteEntityCounts,
-} from './contracts';
-import { compareNewest } from './storage-shared';
+} from './contracts.ts';
+import { compareNewest } from './storage-shared.ts';
 
 export async function getEntityCounts(db: CampusCopilotDB = campusCopilotDb): Promise<EntityCounts> {
   return EntityCountsSchema.parse({
@@ -43,6 +43,11 @@ export async function getAllSiteEntityCounts(db: CampusCopilotDB = campusCopilot
 export async function getAllAssignments(db: CampusCopilotDB = campusCopilotDb) {
   const assignments = await db.assignments.toArray();
   return assignments.sort((left, right) => compareNewest(left.dueAt, right.dueAt));
+}
+
+export async function getAllCourses(db: CampusCopilotDB = campusCopilotDb) {
+  const courses = await db.courses.toArray();
+  return courses.sort((left, right) => left.title.localeCompare(right.title));
 }
 
 export async function getAllResources(db: CampusCopilotDB = campusCopilotDb) {

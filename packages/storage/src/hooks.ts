@@ -1,10 +1,11 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import type { Site } from '@campus-copilot/schema';
-import { campusCopilotDb, type CampusCopilotDB } from './db';
-import type { WorkbenchFilter } from './contracts';
+import { campusCopilotDb, type CampusCopilotDB } from './db.ts';
+import type { WorkbenchFilter } from './contracts.ts';
 import {
   getAllAnnouncements,
   getAllAssignments,
+  getAllCourses,
   getAllEvents,
   getAllGrades,
   getAllMessages,
@@ -12,7 +13,8 @@ import {
   getAllSiteEntityCounts,
   getEntityCounts,
   getSiteEntityCounts,
-} from './query-entities';
+} from './query-entities.ts';
+import { getPlanningSubstratesBySource } from './planning-substrate.ts';
 import {
   getLatestSyncRunBySite,
   getLatestSyncRuns,
@@ -20,7 +22,7 @@ import {
   getRecentChangeEvents,
   getSyncStateBySite,
   getSiteSyncStates,
-} from './sync-ledger';
+} from './sync-ledger.ts';
 import {
   getFocusQueue,
   getPriorityAlerts,
@@ -28,7 +30,7 @@ import {
   getTodaySnapshot,
   getWeeklyLoad,
   getWorkbenchView,
-} from './derived';
+} from './derived.ts';
 
 export function useEntityCounts(db: CampusCopilotDB = campusCopilotDb, refreshKey?: number) {
   return useLiveQuery(() => getEntityCounts(db), [db, refreshKey]);
@@ -56,6 +58,10 @@ export function useLatestSyncRunBySite(
 
 export function useAllAssignments(db: CampusCopilotDB = campusCopilotDb, refreshKey?: number) {
   return useLiveQuery(() => getAllAssignments(db), [db, refreshKey]);
+}
+
+export function useAllCourses(db: CampusCopilotDB = campusCopilotDb, refreshKey?: number) {
+  return useLiveQuery(() => getAllCourses(db), [db, refreshKey]);
 }
 
 export function useAllResources(db: CampusCopilotDB = campusCopilotDb, refreshKey?: number) {
@@ -117,6 +123,14 @@ export function useFocusQueue(now: string, db: CampusCopilotDB = campusCopilotDb
 
 export function useWeeklyLoad(now: string, db: CampusCopilotDB = campusCopilotDb, refreshKey?: number) {
   return useLiveQuery(() => getWeeklyLoad(now, db), [now, db, refreshKey]);
+}
+
+export function usePlanningSubstratesBySource(
+  source: 'myplan',
+  db: CampusCopilotDB = campusCopilotDb,
+  refreshKey?: number,
+) {
+  return useLiveQuery(() => getPlanningSubstratesBySource(source, db), [source, db, refreshKey]);
 }
 
 export function useWorkbenchView(
