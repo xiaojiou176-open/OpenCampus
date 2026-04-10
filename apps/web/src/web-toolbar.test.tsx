@@ -3,14 +3,14 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { WebSupportRail, WebToolbar } from './web-toolbar';
 
-const toolbarProps = {
+const toolbarProps: Parameters<typeof WebToolbar>[0] = {
   ready: true,
   now: '2026-04-10T09:00:00.000Z',
   feedback: 'Loaded the existing local web workspace snapshot.',
-  exportFormat: 'markdown' as const,
-  exportFormats: ['markdown', 'json'] as const,
-  filters: { site: 'all' as const, onlyUnseenUpdates: false },
-  siteOrder: ['canvas', 'gradescope', 'edstem', 'myuw', 'time-schedule'] as const,
+  exportFormat: 'markdown',
+  exportFormats: ['markdown', 'json'],
+  filters: { site: 'all', onlyUnseenUpdates: false },
+  siteOrder: ['canvas', 'gradescope', 'edstem', 'myuw', 'time-schedule'],
   siteLabels: {
     canvas: 'Canvas',
     gradescope: 'Gradescope',
@@ -20,9 +20,9 @@ const toolbarProps = {
   },
   topSyncRun: {
     id: 'sync-1',
-    site: 'canvas' as const,
-    status: 'success' as const,
-    outcome: 'success' as const,
+    site: 'canvas',
+    status: 'success',
+    outcome: 'success',
     completedAt: '2026-04-10T08:45:00.000Z',
     startedAt: '2026-04-10T08:40:00.000Z',
     changeCount: 5,
