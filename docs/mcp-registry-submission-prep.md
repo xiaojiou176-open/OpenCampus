@@ -30,13 +30,13 @@ Use it when the question becomes:
 - local workspace package name: `@campus-copilot/mcp-server`
 - registry name: `io.github.xiaojiou176-open/campus-copilot-mcp`
 - registry package type: `mcpb`
-- version: `0.1.0`
-- release asset URL: `https://github.com/xiaojiou176-open/campus-copilot/releases/download/v0.1.0/campus-copilot-mcp-0.1.0.mcpb`
-- currently listed SHA-256: `24b45ad5883479df448b2d622d3a6e476272cb6782bbb29d518fbf3751aad461`
+- version: `0.1.1`
+- release asset URL: `https://github.com/xiaojiou176-open/campus-copilot/releases/download/v0.1.1/campus-copilot-mcp-0.1.1.mcpb`
+- currently targeted SHA-256: `91bd7cf1c0b429ee5ae66176cdfde6bc390589f09c9fb910dedd333c8efba3c8`
 - transport: `stdio`
 - repository subfolder: `packages/mcp-server`
 - fresh discovery read-back on `2026-04-10` shows the registry entry is publicly searchable as `active`
-- current blocker: the public listing still points at the older v0.1.0 artifact while `main` now carries a newer MCP tool surface
+- current blocker: the registry needs a fresh `0.1.1` bundle + metadata publish so the public listing can advance beyond the older `0.1.0` artifact
 
 ## Submit Flow
 

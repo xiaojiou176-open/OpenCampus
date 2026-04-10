@@ -8,14 +8,14 @@
   },
   "package": {
     "name": "@campus-copilot/mcp-server",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "mcpName": "io.github.xiaojiou176-open/campus-copilot-mcp",
     "distributionType": "mcpb",
     "publishConfigAccess": "public",
-    "releaseTag": "v0.1.0",
-    "releaseAsset": "campus-copilot-mcp-0.1.0.mcpb",
-    "releaseAssetUrl": "https://github.com/xiaojiou176-open/campus-copilot/releases/download/v0.1.0/campus-copilot-mcp-0.1.0.mcpb",
-    "fileSha256": "24b45ad5883479df448b2d622d3a6e476272cb6782bbb29d518fbf3751aad461",
+    "releaseTag": "v0.1.1",
+    "releaseAsset": "campus-copilot-mcp-0.1.1.mcpb",
+    "releaseAssetUrl": "https://github.com/xiaojiou176-open/campus-copilot/releases/download/v0.1.1/campus-copilot-mcp-0.1.1.mcpb",
+    "fileSha256": "91bd7cf1c0b429ee5ae66176cdfde6bc390589f09c9fb910dedd333c8efba3c8",
     "npmPublicationRequiredBeforeRegistrySubmit": false
   },
   "server": {
@@ -42,7 +42,7 @@
   },
   "ownerWorkflow": {
     "buildLocalBundle": "pnpm --filter @campus-copilot/mcp-server build",
-    "uploadReleaseAsset": "gh release upload v0.1.0 campus-copilot-mcp-0.1.0.mcpb --repo xiaojiou176-open/campus-copilot --clobber",
+    "uploadReleaseAsset": "gh release upload v0.1.1 campus-copilot-mcp-0.1.1.mcpb --repo xiaojiou176-open/campus-copilot --clobber",
     "login": "mcp-publisher login github",
     "publishMetadata": "mcp-publisher publish packages/mcp-server/server.json"
   },
