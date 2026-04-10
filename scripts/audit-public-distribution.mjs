@@ -170,6 +170,21 @@ for (const name of publicPackageNames) {
   manifests.set(name, { manifestPath, manifest: readJson(manifestPath) });
 }
 
+function readRegistrySubmissionStatus(packageName) {
+  if (packageName !== '@campus-copilot/mcp-server') {
+    return undefined;
+  }
+
+  const packetPath = 'packages/mcp-server/registry-submission.packet.json';
+  if (!pathExists(packetPath)) {
+    return undefined;
+  }
+
+  const packet = readJson(packetPath);
+  const status = packet?.currentRegistrySubmit?.status;
+  return typeof status === 'string' ? status : undefined;
+}
+
 function listRegistryIssues(packageName, seen = new Set()) {
   if (seen.has(packageName)) {
     return [];
@@ -267,7 +282,13 @@ function buildPackageSurface(name) {
   const registryIssues = listRegistryIssues(name);
   const repoLocalPublicReady = repoLocalIssues.length === 0 && !previewOnlyRepoLocalStates.has(name);
   const currentState = repoLocalPublicReady ? 'public-ready (repo-local)' : 'repo-public preview';
-  const registryReadiness = registryIssues.length === 0 ? 'registry candidate' : 'registry blocked';
+  const registrySubmissionStatus = readRegistrySubmissionStatus(name);
+  const registryReadiness =
+    registryIssues.length > 0
+      ? 'registry blocked'
+      : registrySubmissionStatus === 'accepted_by_registry'
+        ? 'registry submitted'
+        : 'registry candidate';
   const blockers = [
     ...repoLocalIssues,
     ...registryIssues.map((issue) => `registry:${issue}`),

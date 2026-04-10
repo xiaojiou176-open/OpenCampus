@@ -2,7 +2,7 @@
 
 > A local-first academic decision workspace for students who want Canvas, Gradescope, EdStem, and MyUW in one structured place, then want clear answers to what changed, what matters first, and what to export or ask with cited AI.
 
-[Docs](docs/README.md) · [Quickstart](#quickstart) · [Integrations](INTEGRATIONS.md) · [Distribution](DISTRIBUTION.md) · [Privacy](PRIVACY.md) · [Product Brief](docs/01-product-prd.md) · [User Surfaces](docs/06-export-and-user-surfaces.md) · [Verification Matrix](docs/verification-matrix.md) · [Contributing](CONTRIBUTING.md) · [AI Collaboration](CLAUDE.md) · [Security](SECURITY.md) · [License](LICENSE)
+[Docs](docs/README.md) · [Quickstart](#quickstart) · [Integrations](INTEGRATIONS.md) · [Distribution](DISTRIBUTION.md) · [Privacy](PRIVACY.md) · [Product Brief](docs/01-product-prd.md) · [Academic Safety](docs/17-academic-expansion-and-safety-contract.md) · [User Surfaces](docs/06-export-and-user-surfaces.md) · [Verification Matrix](docs/verification-matrix.md) · [Contributing](CONTRIBUTING.md) · [AI Collaboration](CLAUDE.md) · [Security](SECURITY.md) · [License](LICENSE)
 
 ![Campus Copilot hero overview](docs/assets/hero-workbench-overview.svg)
 
@@ -36,7 +36,8 @@ The product stays intentionally narrow:
 
 - **Structured data first**: adapters normalize site-specific data into one shared schema.
 - **Local-first by default**: storage, workbench views, filtering, and export live locally.
-- **AI after structure**: AI can summarize or explain the workbench result, but it does not read raw DOM, raw HTML, or cookies.
+- **AI after structure**: AI can summarize or explain the workbench result, but it does not read raw DOM, raw HTML, cookies, or raw course files/instructor-authored materials by default. The only advanced material-analysis path currently allowed is still default-off, per-course, excerpt-only, and user-confirmed.
+- **Academic safety contract**: read-only academic expansion beyond the current four-site sync core, including the current `Time Schedule` and `MyPlan` lanes, must stay local-first and outside red-zone registration automation.
 - **Export is a first-class feature**: Markdown, CSV, JSON, and ICS are part of the core product, not an afterthought.
 
 You can think of it like a school desk instead of a chat window:
@@ -57,7 +58,7 @@ If you are new, follow this order:
 
 1. **Understand the student-facing loop** in this README.
 2. **Run the local workbench** through [Quickstart](#quickstart).
-3. **Read the product contract** in [docs/01-product-prd.md](docs/01-product-prd.md) and [docs/06-export-and-user-surfaces.md](docs/06-export-and-user-surfaces.md).
+3. **Read the product contract** in [docs/01-product-prd.md](docs/01-product-prd.md), [docs/06-export-and-user-surfaces.md](docs/06-export-and-user-surfaces.md), and [docs/17-academic-expansion-and-safety-contract.md](docs/17-academic-expansion-and-safety-contract.md).
 4. **Only after that**, use the proof and builder routes that match your intent.
 
 That ordering matters.
@@ -277,6 +278,8 @@ pnpm test:coverage
 - Anthropic
 - uncontrolled raw-page ingestion by AI
 - automatic write operations such as posting, submitting, or mutating site state
+- `Register.UW` / `Notify.UW` automation, seat watching, or registration-related polling
+- default AI ingestion of raw course files, instructor-authored materials, exams, or other copyright-sensitive course content
 
 ## Integration Boundaries
 
@@ -368,6 +371,8 @@ The easiest way to keep the repo honest is to separate four layers instead of
 mixing them into one big promise:
 
 - **Current formal scope**: the four-site workbench, shared schema/read-model truth, Wave 2 read-only depth already normalized into assignment/message/event/resource detail, extension + standalone web workbench surfaces, export, cited AI, and the shared BFF seam for `OpenAI` / `Gemini` / optional local `Switchyard`
+- **Read-only academic expansion lane**: `MyPlan`, `DARS`, `Time Schedule`, `DawgPath`, and class-search-only `ctcLink`, still outside `Register.UW` / `Notify.UW` automation
+- **Current repo-side expansion progress**: `Time Schedule` now has a shared runtime landing on the public course-offerings carrier, and `MyPlan` now has a shared planning substrate plus read-only planning summary surfaces in both the extension and the web workbench; both lines must still be described as limited read-only expansion support, not as registration automation or full upstream-site parity
 - **Current builder preview**: repo-public read-only SDK / CLI / MCP surfaces plus a repo-local provider-runtime seam package over imported snapshots and the thin BFF
 - **Current internal direction**: browser control-plane diagnostics stay internal, and Wave 5 continues the `Switchyard-first` cutover without giving away Campus-owned answer semantics or student-facing stop-rule logic
 - **Later ambition**: broader publication, release-channel distribution, and launch-facing `SEO / video` work

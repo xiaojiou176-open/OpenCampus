@@ -27,6 +27,7 @@ They are **not**:
 - official marketplace listings
 - hosted multi-tenant runtimes
 - write-capable browser automation plugins
+- permission to automate protected academic workflows
 
 ## Short Routing
 
@@ -44,5 +45,12 @@ Campus Copilot stays:
 - a local-first academic decision workspace
 - a read-only context provider
 - a repo-public bundle/router for integrations
+
+Every integration surface also inherits the academic safety contract in [`docs/17-academic-expansion-and-safety-contract.md`](docs/17-academic-expansion-and-safety-contract.md):
+
+- no `Register.UW` / `Notify.UW` automation
+- no registration-related polling or seat watching
+- no use of another person's credentials or records
+- no default AI ingestion of raw course files or instructor-authored materials
 
 It does **not** become a hosted plugin platform just because these routes exist.

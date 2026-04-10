@@ -218,6 +218,26 @@ The old global existing-tab fallback has been removed.
 `pnpm probe:live` and adjacent live diagnostics may inspect only the repo-owned single-instance lane through CDP attach or DevTools target HTTP surfaces.
 They must not fall back to AppleScript, JXA, `System Events`, or arbitrary Chrome windows from the desktop.
 
+When the same site has multiple tabs in the same repo-owned lane, prefer the **strongest site-level page** instead of the noisiest or oldest tab.
+
+In plain language:
+
+- a course dashboard or authenticated landing page is stronger than an older timeout/login tab on the same host
+- a product-usable authenticated page is stronger than a stale redirect or expired-session page
+
+`pnpm probe:live` should therefore resolve ties in this order:
+
+1. same requested URL family
+2. stronger authenticated/product-usable page
+3. only then any weaker timeout/login fallback
+
+This matters most for `Gradescope`, where the same repo-owned lane can temporarily contain both:
+
+- `https://www.gradescope.com/` or `/courses/...` authenticated tabs
+- and an older `?reason=timeout` tab
+
+Do not let the weaker timeout tab silently overwrite the stronger authenticated truth.
+
 ### Campus-site auth progression rule
 
 For `Canvas`, `Gradescope`, `EdStem`, and `MyUW`, the default assumption is:

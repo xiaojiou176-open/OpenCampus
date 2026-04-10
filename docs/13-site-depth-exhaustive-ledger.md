@@ -13,16 +13,17 @@ Use [`site-capability-matrix.md`](site-capability-matrix.md) when you only need 
 | :-- | :-- | :-- |
 | `current direct enhancement` | Already landed on the current academic decision workspace contract | Canvas inbox messages; richer assignment submission/score context; Gradescope graded submission annotation detail; EdStem thread summary/category context; EdStem course resources; MyUW notice/class-exam detail |
 | `selective gap` | Still valuable, but only if promoted through the same read-only workbench contract | Canvas richer reply/attachment context; MyUW registration/tuition-like signals; textbook/material signals |
+| `planned read-only expansion` | Future academic-observation lanes that may join the contract later if they stay read-only and policy-safe | MyPlan; DARS; Time Schedule; DawgPath; ctcLink class search |
 | `internal substrate` | Helpful internal support or builder substrate, not student-facing scope by itself | browser evidence/control-plane tooling; site API preview libs; site-scoped read-only MCPs; redacted fixture capture path |
 | `later / platform ambition` | Public distribution/launch work that follows stable substrate and truthful packaging | public registry publishing; plugin packaging; off-repo launch/SEO/video |
 | `owner-only / external` | Human-controlled browser/session or publishing decisions outside repo-owned code paths | live campus sessions when the requested browser context is not attachable or the needed site is not currently open there; release-channel/package publishing decisions |
 | `no-go` | Explicitly outside the current product boundary | write-capable automation; cookies expansion; hosted autonomy framing |
 
-## Fresh Live Corroboration Note
+## Historical Live Corroboration Note
 
 The current site-depth contract is still primarily code-and-doc driven, not daily live-proof driven.
 
-Latest manual corroboration on **April 4, 2026 PDT** used an explicit clone lane first:
+The note below is historical corroboration from **April 4, 2026 PDT**. It explains why older evidence artifacts mention a clone lane, but it is **not** the current operator-facing live-validation default:
 
 ```bash
 CHROME_CDP_URL=http://127.0.0.1:9333 \
@@ -32,15 +33,14 @@ CHROME_ATTACH_MODE=page \
 pnpm probe:live
 ```
 
-The shared `9333` lane was later shown to be contested by an unrelated browser automation process. A temporary clean-port recovery was attempted in the same turn and briefly surfaced stronger page-level evidence, but that alternate lane did not stay stable enough to promote its full site matrix into SSOT.
+That shared `9333` lane was later shown to be contested by an unrelated browser automation process. A temporary clean-port recovery briefly surfaced stronger page-level evidence, but that alternate lane did not become the new default truth surface.
 
-Treat the current live evidence as two layers:
+Treat this note as a two-layer historical explanation:
 
-- **reproducible repo-owned probe truth**: still the conservative, replayable lane for stop-rule judgment
-- **same-turn stronger page evidence**: useful supporting evidence that the repo can push beyond simple `login_required`, but not yet a stable lane to cite as the new default truth
+- **historical clone-lane corroboration**: useful for understanding why older evidence bundles reference `Profile 13` and `9333`
+- **current live contract**: see [`verification-matrix.md`](verification-matrix.md) and the repo-local browser-lane rules in `AGENTS.md` for the current single-instance, repo-owned browser expectation
 
-Treat that as a **current session-state fact**, not as a product-scope regression.  
-In plain language: the code/doc contract for site depth is still intact, the repo can recover and interrogate stronger lanes in the same turn, but the remaining blocker has not yet been reduced to a clean owner-only tail because explicit clone listener continuity is still unstable.
+In plain language: the site-depth contract is still intact, but this section should not be read as “the latest current live lane” for Wave 1C or later governance work.
 
 ## Exhaustive Per-Site Map
 
@@ -69,6 +69,27 @@ In plain language: the code/doc contract for site depth is still intact, the rep
 | Canvas richer reply-body / attachment context | Could improve discussion and decision context beyond the current latest-message body / attachment hint | Full per-thread reply detail still needs a stronger formal contract on how deeper inbox content should normalize | `selective gap` |
 | MyUW registration / tuition-like signals | Current notice/event reminders now reach the decision layer when they naturally arrive on existing carriers | A broader standalone billing/enrollment domain is still unstable and must not be over-promoted | `selective gap` |
 | Textbook / course-material signals | Could matter for planning and workload | Stable source and current canonical contract are not locked yet | `selective gap` |
+
+## Planned Read-Only Expansion Ledger
+
+| Surface | Current disposition | Why |
+| :-- | :-- | :-- |
+| MyPlan | `planned read-only expansion` | valuable planning context, but still not current shipped support and must not be overclaimed as an official public API |
+| DARS | `planned read-only expansion` | valuable degree-audit context, but sensitive enough that it needs a stronger contract before implementation |
+| Time Schedule | `planned read-only expansion` | valuable catalog/schedule context if it stays clearly separate from registration automation |
+| DawgPath | `planned read-only expansion` | valuable program-path context, but it must stay read-only and non-official |
+| ctcLink class search | `planned read-only expansion` | valuable Washington community-college discovery lane, but only for search/discovery and only with school-by-school validation |
+
+## Explicit Red-Zone Exclusions
+
+| Surface | Current disposition | Why |
+| :-- | :-- | :-- |
+| `Register.UW` | `no-go` | registration automation, submission flows, and registration-related polling are explicitly outside the contract |
+| `Notify.UW` | `no-go` | seat watching, seat-swap helpers, and registration-related polling are explicitly outside the contract |
+| registration-related resources | `no-go` | protected registration resources must not become automation or polling targets |
+| seat-watcher / waitlist polling | `no-go` | repeated seat-availability checks are red-zone behavior, not read-only observation |
+| add/drop submission flows | `no-go` | add/drop submission is a site mutation, not a read-only academic-observation surface |
+| hold-seat / seat-swap helpers | `no-go` | hold-seat and seat-swap helpers are operator actions outside the current contract |
 
 ## Internal Substrate vs Later Packaging
 

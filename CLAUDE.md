@@ -7,6 +7,7 @@ Use it together with:
 - [`README.md`](README.md)
 - [`CONTRIBUTING.md`](CONTRIBUTING.md)
 - [`SECURITY.md`](SECURITY.md)
+- [`docs/17-academic-expansion-and-safety-contract.md`](docs/17-academic-expansion-and-safety-contract.md)
 - [`docs/verification-matrix.md`](docs/verification-matrix.md)
 - [`docs/integration-boundaries.md`](docs/integration-boundaries.md)
 
@@ -36,9 +37,11 @@ It is not a generic chatbot shell, and it is not a high-permission automation pr
 
 - Keep AI after structure.
 - Do not send raw DOM, raw HTML, cookies, or raw adapter payloads to AI.
+- Do not send raw course files, instructor-authored materials, or exams into the default AI path.
 - Keep the formal product path read-only.
 - Do not present private, internal, session-backed, page-state, or DOM fallback paths as stable public APIs.
 - Do not silently expand extension permissions, especially around `cookies`.
+- Do not introduce `Register.UW` / `Notify.UW` automation or registration-related polling into the formal product path.
 
 ## Verification Contract
 

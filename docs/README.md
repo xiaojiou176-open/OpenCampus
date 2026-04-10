@@ -19,6 +19,7 @@ If you are new, pick one route and ignore the rest for now:
 - **I want to understand the four-site substrate**: start with [`02-system-architecture.md`](02-system-architecture.md), then [`03-domain-schema.md`](03-domain-schema.md), then [`04-adapter-spec.md`](04-adapter-spec.md)
 - **I want repo-local proof that the current story is real**: start with [`verification-matrix.md`](verification-matrix.md), then [`launch-packet.md`](launch-packet.md), then [`12-wave4-7-omnibus-ledger.md`](12-wave4-7-omnibus-ledger.md)
 - **I want the exact current-vs-next boundary**: start with [`11-wave1-contract-freeze-gap-matrix.md`](11-wave1-contract-freeze-gap-matrix.md), then [`13-site-depth-exhaustive-ledger.md`](13-site-depth-exhaustive-ledger.md), then [`08-phase-plan-and-repo-writing-brief.md`](08-phase-plan-and-repo-writing-brief.md)
+- **I want the academic expansion and safety rules**: start with [`17-academic-expansion-and-safety-contract.md`](17-academic-expansion-and-safety-contract.md), then [`07-security-privacy-compliance.md`](07-security-privacy-compliance.md), then [`integration-boundaries.md`](integration-boundaries.md)
 - **I want the builder/API surface after the product shape is clear**: start with [`10-builder-api-and-ecosystem-fit.md`](10-builder-api-and-ecosystem-fit.md), then [`api/openapi.yaml`](api/openapi.yaml), then [`05-ai-provider-and-runtime.md`](05-ai-provider-and-runtime.md)
 - **I want builder-facing examples and public skills**: start with [`../examples/README.md`](../examples/README.md), then [`../skills/README.md`](../skills/README.md), then [`10-builder-api-and-ecosystem-fit.md`](10-builder-api-and-ecosystem-fit.md)
 - **I want exact public distribution blockers or publish order**: start with [`14-public-distribution-scoreboard.md`](14-public-distribution-scoreboard.md), then [`15-publication-submission-packet.md`](15-publication-submission-packet.md)
@@ -90,6 +91,7 @@ Builder truth stays intentionally narrow:
 | [`13-site-depth-exhaustive-ledger.md`](13-site-depth-exhaustive-ledger.md) | site-depth ledger | exhaustive per-site resource map, classifications, and next-action framing |
 | [`14-public-distribution-scoreboard.md`](14-public-distribution-scoreboard.md) | distribution ledger | bundle-grade, repo-public, and registry-blocked truth for current builder surfaces |
 | [`15-publication-submission-packet.md`](15-publication-submission-packet.md) | submission packet | exact publish order, official URLs, and owner-only next actions for current candidates |
+| [`17-academic-expansion-and-safety-contract.md`](17-academic-expansion-and-safety-contract.md) | academic expansion + safety contract | next read-only expansion targets, red-zone systems, AI/material boundaries, and cross-surface guardrails |
 
 ## Canonical Reading Order For Maintainers
 
@@ -117,6 +119,7 @@ If you are a maintainer or contributor, read in this order:
 | Short truthful integrations router | [`../INTEGRATIONS.md`](../INTEGRATIONS.md) |
 | Short privacy posture page | [`../PRIVACY.md`](../PRIVACY.md) |
 | AI/runtime boundary and builder-facing path | [`05-ai-provider-and-runtime.md`](05-ai-provider-and-runtime.md) |
+| Academic expansion and safety contract | [`17-academic-expansion-and-safety-contract.md`](17-academic-expansion-and-safety-contract.md) |
 | Machine-readable current HTTP contract | [`api/openapi.yaml`](api/openapi.yaml) |
 | Builder example router | [`../examples/README.md`](../examples/README.md) |
 | Plugin-grade bundle router | [`../examples/integrations/plugin-bundles.md`](../examples/integrations/plugin-bundles.md) |

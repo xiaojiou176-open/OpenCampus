@@ -32,6 +32,7 @@ Some supported capabilities still rely on deeper integration surfaces such as:
 Those surfaces may be necessary, but they must never be described as low-risk or permanently stable just because they currently work.
 
 Use [`docs/integration-boundaries.md`](docs/integration-boundaries.md) for the canonical registry of those boundaries.
+Use [`docs/17-academic-expansion-and-safety-contract.md`](docs/17-academic-expansion-and-safety-contract.md) when the question becomes “is this planned expansion or distribution surface still inside the academic safety contract?”.
 
 ## How To Report A Security Issue
 
@@ -55,8 +56,10 @@ When reporting, include:
 - permission drift, especially anything that introduces `cookies`
 - raw site responses or sensitive session context being stored directly
 - AI/BFF uploads that exceed the minimum necessary structured result
+- raw course files, instructor-authored materials, exams, or other copyright-sensitive course content being promoted into the default AI path
 - private/internal site paths being marketed as stable public capabilities
 - automatic write operations sneaking into the formal read-only path
+- academic red-zone automation such as `Register.UW`, `Notify.UW`, registration polling, seat watching, or add/drop submission helpers
 
 ## Repository Hygiene
 

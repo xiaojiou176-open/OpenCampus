@@ -21,8 +21,9 @@ Treat it like a **read-only triage plugin card** over one imported workspace sna
 
 - one imported snapshot path or one current-view export
 - or one connected Campus Copilot MCP server
-- use `references/mcp-setup.md` if the MCP server still needs to be connected
-- use `references/input-shape.md` if only a snapshot/current-view export is available
+- use `references/INSTALL.md` if the MCP server still needs to be connected
+- use `references/DEMO.md` for the first-success walkthrough
+- use `references/TROUBLESHOOTING.md` if setup or input truth is still unclear
 
 ## Exposed MCP abilities
 
@@ -32,7 +33,7 @@ Treat it like a **read-only triage plugin card** over one imported workspace sna
 - the four `*_snapshot_view` tools
 - `export_snapshot_artifact`
 
-Use `references/capability-map.md` when you need the quick map.
+Use `references/CAPABILITIES.md` when you need the quick map.
 
 ## Inputs
 
@@ -66,7 +67,10 @@ Use `references/capability-map.md` when you need the quick map.
 
 ## Companion references
 
-- `references/mcp-setup.md`
-- `references/input-shape.md`
-- `references/capability-map.md`
-- `references/example-output.md`
+- `references/README.md`
+- `references/INSTALL.md`
+- `references/OPENHANDS_MCP_CONFIG.json`
+- `references/OPENCLAW_MCP_CONFIG.json`
+- `references/CAPABILITIES.md`
+- `references/DEMO.md`
+- `references/TROUBLESHOOTING.md`

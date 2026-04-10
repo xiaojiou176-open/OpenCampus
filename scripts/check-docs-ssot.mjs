@@ -74,11 +74,40 @@ for (const rule of docRules) {
 
 const requiredMentions = [
   ['README.md', 'docs/api/openapi.yaml'],
+  ['README.md', 'docs/17-academic-expansion-and-safety-contract.md'],
   ['docs/README.md', 'api/openapi.yaml'],
+  ['docs/README.md', '17-academic-expansion-and-safety-contract.md'],
   ['docs/10-builder-api-and-ecosystem-fit.md', 'api/openapi.yaml'],
+  ['PRIVACY.md', 'docs/17-academic-expansion-and-safety-contract.md'],
+  ['INTEGRATIONS.md', 'docs/17-academic-expansion-and-safety-contract.md'],
+  ['DISTRIBUTION.md', 'docs/17-academic-expansion-and-safety-contract.md'],
+  ['SECURITY.md', 'docs/17-academic-expansion-and-safety-contract.md'],
+  ['CLAUDE.md', 'docs/17-academic-expansion-and-safety-contract.md'],
+];
+
+const requiredContractSnippets = [
+  ['PRIVACY.md', '`Register.UW`'],
+  ['PRIVACY.md', '`Notify.UW`'],
+  ['PRIVACY.md', 'class-search-only `ctcLink`'],
+  ['INTEGRATIONS.md', 'protected academic workflows'],
+  ['DISTRIBUTION.md', 'no registration automation'],
+  ['SECURITY.md', '`Register.UW`'],
+  ['CLAUDE.md', '`Register.UW` / `Notify.UW`'],
 ];
 
 for (const [path, snippet] of requiredMentions) {
+  if (!existsSync(path)) {
+    failures.push(`missing_required_doc:${path}`);
+    continue;
+  }
+
+  const content = readFileSync(path, 'utf8');
+  if (!content.includes(snippet)) {
+    failures.push(`missing_required_snippet:${path}:${snippet}`);
+  }
+}
+
+for (const [path, snippet] of requiredContractSnippets) {
   if (!existsSync(path)) {
     failures.push(`missing_required_doc:${path}`);
     continue;

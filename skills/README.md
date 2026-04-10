@@ -47,6 +47,15 @@ File-based skill ecosystem note:
 
 They are examples of builder-facing workflow assets, not a write-capable automation system.
 
+They also inherit the same academic safety contract as the rest of the repo:
+
+- no `Register.UW` / `Notify.UW` automation
+- no registration-related polling or seat watching
+- no use of another person's credentials or records
+- no default AI ingestion of raw course files or instructor-authored materials
+
+See [`../docs/17-academic-expansion-and-safety-contract.md`](../docs/17-academic-expansion-and-safety-contract.md).
+
 ## Consumer routing
 
 | Consumer | Best first skill | Pair it with | Why |
@@ -86,6 +95,7 @@ Use these when you want the fastest plain-language proof of what a successful pu
 - Keep the workflow on imported snapshots or the thin local BFF unless a task explicitly requires live validation.
 - Pair these skills with files under `examples/` instead of inventing a new integration shape when a public sample already exists.
 - Do not present these skills as official marketplace plugins or write-capable automations.
+- Do not use these skills as a wrapper for protected academic workflows such as registration automation.
 - Do not confuse `skills/catalog.json` with OpenClaw's native `openclaw.plugin.json`; the catalog is a repo-owned bundle index, not an upstream marketplace manifest or native plugin manifest.
 - Keep the current bundle story on the manifestless Claude-style layout described in `../docs/16-distribution-preflight-packets.md` instead of inventing a vendor-only manifest.
 - Do not confuse `clawhub-submission.packet.json` with a vendor-required manifest either; it is a repo-owned packet because the official docs in this wave did not expose a stable marketplace manifest schema for plain skill uploads.

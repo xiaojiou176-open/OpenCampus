@@ -52,6 +52,7 @@ Use this split before you decide where a new check belongs:
 | `pnpm check:consumer-surfaces` | deterministic governance check | contributor / CI | Yes | public examples, public skills, and read-only consumer routing for Codex / Claude Code / OpenClaw-style local runtimes stay internally consistent | live site correctness or hosted plugin distribution |
 | `pnpm check:skill-catalog` | deterministic governance check | contributor / CI | Yes | the repo-owned skill pack catalog stays machine-readable, read-only, semver-tagged, and aligned with `skills/README.md` plus on-disk skill entrypoints | official marketplace listing or native plugin manifest validity |
 | `pnpm check:verification-claims` | deterministic governance check | contributor / CI | Yes | docs do not overclaim what `verify` covers | live site correctness |
+| `pnpm check:campus-readonly-boundary` | deterministic governance check | contributor / CI | Yes | site-facing collectors stay free of campus-site mutation verbs, the extension manifest does not silently expand into `Register.UW` / `Notify.UW` red-zone hosts, current AI callers visibly consume the shared caller guard wrapper for red-zone + advanced-material scaffolding, and the extension red-zone hard-stop helper stays present | prove that a live session is allowed by school or platform policy |
 | `pnpm check:public-surface` | deterministic governance check | contributor / CI | Yes | public collaboration shell files exist and README avoids repo-external hard assertions | GitHub settings state |
 | `pnpm check:actions-pinning` | deterministic governance check | contributor / CI | Yes | workflow actions are pinned by commit SHA | runtime code quality |
 | `pnpm check:english-canonical` | deterministic governance check | contributor / CI | Yes | canonical collaboration docs stay in English | UI localization strategy |
@@ -124,6 +125,14 @@ The repository must not claim that `pnpm verify` covers:
 - manual live site counts
 
 Those belong to optional/manual lanes unless they are explicitly promoted and wired into the required gate.
+
+## Current Governance Holds
+
+These are the important things the current required gates still do **not** prove yet:
+
+- `policies/integration-boundaries.yaml` is now partially consumed by the campus-readonly governance lane, but the current checks still do not treat it as one generated source of truth for every doc table, public wording surface, or manifest/boundary inventory.
+- `pnpm check:campus-readonly-boundary` now guards site-facing mutation verbs, red-zone host drift, the shared AI material-deny snippets, the shared caller wrapper used by the current extension/web AI panels, and the extension red-zone helper adoption in the operations surface, but it does **not** yet prove repo-wide product-layer adoption across every future red-zone route or button.
+- the shared AI seam, its tests, and the current campus-readonly governance check now prove the default AI path explicitly rejects raw DOM/cookies/site payloads, rejects raw course-material classes by default, supports the current default-off per-course excerpt-only lane in the extension/web AI callers, and keeps those callers on one guard-wrapper contract; but there is still no lawful direct raw-file carrier and still no universal proof that every future caller cannot bypass the same narrow scaffold.
 
 ## Required CI Topology
 
