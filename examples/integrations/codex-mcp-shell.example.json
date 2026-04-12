@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "campus-copilot": {
+      "command": "bash",
+      "args": [
+        "/absolute/path/to/campus-copilot/scripts/consumer/campus-copilot-mcp.sh"
+      ]
+    }
+  }
+}

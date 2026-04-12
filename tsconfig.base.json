@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "moduleDetection": "force",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "strict": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "verbatimModuleSyntax": true,
+    "skipLibCheck": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "allowImportingTsExtensions": true,
+    "ignoreDeprecations": "6.0",
+    "types": ["node"],
+    "baseUrl": ".",
+    "paths": {
+      "@campus-copilot/sdk": ["packages/sdk/src/index.ts"],
+      "@campus-copilot/sdk/api": ["packages/sdk/src/api.ts"],
+      "@campus-copilot/sdk/snapshot": ["packages/sdk/src/snapshot.ts"],
+      "@campus-copilot/sdk/sites": ["packages/sdk/src/sites.ts"],
+      "@campus-copilot/workspace-sdk": ["packages/workspace-sdk/src/index.ts"],
+      "@campus-copilot/site-sdk": ["packages/site-sdk/src/index.ts"]
+    }
+  }
+}

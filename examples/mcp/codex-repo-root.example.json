@@ -1,0 +1,24 @@
+{
+  "mcpServers": {
+    "campus-copilot-canvas": {
+      "command": "bash",
+      "args": [
+        "/absolute/path/to/campus-copilot/scripts/consumer/campus-copilot-site-sidecar.sh",
+        "canvas"
+      ],
+      "env": {
+        "CAMPUS_COPILOT_SNAPSHOT": "/absolute/path/to/workspace-snapshot.json"
+      }
+    },
+    "campus-copilot-edstem": {
+      "command": "bash",
+      "args": [
+        "/absolute/path/to/campus-copilot/scripts/consumer/campus-copilot-site-sidecar.sh",
+        "edstem"
+      ],
+      "env": {
+        "CAMPUS_COPILOT_SNAPSHOT": "/absolute/path/to/workspace-snapshot.json"
+      }
+    }
+  }
+}

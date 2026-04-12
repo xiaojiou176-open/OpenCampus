@@ -1,0 +1,38 @@
+{
+  "name": "@campus-copilot/site-sdk",
+  "version": "0.1.0",
+  "private": false,
+  "description": "Read-only per-site snapshot helpers for Campus Copilot builder workflows.",
+  "license": "MIT",
+  "keywords": ["campus-copilot", "site-sdk", "local-first", "read-only", "snapshot"],
+  "homepage": "https://github.com/xiaojiou176-open/campus-copilot/tree/main/packages/site-sdk",
+  "bugs": {
+    "url": "https://github.com/xiaojiou176-open/campus-copilot/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xiaojiou176-open/campus-copilot.git",
+    "directory": "packages/site-sdk"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "files": ["README.md", "dist"],
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "pnpm --filter @campus-copilot/workspace-sdk build && rm -rf dist && pnpm exec esbuild ./src/index.ts --bundle --platform=node --format=esm --target=node20 --legal-comments=none --outfile=dist/index.js",
+    "prepack": "pnpm build",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@campus-copilot/schema": "workspace:*",
+    "@campus-copilot/storage": "workspace:*",
+    "@campus-copilot/workspace-sdk": "workspace:*",
+    "esbuild": "^0.28.0"
+  }
+}

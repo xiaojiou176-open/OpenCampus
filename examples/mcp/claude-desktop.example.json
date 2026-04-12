@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "campus-copilot-gradescope": {
+      "command": "campus-copilot-mcp-gradescope",
+      "env": {
+        "CAMPUS_COPILOT_SNAPSHOT": "/absolute/path/to/workspace-snapshot.json"
+      }
+    },
+    "campus-copilot-myuw": {
+      "command": "campus-copilot-mcp-myuw",
+      "env": {
+        "CAMPUS_COPILOT_SNAPSHOT": "/absolute/path/to/workspace-snapshot.json"
+      }
+    }
+  }
+}

@@ -1,0 +1,692 @@
+import { describe, expect, it } from 'vitest';
+import {
+  CanvasApiClient,
+  createCanvasAdapter,
+  type CanvasRequestExecutor,
+} from './index';
+
+const CANVAS_COURSES_PATH = '/api/v1/courses?state[]=available&include[]=syllabus_body&per_page=100';
+const canvasFilesPath = (courseId: string | number) => `/api/v1/courses/${courseId}/files?per_page=100`;
+const canvasSubmissionFeedbackPath = (courseId: string | number, assignmentIds: Array<string | number>) => {
+  const params = new URLSearchParams();
+  params.set('per_page', '100');
+  params.append('include[]', 'submission_comments');
+  params.append('include[]', 'submission_html_comments');
+  params.append('include[]', 'rubric_assessment');
+  for (const assignmentId of assignmentIds) {
+    params.append('assignment_ids[]', String(assignmentId));
+  }
+
+  return `/api/v1/courses/${courseId}/students/submissions?${params.toString()}`;
+};
+
+const okExecutor =
+  (payloads: Record<string, unknown>): CanvasRequestExecutor =>
+  async (path) => {
+    const payload = payloads[path];
+    if (payload === undefined) {
+      return {
+        ok: false,
+        code: 'request_failed',
+        message: `No mock payload for ${path}`,
+        status: 500,
+      };
+    }
+
+    return {
+      ok: true,
+      status: 200,
+      responseUrl: `https://canvas.example.edu${path}`,
+      bodyText: JSON.stringify(payload),
+      contentType: 'application/json',
+    };
+  };
+
+describe('CanvasApiClient', () => {
+  it('maps 401/403 into unauthorized errors', async () => {
+    const client = new CanvasApiClient(async () => ({
+      ok: true,
+      status: 401,
+      responseUrl: 'https://canvas.example.edu/api/v1/courses',
+      bodyText: '{"errors":[{"message":"unauthorized"}]}',
+      contentType: 'application/json',
+    }));
+
+    await expect(client.getCourses()).rejects.toMatchObject({
+      code: 'unauthorized',
+    });
+  });
+
+  it('rejects malformed JSON payloads', async () => {
+    const client = new CanvasApiClient(async () => ({
+      ok: true,
+      status: 200,
+      responseUrl: 'https://canvas.example.edu/api/v1/courses',
+      bodyText: '{"not":"an array"}',
+      contentType: 'application/json',
+    }));
+
+    await expect(client.getCourses()).rejects.toMatchObject({
+      code: 'malformed_response',
+    });
+  });
+
+  it('parses courses, assignments, announcements, messages, grades, and events from official API payloads', async () => {
+    const client = new CanvasApiClient(
+      okExecutor({
+        [CANVAS_COURSES_PATH]: [
+          {
+            id: 42,
+            name: 'CSE 142',
+            course_code: 'CSE 142',
+            html_url: 'https://canvas.example.edu/courses/42',
+            workflow_state: 'available',
+            syllabus_body: '<p>Review the course policies and weekly reading plan.</p>',
+          },
+        ],
+        [canvasFilesPath(42)]: [
+          {
+            id: 501,
+            display_name: 'lecture-01.pdf',
+            filename: 'lecture-01.pdf',
+            html_url: 'https://canvas.example.edu/courses/42/files/501',
+            url: 'https://canvas.example.edu/files/501/download',
+            size: 204800,
+            updated_at: '2026-03-24T09:00:00-07:00',
+          },
+        ],
+        [canvasSubmissionFeedbackPath(42, [8])]: [
+          {
+            assignment_id: 8,
+            submission_comments: [{ comment: '<p>Great job.</p>' }],
+          },
+        ],
+        '/api/v1/courses/42/assignments?include[]=submission&order_by=due_at&per_page=100': [
+          {
+            id: 8,
+            course_id: 42,
+            name: 'Homework 1',
+            html_url: 'https://canvas.example.edu/courses/42/assignments/8',
+            due_at: '2026-03-25T23:59:00-07:00',
+            points_possible: 100,
+            submission: {
+              workflow_state: 'submitted',
+              submitted_at: '2026-03-24T00:05:00-07:00',
+              score: 95,
+              graded_at: '2026-03-24T12:00:00-07:00',
+            },
+            extra_field: 'allowed',
+          },
+        ],
+        '/api/v1/announcements?per_page=100&context_codes%5B%5D=course_42': [
+          {
+            id: 77,
+            title: 'Welcome',
+            html_url: 'https://canvas.example.edu/courses/42/discussion_topics/77',
+            posted_at: '2026-03-24T10:00:00-07:00',
+            context_code: 'course_42',
+            message: '<p>Read the updated syllabus before lab.</p>',
+          },
+        ],
+        '/api/v1/conversations?scope=inbox&per_page=100': [
+          {
+            id: 108,
+            subject: 'Midterm logistics',
+            last_message: 'Bring your Husky Card and one handwritten note sheet.',
+            last_message_at: '2026-03-24T15:30:00-07:00',
+            workflow_state: 'unread',
+            context_code: 'course_42',
+            html_url: 'https://canvas.example.edu/conversations/108',
+          },
+        ],
+        '/api/v1/conversations/108': {
+          id: 108,
+          subject: 'Midterm logistics',
+          last_message: 'Bring your Husky Card and one handwritten note sheet.',
+          last_message_at: '2026-03-24T15:30:00-07:00',
+          workflow_state: 'unread',
+          context_code: 'course_42',
+          html_url: 'https://canvas.example.edu/conversations/108',
+          message_count: 2,
+          messages: [
+            {
+              body: '<p>Initial question</p>',
+              attachments: [],
+            },
+            {
+              body: '<p>Please review the updated logistics note.</p>',
+              attachments: [
+                {
+                  display_name: 'midterm-logistics.pdf',
+                },
+              ],
+            },
+          ],
+        },
+        '/api/v1/calendar_events?all_events=true&per_page=100&context_codes%5B%5D=course_42': [
+          {
+            id: 'assignment_8',
+            title: 'Homework 1',
+            html_url: 'https://canvas.example.edu/courses/42/assignments/8',
+            start_at: '2026-03-25T23:59:00-07:00',
+            end_at: '2026-03-25T23:59:00-07:00',
+            context_code: 'course_42',
+          },
+          {
+            id: 91,
+            title: 'Midterm review',
+            html_url: 'https://canvas.example.edu/calendar?event_id=91&include_contexts=course_42',
+            start_at: '2026-03-24T19:00:00-07:00',
+            end_at: '2026-03-24T20:00:00-07:00',
+            context_code: 'course_42',
+          },
+        ],
+      }),
+    );
+
+    const adapter = createCanvasAdapter(client);
+    const result = await adapter.sync({
+      url: 'https://canvas.example.edu/courses/42',
+      site: 'canvas',
+      now: '2026-03-24T18:00:00-07:00',
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.snapshot.courses).toHaveLength(1);
+      expect(result.snapshot.assignments?.[0]?.status).toBe('submitted');
+      expect(result.snapshot.assignments?.[0]?.summary).toBe('Graded · 95 / 100');
+      expect(result.snapshot.assignments?.[0]?.submittedAt).toBe('2026-03-24T00:05:00-07:00');
+      expect(result.snapshot.assignments?.[0]?.score).toBe(95);
+      expect(result.snapshot.assignments?.[0]?.maxScore).toBe(100);
+      expect(result.snapshot.resources).toEqual([
+        expect.objectContaining({
+          id: 'canvas:resource:42:syllabus',
+          courseId: 'canvas:course:42',
+          resourceKind: 'other',
+          title: 'Syllabus summary',
+          summary: 'Review the course policies and weekly reading plan.',
+        }),
+        expect.objectContaining({
+          id: 'canvas:resource:501',
+          courseId: 'canvas:course:42',
+          resourceKind: 'file',
+          title: 'lecture-01.pdf',
+          fileExtension: '.pdf',
+          sizeBytes: 204800,
+          downloadUrl: 'https://canvas.example.edu/files/501/download',
+        }),
+      ]);
+      expect(result.snapshot.announcements?.[0]?.courseId).toBe('canvas:course:42');
+      expect(result.snapshot.announcements?.[0]?.summary).toBe('Read the updated syllabus before lab.');
+      expect(result.snapshot.messages?.[0]).toMatchObject({
+        courseId: 'canvas:course:42',
+        title: 'Midterm logistics',
+        summary: 'Please review the updated logistics note. · Attachment: midterm-logistics.pdf',
+        unread: true,
+      });
+      expect(result.snapshot.grades?.[0]).toMatchObject({
+        assignmentId: 'canvas:assignment:8',
+        score: 95,
+        maxScore: 100,
+      });
+      expect(result.snapshot.events).toHaveLength(2);
+      expect(result.snapshot.events?.[0]?.eventKind).toBe('deadline');
+      expect(result.snapshot.events?.[0]?.relatedAssignmentId).toBe('canvas:assignment:8');
+      expect(result.snapshot.events?.[1]?.eventKind).toBe('exam');
+    }
+  });
+
+  it('includes late submission detail in the canonical assignment summary', async () => {
+    const client = new CanvasApiClient(
+      okExecutor({
+        [CANVAS_COURSES_PATH]: [
+          {
+            id: 42,
+            name: 'CSE 142',
+            course_code: 'CSE 142',
+            html_url: 'https://canvas.example.edu/courses/42',
+          },
+        ],
+        [canvasFilesPath(42)]: [],
+        [canvasSubmissionFeedbackPath(42, [9])]: [],
+        '/api/v1/courses/42/assignments?include[]=submission&order_by=due_at&per_page=100': [
+          {
+            id: 9,
+            course_id: 42,
+            name: 'Homework 2',
+            html_url: 'https://canvas.example.edu/courses/42/assignments/9',
+            due_at: '2026-03-23T23:59:00-07:00',
+            points_possible: 20,
+            submission: {
+              workflow_state: 'submitted',
+              submitted_at: '2026-03-24T00:05:00-07:00',
+              late: true,
+            },
+          },
+        ],
+        '/api/v1/announcements?per_page=100&context_codes%5B%5D=course_42': [],
+        '/api/v1/conversations?scope=inbox&per_page=100': [],
+        '/api/v1/calendar_events?all_events=true&per_page=100&context_codes%5B%5D=course_42': [],
+      }),
+    );
+
+    const adapter = createCanvasAdapter(client);
+    const result = await adapter.sync({
+      url: 'https://canvas.example.edu/courses/42',
+      site: 'canvas',
+      now: '2026-03-24T18:00:00-07:00',
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.snapshot.assignments?.[0]).toMatchObject({
+        summary: 'Submitted · Late · - / 20',
+        submittedAt: '2026-03-24T00:05:00-07:00',
+      });
+    }
+  });
+
+  it('keeps assignment core fields when submission feedback enrichment fails', async () => {
+    const client = new CanvasApiClient(
+      okExecutor({
+        [CANVAS_COURSES_PATH]: [
+          {
+            id: 42,
+            name: 'CSE 142',
+            course_code: 'CSE 142',
+            html_url: 'https://canvas.example.edu/courses/42',
+          },
+        ],
+        [canvasFilesPath(42)]: [],
+        '/api/v1/courses/42/assignments?include[]=submission&order_by=due_at&per_page=100': [
+          {
+            id: 10,
+            course_id: 42,
+            name: 'Homework 3',
+            html_url: 'https://canvas.example.edu/courses/42/assignments/10',
+            due_at: '2026-03-26T23:59:00-07:00',
+            points_possible: 25,
+            submission: {
+              workflow_state: 'submitted',
+              submitted_at: '2026-03-24T08:15:00-07:00',
+              score: 24,
+            },
+          },
+        ],
+        '/api/v1/announcements?per_page=100&context_codes%5B%5D=course_42': [],
+        '/api/v1/conversations?scope=inbox&per_page=100': [],
+        '/api/v1/calendar_events?all_events=true&per_page=100&context_codes%5B%5D=course_42': [],
+      }),
+    );
+
+    const adapter = createCanvasAdapter(client);
+    const result = await adapter.sync({
+      url: 'https://canvas.example.edu/courses/42',
+      site: 'canvas',
+      now: '2026-03-24T18:00:00-07:00',
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.outcome).toBe('partial_success');
+      expect(result.snapshot.assignments?.[0]).toMatchObject({
+        title: 'Homework 3',
+        status: 'submitted',
+        summary: 'Submitted · 24 / 25',
+        submittedAt: '2026-03-24T08:15:00-07:00',
+        score: 24,
+        maxScore: 25,
+        detail: undefined,
+      });
+      expect(result.snapshot.grades?.[0]).toMatchObject({
+        assignmentId: 'canvas:assignment:10',
+        score: 24,
+        maxScore: 25,
+      });
+      expect(result.attemptsByResource?.assignments).toHaveLength(2);
+      expect(result.attemptsByResource?.assignments?.[0]).toMatchObject({
+        collectorName: 'CanvasAssignmentsApiCollector',
+        success: true,
+      });
+      expect(result.attemptsByResource?.assignments?.[1]).toMatchObject({
+        collectorName: 'CanvasSubmissionFeedbackCollector',
+        success: false,
+      });
+    }
+  });
+
+  it('uses the detail attachment hint even when the latest message body is empty', async () => {
+    const client = new CanvasApiClient(
+      okExecutor({
+        [CANVAS_COURSES_PATH]: [
+          {
+            id: 42,
+            name: 'CSE 142',
+            course_code: 'CSE 142',
+            html_url: 'https://canvas.example.edu/courses/42',
+          },
+        ],
+        [canvasFilesPath(42)]: [],
+        '/api/v1/courses/42/assignments?include[]=submission&order_by=due_at&per_page=100': [],
+        '/api/v1/announcements?per_page=100&context_codes%5B%5D=course_42': [],
+        '/api/v1/conversations?scope=inbox&per_page=100': [
+          {
+            id: 208,
+            subject: 'Lab handout',
+            last_message: 'See latest attachment.',
+            last_message_at: '2026-03-24T15:30:00-07:00',
+            workflow_state: 'read',
+            context_code: 'course_42',
+            html_url: 'https://canvas.example.edu/conversations/208',
+          },
+        ],
+        '/api/v1/conversations/208': {
+          id: 208,
+          subject: 'Lab handout',
+          last_message: 'See latest attachment.',
+          last_message_at: '2026-03-24T15:30:00-07:00',
+          workflow_state: 'read',
+          context_code: 'course_42',
+          html_url: 'https://canvas.example.edu/conversations/208',
+          messages: [
+            {
+              body: '   ',
+              attachments: [{ display_name: 'lab-3.pdf' }],
+            },
+          ],
+        },
+        '/api/v1/calendar_events?all_events=true&per_page=100&context_codes%5B%5D=course_42': [],
+      }),
+    );
+
+    const adapter = createCanvasAdapter(client);
+    const result = await adapter.sync({
+      url: 'https://canvas.example.edu/courses/42',
+      site: 'canvas',
+      now: '2026-03-24T18:00:00-07:00',
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.snapshot.messages?.[0]).toMatchObject({
+        title: 'Lab handout',
+        summary: 'Attachment: lab-3.pdf',
+        unread: false,
+      });
+    }
+  });
+
+  it('falls back to the list preview when a conversation detail request fails', async () => {
+    const client = new CanvasApiClient(async (path) => {
+      if (path === '/api/v1/conversations/308') {
+        return {
+          ok: false,
+          code: 'request_failed',
+          message: 'detail failed',
+          status: 500,
+        };
+      }
+
+      return okExecutor({
+        [CANVAS_COURSES_PATH]: [
+          {
+            id: 42,
+            name: 'CSE 142',
+            course_code: 'CSE 142',
+            html_url: 'https://canvas.example.edu/courses/42',
+          },
+        ],
+        [canvasFilesPath(42)]: [],
+        '/api/v1/courses/42/assignments?include[]=submission&order_by=due_at&per_page=100': [],
+        '/api/v1/announcements?per_page=100&context_codes%5B%5D=course_42': [],
+        '/api/v1/conversations?scope=inbox&per_page=100': [
+          {
+            id: 308,
+            subject: 'Project reminder',
+            last_message: 'Remember to submit milestone zero tonight.',
+            last_message_at: '2026-03-24T15:30:00-07:00',
+            workflow_state: 'unread',
+            context_code: 'course_42',
+            html_url: 'https://canvas.example.edu/conversations/308',
+          },
+        ],
+        '/api/v1/calendar_events?all_events=true&per_page=100&context_codes%5B%5D=course_42': [],
+      })(path);
+    });
+
+    const adapter = createCanvasAdapter(client);
+    const result = await adapter.sync({
+      url: 'https://canvas.example.edu/courses/42',
+      site: 'canvas',
+      now: '2026-03-24T18:00:00-07:00',
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.outcome).toBe('success');
+      expect(result.snapshot.messages?.[0]).toMatchObject({
+        title: 'Project reminder',
+        summary: 'Remember to submit milestone zero tonight.',
+        unread: true,
+      });
+    }
+  });
+
+  it('returns adapter capabilities and health scoped to canvas phase-2 support', async () => {
+    const client = new CanvasApiClient(okExecutor({ [CANVAS_COURSES_PATH]: [] }));
+    const adapter = createCanvasAdapter(client);
+    const capabilities = await adapter.getCapabilities({
+      url: 'https://canvas.example.edu',
+      site: 'canvas',
+      now: '2026-03-24T18:00:00-07:00',
+    });
+    const health = await adapter.healthCheck?.({
+      url: 'https://canvas.example.edu',
+      site: 'canvas',
+      now: '2026-03-24T18:00:00-07:00',
+    });
+
+    expect(capabilities.resources.messages?.preferredMode).toBe('official_api');
+    expect(capabilities.resources.assignments?.preferredMode).toBe('official_api');
+    expect(capabilities.resources.grades?.preferredMode).toBe('official_api');
+    expect(capabilities.resources.events?.preferredMode).toBe('official_api');
+    expect(capabilities.resources.resources?.preferredMode).toBe('official_api');
+    expect(health?.status).toBe('healthy');
+  });
+
+  it('treats an empty course list as a valid empty snapshot, not a sync failure', async () => {
+    const client = new CanvasApiClient(
+      okExecutor({
+        [CANVAS_COURSES_PATH]: [],
+        '/api/v1/conversations?scope=inbox&per_page=100': [],
+      }),
+    );
+    const adapter = createCanvasAdapter(client);
+    const result = await adapter.sync({
+      url: 'https://canvas.example.edu',
+      site: 'canvas',
+      now: '2026-03-24T18:00:00-07:00',
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.snapshot.courses).toHaveLength(0);
+      expect(result.snapshot.resources).toHaveLength(0);
+      expect(result.snapshot.assignments).toHaveLength(0);
+      expect(result.snapshot.announcements).toHaveLength(0);
+      expect(result.snapshot.messages).toHaveLength(0);
+      expect(result.snapshot.grades).toHaveLength(0);
+      expect(result.snapshot.events).toHaveLength(0);
+    }
+  });
+
+  it('falls back to a synthetic course title when canvas omits name', async () => {
+    const client = new CanvasApiClient(
+      okExecutor({
+        [CANVAS_COURSES_PATH]: [
+          {
+            id: 1830320,
+            workflow_state: 'available',
+          },
+        ],
+        [canvasFilesPath(1830320)]: [],
+        '/api/v1/courses/1830320/assignments?include[]=submission&order_by=due_at&per_page=100': [],
+        '/api/v1/announcements?per_page=100&context_codes%5B%5D=course_1830320': [],
+        '/api/v1/conversations?scope=inbox&per_page=100': [],
+        '/api/v1/calendar_events?all_events=true&per_page=100&context_codes%5B%5D=course_1830320': [],
+      }),
+    );
+
+    const adapter = createCanvasAdapter(client);
+    const result = await adapter.sync({
+      url: 'https://canvas.example.edu',
+      site: 'canvas',
+      now: '2026-03-24T18:00:00-07:00',
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.snapshot.courses[0]?.title).toBe('Canvas course 1830320');
+    }
+  });
+
+  it('filters access-restricted placeholder courses out of the current sync set', async () => {
+    const client = new CanvasApiClient(
+      okExecutor({
+        [CANVAS_COURSES_PATH]: [
+          {
+            id: 42,
+            name: 'CSE 142',
+            course_code: 'CSE 142',
+            html_url: 'https://canvas.example.edu/courses/42',
+          },
+          {
+            id: 1830320,
+            access_restricted_by_date: true,
+          },
+        ],
+        [canvasFilesPath(42)]: [],
+        '/api/v1/courses/42/assignments?include[]=submission&order_by=due_at&per_page=100': [],
+        '/api/v1/announcements?per_page=100&context_codes%5B%5D=course_42': [],
+        '/api/v1/conversations?scope=inbox&per_page=100': [],
+        '/api/v1/calendar_events?all_events=true&per_page=100&context_codes%5B%5D=course_42': [],
+      }),
+    );
+
+    const adapter = createCanvasAdapter(client);
+    const result = await adapter.sync({
+      url: 'https://canvas.example.edu',
+      site: 'canvas',
+      now: '2026-03-24T18:00:00-07:00',
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.outcome).toBe('success');
+      expect(result.snapshot.courses).toHaveLength(1);
+      expect(result.snapshot.courses[0]?.source.resourceId).toBe('42');
+      expect(result.snapshot.assignments).toHaveLength(0);
+      expect(result.snapshot.announcements).toHaveLength(0);
+      expect(result.snapshot.messages).toHaveLength(0);
+      expect(result.snapshot.events).toHaveLength(0);
+    }
+  });
+
+  it('returns partial_success when assignments fail but courses still sync', async () => {
+    const client = new CanvasApiClient(
+      okExecutor({
+        [CANVAS_COURSES_PATH]: [
+          {
+            id: 42,
+            name: 'CSE 142',
+            course_code: 'CSE 142',
+            html_url: 'https://canvas.example.edu/courses/42',
+          },
+        ],
+        [canvasFilesPath(42)]: [],
+        '/api/v1/announcements?per_page=100&context_codes%5B%5D=course_42': [],
+        '/api/v1/conversations?scope=inbox&per_page=100': [],
+        '/api/v1/calendar_events?all_events=true&per_page=100&context_codes%5B%5D=course_42': [],
+      }),
+    );
+
+    const adapter = createCanvasAdapter(client);
+    const result = await adapter.sync({
+      url: 'https://canvas.example.edu/courses/42',
+      site: 'canvas',
+      now: '2026-03-24T18:00:00-07:00',
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.outcome).toBe('partial_success');
+      expect(result.snapshot.courses).toHaveLength(1);
+      expect(result.snapshot.assignments).toBeUndefined();
+      expect(result.snapshot.grades).toBeUndefined();
+      expect(result.snapshot.announcements).toHaveLength(0);
+      expect(result.snapshot.messages).toHaveLength(0);
+      expect(result.snapshot.events).toHaveLength(0);
+      expect(result.health.code).toBe('partial_success');
+    }
+    expect(result.attemptsByResource?.assignments?.[0]?.success).toBe(false);
+  });
+
+  it('preserves successful assignments without stuffing the payload into the error string when one course fails', async () => {
+    const client = new CanvasApiClient(
+      okExecutor({
+        [CANVAS_COURSES_PATH]: [
+          {
+            id: 42,
+            name: 'CSE 142',
+            course_code: 'CSE 142',
+            html_url: 'https://canvas.example.edu/courses/42',
+          },
+          {
+            id: 84,
+            name: 'Restricted course',
+            course_code: 'RESTRICTED 101',
+            html_url: 'https://canvas.example.edu/courses/84',
+          },
+        ],
+        [canvasFilesPath(42)]: [],
+        [canvasFilesPath(84)]: [],
+        '/api/v1/courses/42/assignments?include[]=submission&order_by=due_at&per_page=100': [
+          {
+            id: 8,
+            course_id: 42,
+            name: 'Homework 1',
+            html_url: 'https://canvas.example.edu/courses/42/assignments/8',
+            due_at: '2026-03-25T23:59:00-07:00',
+            points_possible: 10,
+            submission: {
+              workflow_state: 'graded',
+              score: 9,
+              graded_at: '2026-03-24T12:00:00-07:00',
+            },
+          },
+        ],
+        '/api/v1/announcements?per_page=100&context_codes%5B%5D=course_42&context_codes%5B%5D=course_84': [],
+        '/api/v1/conversations?scope=inbox&per_page=100': [],
+        '/api/v1/calendar_events?all_events=true&per_page=100&context_codes%5B%5D=course_42&context_codes%5B%5D=course_84': [],
+      }),
+    );
+
+    const adapter = createCanvasAdapter(client);
+    const result = await adapter.sync({
+      url: 'https://canvas.example.edu/courses/42',
+      site: 'canvas',
+      now: '2026-03-24T18:00:00-07:00',
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.outcome).toBe('partial_success');
+      expect(result.snapshot.assignments).toHaveLength(1);
+      expect(result.snapshot.assignments?.[0]?.title).toBe('Homework 1');
+      expect(result.snapshot.grades?.[0]?.score).toBe(9);
+    }
+    expect(result.attemptsByResource?.assignments?.[0]?.errorReason).not.toContain('PARTIAL_ASSIGNMENTS');
+    expect(result.attemptsByResource?.assignments?.[0]?.errorReason).toContain('course_84');
+  });
+});

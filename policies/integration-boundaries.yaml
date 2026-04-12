@@ -1,0 +1,168 @@
+version: 1
+canonical_registry: true
+
+source_precedence:
+  - official public API
+  - institution-recognized stable session-backed interface or standard integration
+  - page-state, internal endpoint, reverse-engineered path, or DOM fallback
+
+ai_material_boundary:
+  allowed_default_inputs:
+    - normalized workspace entities
+    - structured summaries
+    - local decision views
+    - file names
+    - metadata
+    - jump links
+  forbidden_default_inputs:
+    - raw course files
+    - lecture slides
+    - instructor-authored notes
+    - exams
+    - quizzes
+    - assignment PDFs
+    - solution documents
+    - copyright-sensitive or sharing-unclear course materials
+  advanced_material_analysis:
+    status: planned_only
+    default_state: disabled
+    current_narrow_lane: per_course_excerpt_only
+    requirements:
+      - explicit per-course opt-in
+      - user-pasted excerpt only
+      - separate UX
+      - separate review
+      - user-responsibility language
+
+cross_surface_inheritance:
+  - browser extension
+  - standalone web workbench
+  - MCP servers
+  - public skills
+  - SDK preview packages
+  - CLI preview packages
+  - site API preview packages
+  - plugin-grade repo bundles
+  - containerized local BFF routes
+  - distribution-facing docs
+
+boundary_classes:
+  official: documented public contract or clearly supported API surface
+  internal: private/internal endpoint or undocumented request surface
+  session-backed: depends on authenticated browser session state or page-local token material
+  state-fallback: uses page bootstrap state or equivalent injected state
+  dom-fallback: uses DOM parsing as a fallback layer
+
+registry:
+  - site: canvas
+    primary_path: /api/v1/*
+    boundary_classes:
+      - official
+    current_sensitivity: Medium
+    validation_expectation: deterministic repo coverage plus manual live validation when needed
+    public_safe_wording: Canvas uses official API paths first, with filtering and fallbacks handled in the adapter.
+
+  - site: gradescope
+    primary_path: /internal/* plus DOM discovery
+    boundary_classes:
+      - internal
+      - dom-fallback
+    current_sensitivity: High
+    validation_expectation: deterministic adapter tests plus manual live validation for current tenant behavior
+    public_safe_wording: Gradescope currently depends on internal and fallback collection paths and should not be described as an official public integration.
+
+  - site: edstem
+    primary_path: session-backed api/user and api/courses/:id/threads requests, with inferred /internal/unread and /internal/recent-activity defaults plus DOM fallback
+    boundary_classes:
+      - internal
+      - session-backed
+      - dom-fallback
+    current_sensitivity: High
+    validation_expectation: deterministic adapter tests plus manual live validation for the current authenticated session
+    public_safe_wording: EdStem uses authenticated session-backed requests for course memberships and thread lists, with inferred default activity paths and DOM fallback surfaces; stability depends on the current site surface.
+
+  - site: myuw
+    primary_path: session-backed /api/v1/schedule/current, /api/v1/notices/, /api/v1/visual_schedule/current, and /api/v1/deptcal/, fallback page state, then DOM bridge
+    boundary_classes:
+      - session-backed
+      - state-fallback
+      - dom-fallback
+    current_sensitivity: Medium to High
+    validation_expectation: deterministic adapter tests plus manual live validation from a matching tab context
+    public_safe_wording: MyUW currently prefers authenticated session-backed schedule, notices, and calendar APIs, with page-state-derived context and DOM parsing as fallbacks, and should be treated as context-sensitive.
+
+  - site: bff-provider-status
+    primary_path: local loopback API
+    boundary_classes:
+      - official
+    current_sensitivity: Low
+    validation_expectation: deterministic repo gate
+    public_safe_wording: The BFF exposes local status and proxy routes for formal API-key flows.
+
+  - site: provider-roundtrip
+    primary_path: OpenAI / Gemini API-key flow
+    boundary_classes:
+      - official
+    current_sensitivity: Medium
+    validation_expectation: optional local smoke, not required CI
+    public_safe_wording: Provider round-trip is an environment-dependent validation lane, not a default merge gate.
+
+planned_readonly_expansion:
+  - site: myplan
+    primary_path: to be determined per live proof; prefer official/public planning surfaces before session-backed or DOM fallback
+    boundary_classes: []
+    current_sensitivity: Medium
+    validation_expectation: a shared planning substrate plus read-only extension/web planning-summary adoption now exist repo-side, but manual live validation and stronger product claims are still required.
+    public_safe_wording: MyPlan is a read-only academic-planning expansion lane with a shared planning substrate and read-only workbench summary landed repo-side, and it must not be described as registration automation, upstream MyPlan parity, or unrestricted current support.
+
+  - site: dars
+    primary_path: to be determined per live proof; prefer official/public degree-audit surfaces before session-backed or DOM fallback
+    boundary_classes: []
+    current_sensitivity: High
+    validation_expectation: contract design first, then deterministic adapter tests plus manual live validation
+    public_safe_wording: DARS is a planned read-only degree-audit observation lane and must not be described as a current shipped integration.
+
+  - site: time-schedule
+    primary_path: to be determined per live proof; prefer official/public schedule surfaces before session-backed or DOM fallback
+    boundary_classes: []
+    current_sensitivity: Medium
+    validation_expectation: a repo-side shared runtime landing now exists on the public course-offerings carrier, and broader surface/documentation adoption plus manual live validation are still required.
+    public_safe_wording: Time Schedule is a read-only catalog/schedule lane with a shared runtime landing on the public course-offerings carrier, and it must not be described as registration automation, broader registration support, or full upstream-site parity.
+
+  - site: dawgpath
+    primary_path: to be determined per live proof; prefer official/public program-path surfaces before session-backed or DOM fallback
+    boundary_classes: []
+    current_sensitivity: Medium
+    validation_expectation: contract design first, then deterministic adapter tests plus manual live validation
+    public_safe_wording: DawgPath is a planned read-only program-path lane and must not be marketed as an official advising product.
+
+  - site: ctclink-class-search
+    primary_path: public class-search surface first; validate institution-by-institution before any internal endpoint or DOM fallback is trusted
+    boundary_classes:
+      - internal
+      - dom-fallback
+    current_sensitivity: Medium to High
+    validation_expectation: school-by-school validation plus deterministic adapter tests once a stable carrier is proved
+    public_safe_wording: ctcLink class search is a planned read-only discovery lane and must not be overclaimed as a stable anonymous public API across every institution.
+
+red_zone_registry:
+  - site: register-uw
+    reason: registration automation, submission flows, and registration-related polling are out of scope
+
+  - site: notify-uw
+    reason: seat-watching, registration-related polling, and notification automation are out of scope
+
+  - site: registration-related-resources
+    reason: protected registration resources must not become automation or polling targets
+
+  - site: seat-watcher-waitlist-polling
+    reason: repeated seat-availability checking is red-zone registration automation behavior
+
+  - site: add-drop-submission
+    reason: the current contract never submits registration-state mutations
+
+  - site: seat-swap-hold-seat
+    reason: seat-swap and hold-seat helpers are operator actions, not read-only observation surfaces
+
+  - site: registration-query-loop
+    reason: looped registration-related queries are explicitly outside the current read-only posture

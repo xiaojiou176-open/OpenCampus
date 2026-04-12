@@ -1,0 +1,57 @@
+import { expect, test } from '@playwright/test';
+
+test('shows the standalone workbench and exports the current view', async ({ page }) => {
+  await page.addInitScript(() => {
+    globalThis.__CAMPUS_WEB_BOOTSTRAP_DELAY_MS__ = 150;
+  });
+
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
+
+  const loadingWorkbenchHeading = page.getByRole('heading', { name: 'Loading shared workbench' });
+  const firstStatCard = page.locator('.stats-grid .stat-card').first();
+
+  await expect(loadingWorkbenchHeading).toBeVisible();
+  await expect(firstStatCard.getByText('—')).toBeVisible();
+
+  await expect(loadingWorkbenchHeading).toBeHidden();
+  await expect(page.getByRole('heading', { name: 'Academic workbench' })).toBeVisible();
+  await expect(
+    page.getByText('This local-first academic decision workspace keeps shared storage, exported evidence, and visible receipts in front.'),
+  ).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Focus Queue' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Weekly Load' })).toBeVisible();
+  await expect(page.getByText('Light load: 1 calendar item.')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Change Journal' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Discussion Highlights' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Schedule Outlook' })).toBeVisible();
+
+  const statsGrid = page.locator('.stats-grid').first();
+  const focusQueueHeading = page.getByRole('heading', { name: 'Focus Queue' });
+  const planningPulseHeading = page.getByRole('heading', { name: 'Planning Pulse' });
+  const currentTasksHeading = page.getByRole('heading', { name: 'Current Tasks' });
+  const studyMaterialsHeading = page.getByRole('heading', { name: 'Study Materials' });
+  const importedCountsHeading = page.getByRole('heading', { name: 'Imported site counts' });
+
+  const statsBox = await statsGrid.boundingBox();
+  const focusQueueBox = await focusQueueHeading.boundingBox();
+  const planningPulseBox = await planningPulseHeading.boundingBox();
+  const currentTasksBox = await currentTasksHeading.boundingBox();
+  const studyMaterialsBox = await studyMaterialsHeading.boundingBox();
+  const importedCountsBox = await importedCountsHeading.boundingBox();
+
+  expect(statsBox).not.toBeNull();
+  expect(focusQueueBox).not.toBeNull();
+  expect(planningPulseBox).not.toBeNull();
+  expect(currentTasksBox).not.toBeNull();
+  expect(studyMaterialsBox).not.toBeNull();
+  expect(importedCountsBox).not.toBeNull();
+
+  expect(statsBox!.y).toBeLessThan(focusQueueBox!.y);
+  expect(focusQueueBox!.y).toBeLessThan(planningPulseBox!.y);
+  expect(planningPulseBox!.y).toBeLessThan(currentTasksBox!.y);
+  expect(currentTasksBox!.y).toBeLessThan(studyMaterialsBox!.y);
+  expect(studyMaterialsBox!.y).toBeLessThan(importedCountsBox!.y);
+
+  await page.getByRole('button', { name: 'Export current view' }).click();
+  await expect(page.getByText(/Downloaded .*current-view/i)).toBeVisible();
+});

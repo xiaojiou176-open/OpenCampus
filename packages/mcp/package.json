@@ -1,0 +1,28 @@
+{
+  "name": "@campus-copilot/mcp",
+  "version": "0.1.0",
+  "private": false,
+  "description": "Config helpers for Campus Copilot read-only site MCP sidecars.",
+  "license": "MIT",
+  "keywords": ["campus-copilot", "mcp", "config", "read-only", "snapshot"],
+  "homepage": "https://github.com/xiaojiou176-open/campus-copilot/tree/main/packages/mcp",
+  "bugs": {
+    "url": "https://github.com/xiaojiou176-open/campus-copilot/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xiaojiou176-open/campus-copilot.git",
+    "directory": "packages/mcp"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "files": ["README.md", "src/index.mjs"],
+  "exports": {
+    ".": "./src/index.mjs"
+  },
+  "scripts": {
+    "test": "node --test ./src/index.test.mjs"
+  }
+}
