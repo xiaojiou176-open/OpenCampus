@@ -5,6 +5,21 @@ import {
   type CanvasRequestExecutor,
 } from './index';
 
+const CANVAS_COURSES_PATH = '/api/v1/courses?state[]=available&include[]=syllabus_body&per_page=100';
+const canvasFilesPath = (courseId: string | number) => `/api/v1/courses/${courseId}/files?per_page=100`;
+const canvasSubmissionFeedbackPath = (courseId: string | number, assignmentIds: Array<string | number>) => {
+  const params = new URLSearchParams();
+  params.set('per_page', '100');
+  params.append('include[]', 'submission_comments');
+  params.append('include[]', 'submission_html_comments');
+  params.append('include[]', 'rubric_assessment');
+  for (const assignmentId of assignmentIds) {
+    params.append('assignment_ids[]', String(assignmentId));
+  }
+
+  return `/api/v1/courses/${courseId}/students/submissions?${params.toString()}`;
+};
+
 const okExecutor =
   (payloads: Record<string, unknown>): CanvasRequestExecutor =>
   async (path) => {
@@ -59,13 +74,31 @@ describe('CanvasApiClient', () => {
   it('parses courses, assignments, announcements, messages, grades, and events from official API payloads', async () => {
     const client = new CanvasApiClient(
       okExecutor({
-        '/api/v1/courses?state[]=available&per_page=100': [
+        [CANVAS_COURSES_PATH]: [
           {
             id: 42,
             name: 'CSE 142',
             course_code: 'CSE 142',
             html_url: 'https://canvas.example.edu/courses/42',
             workflow_state: 'available',
+            syllabus_body: '<p>Review the course policies and weekly reading plan.</p>',
+          },
+        ],
+        [canvasFilesPath(42)]: [
+          {
+            id: 501,
+            display_name: 'lecture-01.pdf',
+            filename: 'lecture-01.pdf',
+            html_url: 'https://canvas.example.edu/courses/42/files/501',
+            url: 'https://canvas.example.edu/files/501/download',
+            size: 204800,
+            updated_at: '2026-03-24T09:00:00-07:00',
+          },
+        ],
+        [canvasSubmissionFeedbackPath(42, [8])]: [
+          {
+            assignment_id: 8,
+            submission_comments: [{ comment: '<p>Great job.</p>' }],
           },
         ],
         '/api/v1/courses/42/assignments?include[]=submission&order_by=due_at&per_page=100': [
@@ -166,6 +199,24 @@ describe('CanvasApiClient', () => {
       expect(result.snapshot.assignments?.[0]?.submittedAt).toBe('2026-03-24T00:05:00-07:00');
       expect(result.snapshot.assignments?.[0]?.score).toBe(95);
       expect(result.snapshot.assignments?.[0]?.maxScore).toBe(100);
+      expect(result.snapshot.resources).toEqual([
+        expect.objectContaining({
+          id: 'canvas:resource:42:syllabus',
+          courseId: 'canvas:course:42',
+          resourceKind: 'other',
+          title: 'Syllabus summary',
+          summary: 'Review the course policies and weekly reading plan.',
+        }),
+        expect.objectContaining({
+          id: 'canvas:resource:501',
+          courseId: 'canvas:course:42',
+          resourceKind: 'file',
+          title: 'lecture-01.pdf',
+          fileExtension: '.pdf',
+          sizeBytes: 204800,
+          downloadUrl: 'https://canvas.example.edu/files/501/download',
+        }),
+      ]);
       expect(result.snapshot.announcements?.[0]?.courseId).toBe('canvas:course:42');
       expect(result.snapshot.announcements?.[0]?.summary).toBe('Read the updated syllabus before lab.');
       expect(result.snapshot.messages?.[0]).toMatchObject({
@@ -189,7 +240,7 @@ describe('CanvasApiClient', () => {
   it('includes late submission detail in the canonical assignment summary', async () => {
     const client = new CanvasApiClient(
       okExecutor({
-        '/api/v1/courses?state[]=available&per_page=100': [
+        [CANVAS_COURSES_PATH]: [
           {
             id: 42,
             name: 'CSE 142',
@@ -197,6 +248,8 @@ describe('CanvasApiClient', () => {
             html_url: 'https://canvas.example.edu/courses/42',
           },
         ],
+        [canvasFilesPath(42)]: [],
+        [canvasSubmissionFeedbackPath(42, [9])]: [],
         '/api/v1/courses/42/assignments?include[]=submission&order_by=due_at&per_page=100': [
           {
             id: 9,
@@ -234,10 +287,10 @@ describe('CanvasApiClient', () => {
     }
   });
 
-  it('uses the detail attachment hint even when the latest message body is empty', async () => {
+  it('keeps assignment core fields when submission feedback enrichment fails', async () => {
     const client = new CanvasApiClient(
       okExecutor({
-        '/api/v1/courses?state[]=available&per_page=100': [
+        [CANVAS_COURSES_PATH]: [
           {
             id: 42,
             name: 'CSE 142',
@@ -245,6 +298,76 @@ describe('CanvasApiClient', () => {
             html_url: 'https://canvas.example.edu/courses/42',
           },
         ],
+        [canvasFilesPath(42)]: [],
+        '/api/v1/courses/42/assignments?include[]=submission&order_by=due_at&per_page=100': [
+          {
+            id: 10,
+            course_id: 42,
+            name: 'Homework 3',
+            html_url: 'https://canvas.example.edu/courses/42/assignments/10',
+            due_at: '2026-03-26T23:59:00-07:00',
+            points_possible: 25,
+            submission: {
+              workflow_state: 'submitted',
+              submitted_at: '2026-03-24T08:15:00-07:00',
+              score: 24,
+            },
+          },
+        ],
+        '/api/v1/announcements?per_page=100&context_codes%5B%5D=course_42': [],
+        '/api/v1/conversations?scope=inbox&per_page=100': [],
+        '/api/v1/calendar_events?all_events=true&per_page=100&context_codes%5B%5D=course_42': [],
+      }),
+    );
+
+    const adapter = createCanvasAdapter(client);
+    const result = await adapter.sync({
+      url: 'https://canvas.example.edu/courses/42',
+      site: 'canvas',
+      now: '2026-03-24T18:00:00-07:00',
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.outcome).toBe('partial_success');
+      expect(result.snapshot.assignments?.[0]).toMatchObject({
+        title: 'Homework 3',
+        status: 'submitted',
+        summary: 'Submitted · 24 / 25',
+        submittedAt: '2026-03-24T08:15:00-07:00',
+        score: 24,
+        maxScore: 25,
+        detail: undefined,
+      });
+      expect(result.snapshot.grades?.[0]).toMatchObject({
+        assignmentId: 'canvas:assignment:10',
+        score: 24,
+        maxScore: 25,
+      });
+      expect(result.attemptsByResource?.assignments).toHaveLength(2);
+      expect(result.attemptsByResource?.assignments?.[0]).toMatchObject({
+        collectorName: 'CanvasAssignmentsApiCollector',
+        success: true,
+      });
+      expect(result.attemptsByResource?.assignments?.[1]).toMatchObject({
+        collectorName: 'CanvasSubmissionFeedbackCollector',
+        success: false,
+      });
+    }
+  });
+
+  it('uses the detail attachment hint even when the latest message body is empty', async () => {
+    const client = new CanvasApiClient(
+      okExecutor({
+        [CANVAS_COURSES_PATH]: [
+          {
+            id: 42,
+            name: 'CSE 142',
+            course_code: 'CSE 142',
+            html_url: 'https://canvas.example.edu/courses/42',
+          },
+        ],
+        [canvasFilesPath(42)]: [],
         '/api/v1/courses/42/assignments?include[]=submission&order_by=due_at&per_page=100': [],
         '/api/v1/announcements?per_page=100&context_codes%5B%5D=course_42': [],
         '/api/v1/conversations?scope=inbox&per_page=100': [
@@ -306,7 +429,7 @@ describe('CanvasApiClient', () => {
       }
 
       return okExecutor({
-        '/api/v1/courses?state[]=available&per_page=100': [
+        [CANVAS_COURSES_PATH]: [
           {
             id: 42,
             name: 'CSE 142',
@@ -314,6 +437,7 @@ describe('CanvasApiClient', () => {
             html_url: 'https://canvas.example.edu/courses/42',
           },
         ],
+        [canvasFilesPath(42)]: [],
         '/api/v1/courses/42/assignments?include[]=submission&order_by=due_at&per_page=100': [],
         '/api/v1/announcements?per_page=100&context_codes%5B%5D=course_42': [],
         '/api/v1/conversations?scope=inbox&per_page=100': [
@@ -350,7 +474,7 @@ describe('CanvasApiClient', () => {
   });
 
   it('returns adapter capabilities and health scoped to canvas phase-2 support', async () => {
-    const client = new CanvasApiClient(okExecutor({ '/api/v1/courses?state[]=available&per_page=100': [] }));
+    const client = new CanvasApiClient(okExecutor({ [CANVAS_COURSES_PATH]: [] }));
     const adapter = createCanvasAdapter(client);
     const capabilities = await adapter.getCapabilities({
       url: 'https://canvas.example.edu',
@@ -367,13 +491,14 @@ describe('CanvasApiClient', () => {
     expect(capabilities.resources.assignments?.preferredMode).toBe('official_api');
     expect(capabilities.resources.grades?.preferredMode).toBe('official_api');
     expect(capabilities.resources.events?.preferredMode).toBe('official_api');
+    expect(capabilities.resources.resources?.preferredMode).toBe('official_api');
     expect(health?.status).toBe('healthy');
   });
 
   it('treats an empty course list as a valid empty snapshot, not a sync failure', async () => {
     const client = new CanvasApiClient(
       okExecutor({
-        '/api/v1/courses?state[]=available&per_page=100': [],
+        [CANVAS_COURSES_PATH]: [],
         '/api/v1/conversations?scope=inbox&per_page=100': [],
       }),
     );
@@ -387,6 +512,7 @@ describe('CanvasApiClient', () => {
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.snapshot.courses).toHaveLength(0);
+      expect(result.snapshot.resources).toHaveLength(0);
       expect(result.snapshot.assignments).toHaveLength(0);
       expect(result.snapshot.announcements).toHaveLength(0);
       expect(result.snapshot.messages).toHaveLength(0);
@@ -398,12 +524,13 @@ describe('CanvasApiClient', () => {
   it('falls back to a synthetic course title when canvas omits name', async () => {
     const client = new CanvasApiClient(
       okExecutor({
-        '/api/v1/courses?state[]=available&per_page=100': [
+        [CANVAS_COURSES_PATH]: [
           {
             id: 1830320,
             workflow_state: 'available',
           },
         ],
+        [canvasFilesPath(1830320)]: [],
         '/api/v1/courses/1830320/assignments?include[]=submission&order_by=due_at&per_page=100': [],
         '/api/v1/announcements?per_page=100&context_codes%5B%5D=course_1830320': [],
         '/api/v1/conversations?scope=inbox&per_page=100': [],
@@ -427,7 +554,7 @@ describe('CanvasApiClient', () => {
   it('filters access-restricted placeholder courses out of the current sync set', async () => {
     const client = new CanvasApiClient(
       okExecutor({
-        '/api/v1/courses?state[]=available&per_page=100': [
+        [CANVAS_COURSES_PATH]: [
           {
             id: 42,
             name: 'CSE 142',
@@ -439,6 +566,7 @@ describe('CanvasApiClient', () => {
             access_restricted_by_date: true,
           },
         ],
+        [canvasFilesPath(42)]: [],
         '/api/v1/courses/42/assignments?include[]=submission&order_by=due_at&per_page=100': [],
         '/api/v1/announcements?per_page=100&context_codes%5B%5D=course_42': [],
         '/api/v1/conversations?scope=inbox&per_page=100': [],
@@ -468,7 +596,7 @@ describe('CanvasApiClient', () => {
   it('returns partial_success when assignments fail but courses still sync', async () => {
     const client = new CanvasApiClient(
       okExecutor({
-        '/api/v1/courses?state[]=available&per_page=100': [
+        [CANVAS_COURSES_PATH]: [
           {
             id: 42,
             name: 'CSE 142',
@@ -476,6 +604,7 @@ describe('CanvasApiClient', () => {
             html_url: 'https://canvas.example.edu/courses/42',
           },
         ],
+        [canvasFilesPath(42)]: [],
         '/api/v1/announcements?per_page=100&context_codes%5B%5D=course_42': [],
         '/api/v1/conversations?scope=inbox&per_page=100': [],
         '/api/v1/calendar_events?all_events=true&per_page=100&context_codes%5B%5D=course_42': [],
@@ -506,7 +635,7 @@ describe('CanvasApiClient', () => {
   it('preserves successful assignments without stuffing the payload into the error string when one course fails', async () => {
     const client = new CanvasApiClient(
       okExecutor({
-        '/api/v1/courses?state[]=available&per_page=100': [
+        [CANVAS_COURSES_PATH]: [
           {
             id: 42,
             name: 'CSE 142',
@@ -520,6 +649,8 @@ describe('CanvasApiClient', () => {
             html_url: 'https://canvas.example.edu/courses/84',
           },
         ],
+        [canvasFilesPath(42)]: [],
+        [canvasFilesPath(84)]: [],
         '/api/v1/courses/42/assignments?include[]=submission&order_by=due_at&per_page=100': [
           {
             id: 8,

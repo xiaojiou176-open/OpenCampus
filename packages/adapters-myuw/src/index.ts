@@ -432,6 +432,118 @@ function parseVisibleEventsFromHtml(pageHtml: string | undefined): MyUWRawEvent[
   return events;
 }
 
+const MONTH_INDEX_BY_LABEL: Record<string, string> = {
+  jan: '01',
+  feb: '02',
+  mar: '03',
+  apr: '04',
+  may: '05',
+  jun: '06',
+  jul: '07',
+  aug: '08',
+  sep: '09',
+  oct: '10',
+  nov: '11',
+  dec: '12',
+};
+
+function toMyUWAllDayDate(dateLabel: string, year: string, offset: string) {
+  const match = dateLabel.trim().match(/^(?<month>[A-Za-z]{3})\s+(?<day>\d{1,2})$/);
+  const monthLabel = match?.groups?.month?.slice(0, 3).toLowerCase();
+  const day = match?.groups?.day?.padStart(2, '0');
+  const month = monthLabel ? MONTH_INDEX_BY_LABEL[monthLabel] : undefined;
+  if (!month || !day) {
+    return undefined;
+  }
+
+  const iso = `${year}-${month}-${day}T00:00:00${offset}`;
+  return IsoDateTimeSchema.safeParse(iso).success ? iso : undefined;
+}
+
+function toMyUWAcademicCalendarEventRange(dateLabel: string, year: string, offset: string) {
+  const normalized = dateLabel.replace(/\s+/g, ' ').trim();
+  const rangeMatch = normalized.match(
+    /^(?<month>[A-Za-z]{3})\s+(?<start>\d{1,2})\s*-\s*(?:(?<endMonth>[A-Za-z]{3})\s+)?(?<end>\d{1,2})$/,
+  );
+  if (rangeMatch?.groups) {
+    const startMonth = MONTH_INDEX_BY_LABEL[rangeMatch.groups.month.slice(0, 3).toLowerCase()];
+    const endMonthLabel = rangeMatch.groups.endMonth?.slice(0, 3).toLowerCase() ?? rangeMatch.groups.month.slice(0, 3).toLowerCase();
+    const endMonth = MONTH_INDEX_BY_LABEL[endMonthLabel];
+    const startDay = rangeMatch.groups.start.padStart(2, '0');
+    const endDay = rangeMatch.groups.end.padStart(2, '0');
+    if (!startMonth || !endMonth) {
+      return {};
+    }
+    const startAt = IsoDateTimeSchema.safeParse(`${year}-${startMonth}-${startDay}T00:00:00${offset}`).success
+      ? `${year}-${startMonth}-${startDay}T00:00:00${offset}`
+      : undefined;
+    const endAt = IsoDateTimeSchema.safeParse(`${year}-${endMonth}-${endDay}T23:59:59${offset}`).success
+      ? `${year}-${endMonth}-${endDay}T23:59:59${offset}`
+      : undefined;
+    return { startAt, endAt };
+  }
+
+  const startAt = toMyUWAllDayDate(normalized, year, offset);
+  const endAt = startAt ? startAt.replace('T00:00:00', 'T23:59:59') : undefined;
+  return { startAt, endAt };
+}
+
+function parseAcademicCalendarEventsFromHtml(pageHtml: string | undefined, now: string): MyUWRawEvent[] {
+  if (!pageHtml) {
+    throw new MyUWAdapterError('unsupported_context', 'MyUW academic calendar HTML is unavailable.');
+  }
+
+  const offset = getOffsetFromNow(now);
+  const cards = Array.from(
+    pageHtml.matchAll(
+      /<h2[^>]*class="[^"]*myuw-font-encode-sans[^"]*"[^>]*>\s*(?<quarter>[^<]+?)\s*<\/h2>[\s\S]*?<ul[^>]*class="[^"]*list-unstyled[^"]*"[^>]*>(?<items>[\s\S]*?)<\/ul>/gi,
+    ),
+  );
+
+  const events: MyUWRawEvent[] = [];
+  for (const card of cards) {
+    const quarter = decodeHtmlText(card.groups?.quarter)?.replace(/\s+/g, ' ').trim();
+    const yearMatch = quarter?.match(/(?<year>\d{4})$/);
+    const year = yearMatch?.groups?.year;
+    if (!quarter || !year) {
+      continue;
+    }
+
+    const itemsHtml = card.groups?.items ?? '';
+    const items = Array.from(
+      itemsHtml.matchAll(
+        /<li[^>]*class="[^"]*mb-2[^"]*"[^>]*>\s*<div[^>]*class="[^"]*fw-bold[^"]*"[^>]*>\s*(?<date>[^<]+?)\s*<\/div>[\s\S]*?<a[^>]+href="(?<href>[^"]+)"[^>]*>\s*(?<title>[\s\S]*?)\s*<\/a>/gi,
+      ),
+    );
+
+    for (const [index, item] of items.entries()) {
+      const dateLabel = decodeHtmlText(item.groups?.date)?.replace(/\s+/g, ' ').trim();
+      const title = decodeHtmlText(item.groups?.title)?.replace(/\s+/g, ' ').trim();
+      const href = item.groups?.href;
+      if (!dateLabel || !title) {
+        continue;
+      }
+
+      const { startAt, endAt } = toMyUWAcademicCalendarEventRange(dateLabel, year, offset);
+      events.push({
+        id: `academic-calendar:${quarter}:${index + 1}`,
+        title,
+        summary: `${quarter} academic calendar`,
+        url: href,
+        eventKind: 'other',
+        startAt,
+        endAt,
+      });
+    }
+  }
+
+  if (events.length === 0) {
+    throw new MyUWAdapterError('unsupported_context', 'MyUW academic calendar DOM is unavailable.');
+  }
+
+  return events;
+}
+
 function parseStateCollection<T>(pageState: unknown, key: 'notices' | 'events'): T[] {
   const parsedState = z
     .object({
@@ -922,13 +1034,17 @@ class MyUWEventsDomCollector implements ResourceCollector<Event> {
 
   async collect(ctx: AdapterContext) {
     let rawEvents: MyUWRawEvent[];
-    try {
-      rawEvents = parseJsonFromHtml<MyUWRawEvent>(ctx.pageHtml, 'myuw-events');
-    } catch (error) {
-      if (!(error instanceof MyUWAdapterError) || error.code !== 'unsupported_context') {
-        throw error;
+    if (ctx.url.includes('/academic_calendar/')) {
+      rawEvents = parseAcademicCalendarEventsFromHtml(ctx.pageHtml, ctx.now);
+    } else {
+      try {
+        rawEvents = parseJsonFromHtml<MyUWRawEvent>(ctx.pageHtml, 'myuw-events');
+      } catch (error) {
+        if (!(error instanceof MyUWAdapterError) || error.code !== 'unsupported_context') {
+          throw error;
+        }
+        rawEvents = parseVisibleEventsFromHtml(ctx.pageHtml);
       }
-      rawEvents = parseVisibleEventsFromHtml(ctx.pageHtml);
     }
     return z.array(MyUWRawEventSchema).parse(rawEvents).map(normalizeEvent);
   }

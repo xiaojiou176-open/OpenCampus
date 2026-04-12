@@ -41,6 +41,7 @@ export const CanvasSyncOutcomeSchema = SiteSyncOutcomeSchema;
 
 export const SYNC_SITE_COMMAND = 'syncSite';
 export const GET_SITE_SYNC_STATUS_COMMAND = 'getSiteSyncStatus';
+export const CAPTURE_PLANNING_SUBSTRATE_COMMAND = 'capturePlanningSubstrate';
 
 export const SYNC_CANVAS_COMMAND = 'syncCanvas';
 export const GET_CANVAS_SYNC_STATUS_COMMAND = 'getCanvasSyncStatus';
@@ -58,6 +59,8 @@ export interface SiteSyncStatusView {
 export interface SyncSiteCommandRequest {
   type: typeof SYNC_SITE_COMMAND;
   site: Site;
+  tabId?: number;
+  url?: string;
 }
 
 export interface GetSiteSyncStatusRequest {
@@ -70,6 +73,21 @@ export interface SyncSiteCommandResponse {
   site: Site;
   outcome: SiteSyncOutcome;
   status: SiteSyncStatusView;
+}
+
+export interface CapturePlanningSubstrateCommandRequest {
+  type: typeof CAPTURE_PLANNING_SUBSTRATE_COMMAND;
+  tabId?: number;
+  url?: string;
+}
+
+export interface CapturePlanningSubstrateCommandResponse {
+  type: typeof CAPTURE_PLANNING_SUBSTRATE_COMMAND;
+  source: 'myplan';
+  outcome: SiteSyncOutcome;
+  capturedAt: string;
+  planLabel?: string;
+  message: string;
 }
 
 export interface GetSiteSyncStatusResponse {
@@ -113,3 +131,4 @@ export {
   type BuildWorkbenchExportInputArgs,
   type WorkbenchPresentationOverrides,
 } from './workbench-composition';
+export * from './local-bff';

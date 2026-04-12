@@ -1,5 +1,12 @@
-import { describe, expect, it } from 'vitest';
-import { buildWorkbenchAiProxyRequest, buildWorkbenchExportInput, CanvasSyncOutcomeSchema, createSurfaceSnapshot } from './index';
+import { describe, expect, it, vi } from 'vitest';
+import {
+  buildWorkbenchAiProxyRequest,
+  buildWorkbenchExportInput,
+  CanvasSyncOutcomeSchema,
+  createSurfaceSnapshot,
+  normalizeLocalBffBaseUrl,
+  resolveLocalBffBaseUrl,
+} from './index';
 
 describe('core contracts', () => {
   it('creates a surface snapshot from canonical storage results', () => {
@@ -49,6 +56,10 @@ describe('core contracts', () => {
 
     expect(input.viewTitle).toBe('Localized current view');
     expect(input.timelineEntries).toEqual([]);
+    expect(input.scope).toEqual({
+      site: 'canvas',
+    });
+    expect(input.authorization).toBeUndefined();
   });
 
   it('builds a shared AI proxy request on the existing route/body contract', () => {
@@ -93,6 +104,25 @@ describe('core contracts', () => {
         format: 'markdown',
         filename: 'current-view.md',
         mimeType: 'text/markdown',
+        scope: {
+          scopeType: 'current_view',
+          preset: 'current_view',
+          site: 'canvas',
+          resourceFamily: 'workspace_snapshot',
+        },
+        packaging: {
+          authorizationLevel: 'allowed',
+          aiAllowed: false,
+          riskLabel: 'medium',
+          matchConfidence: 'medium',
+          provenance: [
+            {
+              sourceType: 'derived_read_model',
+              label: 'Unified local read model',
+              readOnly: true,
+            },
+          ],
+        },
         content: '# Current view',
       },
     });
@@ -101,8 +131,10 @@ describe('core contracts', () => {
     expect(request.body.messages).toHaveLength(2);
     expect(request.body.messages[0]?.role).toBe('system');
     expect(request.body.messages[0]?.content).toContain('Advanced material analysis stays default-disabled');
+    expect(request.body.messages[0]?.content).toContain('Current site policy overlay: Canvas.');
     expect(request.body.messages[1]?.role).toBe('user');
     expect(request.body.messages[1]?.content).toContain('get_planning_substrates');
+    expect(request.body.messages[1]?.content).toContain('"scope"');
   });
 
   it('accepts planning substrates from the shared workbench view contract', () => {
@@ -149,6 +181,25 @@ describe('core contracts', () => {
         format: 'markdown',
         filename: 'current-view.md',
         mimeType: 'text/markdown',
+        scope: {
+          scopeType: 'current_view',
+          preset: 'current_view',
+          site: 'canvas',
+          resourceFamily: 'workspace_snapshot',
+        },
+        packaging: {
+          authorizationLevel: 'allowed',
+          aiAllowed: false,
+          riskLabel: 'medium',
+          matchConfidence: 'medium',
+          provenance: [
+            {
+              sourceType: 'derived_read_model',
+              label: 'Unified local read model',
+              readOnly: true,
+            },
+          ],
+        },
         content: '# Current view',
       },
     });
@@ -189,6 +240,25 @@ describe('core contracts', () => {
         format: 'markdown',
         filename: 'current-view.md',
         mimeType: 'text/markdown',
+        scope: {
+          scopeType: 'current_view',
+          preset: 'current_view',
+          site: 'canvas',
+          resourceFamily: 'workspace_snapshot',
+        },
+        packaging: {
+          authorizationLevel: 'allowed',
+          aiAllowed: false,
+          riskLabel: 'medium',
+          matchConfidence: 'medium',
+          provenance: [
+            {
+              sourceType: 'derived_read_model',
+              label: 'Unified local read model',
+              readOnly: true,
+            },
+          ],
+        },
         content: '# Current view',
       },
     });
@@ -196,5 +266,69 @@ describe('core contracts', () => {
     expect(request.body.messages[0]?.content).toContain('explicitly opted in to advanced material analysis');
     expect(request.body.messages[1]?.content).toContain('get_opted_in_course_material_excerpt');
     expect(request.body.messages[1]?.content).toContain('Canvas · CSE 142');
+  });
+
+  it('normalizes local BFF base URLs', () => {
+    expect(normalizeLocalBffBaseUrl(' http://127.0.0.1:8787/ ')).toBe('http://127.0.0.1:8787');
+    expect(normalizeLocalBffBaseUrl('notaurl')).toBeUndefined();
+  });
+
+  it('prefers a reachable manual local BFF URL', async () => {
+    const fetchImpl = vi.fn(async (input: string | URL | Request) => {
+      const url = String(input);
+      return {
+        ok: url === 'http://127.0.0.1:8787/health',
+      } as Response;
+    });
+
+    await expect(
+      resolveLocalBffBaseUrl({
+        configuredBaseUrl: 'http://127.0.0.1:8787',
+        fetchImpl: fetchImpl as typeof fetch,
+      }),
+    ).resolves.toEqual({
+      baseUrl: 'http://127.0.0.1:8787',
+      source: 'manual',
+      checkedUrls: ['http://127.0.0.1:8787'],
+    });
+  });
+
+  it('autodiscovers a fallback local BFF URL when manual config is missing', async () => {
+    const fetchImpl = vi.fn(async (input: string | URL | Request) => {
+      const url = String(input);
+      return {
+        ok: url === 'http://localhost:8787/health',
+      } as Response;
+    });
+
+    await expect(
+      resolveLocalBffBaseUrl({
+        fetchImpl: fetchImpl as typeof fetch,
+      }),
+    ).resolves.toEqual({
+      baseUrl: 'http://localhost:8787',
+      source: 'autodiscovered',
+      checkedUrls: ['http://127.0.0.1:8787', 'http://localhost:8787'],
+    });
+  });
+
+  it('keeps a manual BFF override authoritative when it is unreachable', async () => {
+    const fetchImpl = vi.fn(async (input: string | URL | Request) => {
+      const url = String(input);
+      return {
+        ok: url === 'http://127.0.0.1:8787/health',
+      } as Response;
+    });
+
+    await expect(
+      resolveLocalBffBaseUrl({
+        configuredBaseUrl: 'http://localhost:9999',
+        fetchImpl: fetchImpl as typeof fetch,
+      }),
+    ).resolves.toEqual({
+      source: 'none',
+      checkedUrls: ['http://localhost:9999'],
+      error: 'manual_unreachable',
+    });
   });
 });

@@ -338,6 +338,53 @@ describe('MyUWAdapter', () => {
     }
   });
 
+  it('parses academic calendar DOM entries into read-only timeline events', async () => {
+    const adapter = createMyUWAdapter();
+
+    const result = await adapter.sync({
+      url: 'https://my.uw.edu/academic_calendar/',
+      site: 'myuw',
+      now: '2026-04-11T12:00:00-07:00',
+      pageHtml: `
+        <main>
+          <h2 class="h4 mb-3 text-dark-beige myuw-font-encode-sans">Spring 2026</h2>
+          <ul class="list-unstyled mb-0 myuw-text-md">
+            <li class="mb-2">
+              <div class="fw-bold">May 25</div>
+              <a href="http://www.washington.edu/calendar/academic/?trumbaEmbed=view%3Devent%26eventid%3D177468211">
+                Memorial Day
+              </a>
+            </li>
+            <li class="mb-2">
+              <div class="fw-bold">Jun 6 - 12</div>
+              <a href="http://www.washington.edu/calendar/academic/?trumbaEmbed=view%3Devent%26eventid%3D177511985">
+                Final Examinations - Spring 2026
+              </a>
+            </li>
+          </ul>
+        </main>
+      `,
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.snapshot.events?.map((item) => item.title)).toEqual([
+        'Memorial Day',
+        'Final Examinations - Spring 2026',
+      ]);
+      expect(result.snapshot.events?.[0]?.summary).toBe('Spring 2026 academic calendar');
+      expect(result.snapshot.events?.[0]?.startAt).toBe('2026-05-25T00:00:00-07:00');
+      expect(result.snapshot.events?.[0]?.endAt).toBe('2026-05-25T23:59:59-07:00');
+      expect(result.snapshot.events?.[1]?.startAt).toBe('2026-06-06T00:00:00-07:00');
+      expect(result.snapshot.events?.[1]?.endAt).toBe('2026-06-12T23:59:59-07:00');
+      expect(
+        result.attemptsByResource?.events?.some(
+          (attempt) => attempt.mode === 'dom' && attempt.collectorName === 'MyUWEventsDomCollector' && attempt.success,
+        ),
+      ).toBe(true);
+    }
+  });
+
   it('returns unsupported_context when neither state nor DOM is available', async () => {
     const adapter = createMyUWAdapter();
     const result = await adapter.sync({

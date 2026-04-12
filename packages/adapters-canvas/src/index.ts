@@ -18,6 +18,7 @@ import {
   GradeSchema,
   HealthStatusSchema,
   MessageSchema,
+  ResourceSchema,
   type Announcement,
   type Assignment,
   type Course,
@@ -25,6 +26,7 @@ import {
   type Grade,
   type HealthStatus,
   type Message,
+  type Resource,
 } from '@campus-copilot/schema';
 import { z } from 'zod';
 
@@ -57,6 +59,16 @@ class PartialCanvasAssignmentsError extends Error {
   }
 }
 
+class PartialCanvasResourcesError extends Error {
+  constructor(
+    public readonly resources: Resource[],
+    message: string,
+  ) {
+    super(message);
+    this.name = 'PartialCanvasResourcesError';
+  }
+}
+
 type CanvasRequestResult =
   | {
       ok: true;
@@ -81,7 +93,24 @@ const CanvasRawCourseSchema = z
     name: z.string().min(1).nullable().optional(),
     course_code: z.string().optional(),
     html_url: z.url().optional(),
+    syllabus_body: z.string().nullable().optional(),
     access_restricted_by_date: z.boolean().optional(),
+  })
+  .passthrough();
+
+const CanvasRawFileSchema = z
+  .object({
+    id: z.union([z.number(), z.string()]),
+    display_name: z.string().nullable().optional(),
+    filename: z.string().nullable().optional(),
+    url: z.string().nullable().optional(),
+    html_url: z.string().nullable().optional(),
+    size: z.union([z.number(), z.string()]).nullable().optional(),
+    updated_at: z.string().nullable().optional(),
+    modified_at: z.string().nullable().optional(),
+    created_at: z.string().nullable().optional(),
+    content_type: z.string().nullable().optional(),
+    'content-type': z.string().nullable().optional(),
   })
   .passthrough();
 
@@ -97,6 +126,23 @@ const CanvasRawAssignmentSubmissionSchema = z
   })
   .passthrough()
   .optional();
+
+const CanvasRawSubmissionCommentSchema = z
+  .object({
+    comment: z.string().nullable().optional(),
+    author_name: z.string().nullable().optional(),
+    created_at: z.string().nullable().optional(),
+  })
+  .passthrough();
+
+const CanvasRawSubmissionSchema = z
+  .object({
+    assignment_id: z.union([z.number(), z.string()]),
+    submission_comments: z.array(CanvasRawSubmissionCommentSchema).optional(),
+    submission_html_comments: z.string().nullable().optional(),
+    rubric_assessment: z.record(z.string(), z.unknown()).optional(),
+  })
+  .passthrough();
 
 const CanvasRawAssignmentSchema = z
   .object({
@@ -172,7 +218,9 @@ const CanvasRawEventSchema = z
   .passthrough();
 
 type CanvasRawCourse = z.infer<typeof CanvasRawCourseSchema>;
+type CanvasRawFile = z.infer<typeof CanvasRawFileSchema>;
 type CanvasRawAssignment = z.infer<typeof CanvasRawAssignmentSchema>;
+type CanvasRawSubmission = z.infer<typeof CanvasRawSubmissionSchema>;
 type CanvasRawAnnouncement = z.infer<typeof CanvasRawAnnouncementSchema>;
 type CanvasRawConversation = z.infer<typeof CanvasRawConversationSchema>;
 type CanvasRawConversationAttachment = z.infer<typeof CanvasRawConversationAttachmentSchema>;
@@ -258,7 +306,13 @@ export class CanvasApiClient {
 
   async getCourses(): Promise<CanvasRawCourse[]> {
     return z.array(CanvasRawCourseSchema).parse(
-      await this.fetchPaginatedArray('/api/v1/courses?state[]=available&per_page=100'),
+      await this.fetchPaginatedArray('/api/v1/courses?state[]=available&include[]=syllabus_body&per_page=100'),
+    );
+  }
+
+  async getFiles(courseId: string): Promise<CanvasRawFile[]> {
+    return z.array(CanvasRawFileSchema).parse(
+      await this.fetchPaginatedArray(`/api/v1/courses/${courseId}/files?per_page=100`),
     );
   }
 
@@ -267,6 +321,25 @@ export class CanvasApiClient {
       await this.fetchPaginatedArray(
         `/api/v1/courses/${courseId}/assignments?include[]=submission&order_by=due_at&per_page=100`,
       ),
+    );
+  }
+
+  async getSubmissionFeedback(courseId: string, assignmentIds: string[]): Promise<CanvasRawSubmission[]> {
+    if (assignmentIds.length === 0) {
+      return [];
+    }
+
+    const params = new URLSearchParams();
+    params.set('per_page', '100');
+    params.append('include[]', 'submission_comments');
+    params.append('include[]', 'submission_html_comments');
+    params.append('include[]', 'rubric_assessment');
+    for (const assignmentId of assignmentIds) {
+      params.append('assignment_ids[]', assignmentId);
+    }
+
+    return z.array(CanvasRawSubmissionSchema).parse(
+      await this.fetchPaginatedArray(`/api/v1/courses/${courseId}/students/submissions?${params.toString()}`),
     );
   }
 
@@ -378,6 +451,16 @@ function toOptionalNumber(value: unknown): number | undefined {
   return undefined;
 }
 
+function toOptionalNonNegativeInt(value: unknown): number | undefined {
+  const parsed = toOptionalNumber(value);
+  if (parsed == null) {
+    return undefined;
+  }
+
+  const normalized = Math.round(parsed);
+  return normalized >= 0 ? normalized : undefined;
+}
+
 function stripCanvasHtml(value: string | undefined) {
   const normalized = value
     ?.replace(/<svg[\s\S]*?<\/svg>/gi, ' ')
@@ -386,6 +469,124 @@ function stripCanvasHtml(value: string | undefined) {
     .trim();
 
   return normalized || undefined;
+}
+
+function toOptionalAbsoluteUrl(value: string | null | undefined) {
+  if (!value) {
+    return undefined;
+  }
+
+  try {
+    return new URL(value).toString();
+  } catch {
+    return undefined;
+  }
+}
+
+function extractFileExtension(filename: string | undefined) {
+  if (!filename) {
+    return undefined;
+  }
+
+  const match = filename.trim().match(/(\.[a-z0-9]+)$/i);
+  return match?.[1]?.toLowerCase();
+}
+
+function formatFileSize(bytes: number | undefined) {
+  if (bytes == null || bytes <= 0) {
+    return undefined;
+  }
+
+  if (bytes >= 1024 * 1024) {
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  if (bytes >= 1024) {
+    return `${Math.round(bytes / 1024)} KB`;
+  }
+
+  return `${bytes} B`;
+}
+
+function buildCanvasResourceDetail(input: { label: string; extension?: string; sizeBytes?: number }) {
+  const parts = [input.label];
+  if (input.extension) {
+    parts.push(input.extension.replace(/^\./, '').toUpperCase());
+  }
+
+  const formattedSize = formatFileSize(input.sizeBytes);
+  if (formattedSize) {
+    parts.push(formattedSize);
+  }
+
+  return parts.join(' · ');
+}
+
+function buildSyllabusSummary(rawCourse: CanvasRawCourse) {
+  const summary = stripCanvasHtml(rawCourse.syllabus_body ?? undefined);
+  if (!summary) {
+    return undefined;
+  }
+
+  return summary.length > 280 ? `${summary.slice(0, 277)}...` : summary;
+}
+
+function normalizeSyllabusResource(rawCourse: CanvasRawCourse): Resource | undefined {
+  const summary = buildSyllabusSummary(rawCourse);
+  if (!summary) {
+    return undefined;
+  }
+
+  return ResourceSchema.parse({
+    id: `canvas:resource:${rawCourse.id}:syllabus`,
+    kind: 'resource',
+    site: 'canvas',
+    source: {
+      site: 'canvas',
+      resourceId: `${rawCourse.id}:syllabus`,
+      resourceType: 'syllabus_summary',
+      url: rawCourse.html_url,
+    },
+    url: rawCourse.html_url,
+    courseId: `canvas:course:${rawCourse.id}`,
+    resourceKind: 'other',
+    title: 'Syllabus summary',
+    summary,
+    detail: 'Canvas course syllabus summary',
+  });
+}
+
+function normalizeFileResource(rawFile: CanvasRawFile, courseId: string): Resource {
+  const title = rawFile.display_name?.trim() || rawFile.filename?.trim() || `Canvas file ${rawFile.id}`;
+  const fileExtension = extractFileExtension(rawFile.display_name ?? rawFile.filename ?? undefined);
+  const sizeBytes = toOptionalNonNegativeInt(rawFile.size);
+  const htmlUrl = toOptionalAbsoluteUrl(rawFile.html_url ?? undefined);
+  const downloadUrl = toOptionalAbsoluteUrl(rawFile.url ?? undefined);
+
+  return ResourceSchema.parse({
+    id: `canvas:resource:${rawFile.id}`,
+    kind: 'resource',
+    site: 'canvas',
+    source: {
+      site: 'canvas',
+      resourceId: String(rawFile.id),
+      resourceType: 'file',
+      url: htmlUrl ?? downloadUrl,
+    },
+    url: htmlUrl ?? downloadUrl,
+    courseId: `canvas:course:${courseId}`,
+    resourceKind: 'file',
+    title,
+    detail: buildCanvasResourceDetail({
+      label: 'Canvas file',
+      extension: fileExtension,
+      sizeBytes,
+    }),
+    fileExtension,
+    sizeBytes,
+    downloadUrl,
+    releasedAt: rawFile.updated_at ?? rawFile.modified_at ?? rawFile.created_at ?? undefined,
+  });
 }
 
 function buildCanvasAssignmentSummary(rawAssignment: CanvasRawAssignment) {
@@ -415,7 +616,39 @@ function buildCanvasAssignmentSummary(rawAssignment: CanvasRawAssignment) {
   return parts.length > 0 ? parts.join(' · ') : undefined;
 }
 
-function normalizeAssignment(rawAssignment: CanvasRawAssignment, now: string): Assignment {
+function buildCanvasAssignmentDetail(rawSubmission: CanvasRawSubmission | undefined) {
+  const comments = [
+    ...(rawSubmission?.submission_comments ?? []).map((comment) => stripCanvasHtml(comment.comment ?? undefined)),
+    stripCanvasHtml(rawSubmission?.submission_html_comments ?? undefined),
+    ...Object.values(rawSubmission?.rubric_assessment ?? {}).flatMap((entry) => {
+      if (!entry || typeof entry !== 'object') {
+        return [];
+      }
+
+      const comment =
+        'comments' in entry && typeof entry.comments === 'string'
+          ? stripCanvasHtml(entry.comments)
+          : 'comment' in entry && typeof entry.comment === 'string'
+            ? stripCanvasHtml(entry.comment)
+            : undefined;
+      return comment ? [comment] : [];
+    }),
+  ].filter((value): value is string => Boolean(value));
+
+  if (comments.length === 0) {
+    return undefined;
+  }
+
+  const deduped = Array.from(new Set(comments));
+  const preview = deduped.slice(0, 2).join(' · ');
+  return preview.length > 200 ? `${preview.slice(0, 197)}...` : preview;
+}
+
+function normalizeAssignment(
+  rawAssignment: CanvasRawAssignment,
+  now: string,
+  rawSubmission?: CanvasRawSubmission,
+): Assignment {
   const dueAt = rawAssignment.due_at ?? undefined;
   const score = toOptionalNumber(rawAssignment.submission?.score);
   const maxScore = toOptionalNumber(rawAssignment.points_possible);
@@ -433,12 +666,25 @@ function normalizeAssignment(rawAssignment: CanvasRawAssignment, now: string): A
     courseId: `canvas:course:${rawAssignment.course_id}`,
     title: rawAssignment.name,
     summary: buildCanvasAssignmentSummary(rawAssignment),
+    detail: buildCanvasAssignmentDetail(rawSubmission),
     dueAt: dueAt ?? undefined,
     status: deriveAssignmentStatus(rawAssignment, now),
     submittedAt: rawAssignment.submission?.submitted_at ?? undefined,
     score,
     maxScore,
   });
+}
+
+function normalizeAssignments(
+  rawAssignments: CanvasRawAssignment[],
+  now: string,
+  feedbackByAssignmentId?: ReadonlyMap<string, CanvasRawSubmission>,
+) {
+  return z.array(AssignmentSchema).parse(
+    rawAssignments.map((rawAssignment) =>
+      normalizeAssignment(rawAssignment, now, feedbackByAssignmentId?.get(String(rawAssignment.id))),
+    ),
+  );
 }
 
 function normalizeGrade(rawAssignment: CanvasRawAssignment): Grade | undefined {
@@ -614,6 +860,7 @@ function normalizeEvent(rawEvent: CanvasRawEvent): Event {
 export type CanvasSyncOutcome = SiteSyncOutcome;
 export interface CanvasSnapshot extends SiteSnapshot {
   courses: Course[];
+  resources?: Resource[];
   assignments?: Assignment[];
   announcements?: Announcement[];
   grades?: Grade[];
@@ -636,6 +883,7 @@ class CanvasCoursesApiCollector implements ResourceCollector<Course> {
   readonly resource = 'courses';
   readonly mode = 'official_api' as const;
   readonly priority = 10;
+  lastRawCourses: CanvasRawCourse[] = [];
 
   constructor(private readonly client: CanvasApiClient) {}
 
@@ -645,7 +893,55 @@ class CanvasCoursesApiCollector implements ResourceCollector<Course> {
 
   async collect() {
     const rawCourses = await this.client.getCourses();
-    return rawCourses.filter(shouldSyncCourse).map(normalizeCourse);
+    this.lastRawCourses = rawCourses.filter(shouldSyncCourse);
+    return this.lastRawCourses.map(normalizeCourse);
+  }
+}
+
+class CanvasResourcesApiCollector implements ResourceCollector<Resource> {
+  readonly name = 'CanvasResourcesApiCollector';
+  readonly resource = 'resources';
+  readonly mode = 'official_api' as const;
+  readonly priority = 10;
+
+  constructor(
+    private readonly client: CanvasApiClient,
+    private readonly rawCourses: CanvasRawCourse[],
+  ) {}
+
+  async supports(ctx: AdapterContext) {
+    return ctx.site === 'canvas';
+  }
+
+  async collect() {
+    const collected: Resource[] = [];
+    const failures: string[] = [];
+
+    for (const rawCourse of this.rawCourses) {
+      const courseId = String(rawCourse.id);
+      const syllabusResource = normalizeSyllabusResource(rawCourse);
+      if (syllabusResource) {
+        collected.push(syllabusResource);
+      }
+
+      try {
+        const rawFiles = await this.client.getFiles(courseId);
+        collected.push(...rawFiles.map((rawFile) => normalizeFileResource(rawFile, courseId)));
+      } catch (error) {
+        const reason = error instanceof Error ? error.message : 'resource_collector_failed';
+        failures.push(`course_${courseId}:${reason}`);
+      }
+    }
+
+    if (collected.length === 0 && failures.length > 0) {
+      throw new CanvasApiError('request_failed', failures.join(' | '));
+    }
+
+    if (failures.length > 0) {
+      throw new PartialCanvasResourcesError(collected, failures.join(' | '));
+    }
+
+    return z.array(ResourceSchema).parse(collected);
   }
 }
 
@@ -766,9 +1062,12 @@ class CanvasEventsApiCollector implements ResourceCollector<Event> {
 
 function mergePartialReason(
   currentReason: string | undefined,
-  failedResource: 'assignments' | 'announcements' | 'messages' | 'events',
+  failedResource: 'resources' | 'assignments' | 'announcements' | 'messages' | 'events',
 ) {
   const failures = new Set<string>();
+  if (currentReason?.includes('resources')) {
+    failures.add('resources');
+  }
   if (currentReason?.includes('assignments')) {
     failures.add('assignments');
   }
@@ -876,6 +1175,11 @@ export class CanvasAdapter implements SiteAdapter {
           modes: ['official_api'],
           preferredMode: 'official_api',
         },
+        resources: {
+          supported: ctx.site === 'canvas',
+          modes: ['official_api'],
+          preferredMode: 'official_api',
+        },
         messages: {
           supported: ctx.site === 'canvas',
           modes: ['official_api'],
@@ -903,7 +1207,8 @@ export class CanvasAdapter implements SiteAdapter {
     const attemptsByResource: AttemptsByResource = {};
 
     try {
-      const coursesPipeline = await runCollectorPipeline(ctx, [new CanvasCoursesApiCollector(this.client)]);
+      const coursesCollector = new CanvasCoursesApiCollector(this.client);
+      const coursesPipeline = await runCollectorPipeline(ctx, [coursesCollector]);
       attemptsByResource.courses = coursesPipeline.attempts;
       if (!coursesPipeline.ok) {
         return buildCanvasFailure('collector_failed', coursesPipeline.errorReason, ctx.now, 'collector_failed', attemptsByResource);
@@ -922,9 +1227,52 @@ export class CanvasAdapter implements SiteAdapter {
         reason: 'canvas_sync_success',
       });
 
+      const resourcesCollector = new CanvasResourcesApiCollector(this.client, coursesCollector.lastRawCourses);
+      try {
+        const resources = await resourcesCollector.collect();
+        attemptsByResource.resources = [
+          {
+            mode: resourcesCollector.mode,
+            collectorName: resourcesCollector.name,
+            attemptedAt: ctx.now,
+            success: true,
+          },
+        ];
+        snapshot.resources = z.array(ResourceSchema).parse(resources);
+      } catch (error) {
+        const errorReason = error instanceof Error ? error.message : 'collector_failed';
+        attemptsByResource.resources = [
+          {
+            mode: resourcesCollector.mode,
+            collectorName: resourcesCollector.name,
+            attemptedAt: ctx.now,
+            success: false,
+            errorReason,
+          },
+        ];
+
+        if (error instanceof PartialCanvasResourcesError) {
+          snapshot.resources = z.array(ResourceSchema).parse(error.resources);
+        }
+
+        outcome = 'partial_success';
+        health = HealthStatusSchema.parse({
+          status: 'degraded',
+          checkedAt: ctx.now,
+          code: 'partial_success',
+          reason: mergePartialReason(health.reason, 'resources'),
+        });
+      }
+
       const assignmentsCollector = new CanvasAssignmentsApiCollector(this.client, courseIds);
       try {
+        const assignmentIdsByCourse = new Map<string, string[]>();
         const assignments = await assignmentsCollector.collect(ctx);
+        for (const rawAssignment of assignmentsCollector.lastRawAssignments) {
+          const courseId = String(rawAssignment.course_id);
+          const assignmentId = String(rawAssignment.id);
+          assignmentIdsByCourse.set(courseId, [...(assignmentIdsByCourse.get(courseId) ?? []), assignmentId]);
+        }
         attemptsByResource.assignments = [
           {
             mode: assignmentsCollector.mode,
@@ -945,6 +1293,45 @@ export class CanvasAdapter implements SiteAdapter {
             success: true,
           },
         ];
+
+        try {
+          const feedbackByAssignmentId = new Map<string, CanvasRawSubmission>();
+          for (const [courseId, assignmentIds] of assignmentIdsByCourse) {
+            const submissions = await this.client.getSubmissionFeedback(courseId, assignmentIds);
+            for (const submission of submissions) {
+              feedbackByAssignmentId.set(String(submission.assignment_id), submission);
+            }
+          }
+
+          attemptsByResource.assignments.push({
+            mode: assignmentsCollector.mode,
+            collectorName: 'CanvasSubmissionFeedbackCollector',
+            attemptedAt: ctx.now,
+            success: true,
+          });
+          snapshot.assignments = normalizeAssignments(
+            assignmentsCollector.lastRawAssignments,
+            ctx.now,
+            feedbackByAssignmentId,
+          );
+        } catch (error) {
+          const errorReason = error instanceof Error ? error.message : 'collector_failed';
+          attemptsByResource.assignments.push({
+            mode: assignmentsCollector.mode,
+            collectorName: 'CanvasSubmissionFeedbackCollector',
+            attemptedAt: ctx.now,
+            success: false,
+            errorReason,
+          });
+
+          outcome = 'partial_success';
+          health = HealthStatusSchema.parse({
+            status: 'degraded',
+            checkedAt: ctx.now,
+            code: 'partial_success',
+            reason: 'canvas_assignments_collector_failed',
+          });
+        }
       } catch (error) {
         const errorReason = error instanceof Error ? error.message : 'collector_failed';
         attemptsByResource.assignments = [
