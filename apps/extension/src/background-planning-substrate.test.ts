@@ -2,6 +2,30 @@ import { describe, expect, it } from 'vitest';
 import { buildMyPlanPlanningSubstrateFromHtml } from './background-planning-substrate';
 
 describe('background planning substrate capture', () => {
+  it('does not double-unescape encoded ampersand entities inside visible course titles', () => {
+    const record = buildMyPlanPlanningSubstrateFromHtml({
+      url: 'https://myplan.uw.edu/plan/#/sp26',
+      capturedAt: '2026-04-11T12:00:00-07:00',
+      pageHtml: `
+        <main>
+          <h1 class="mb-0 fw-bold">Spring 2026 Current Quarter</h1>
+          <a href="/plan/#/sp26">SP 26</a>
+          <h2 class="mb-0">Issues to Resolve</h2>
+          <div class="card-body">
+            Review Research &amp;lt;Practice&amp;gt; before registration.
+          </div>
+          <h3 class="mb-0 d-inline align-middle h3">CSE 999</h3>
+          <a class="d-block lead me-4" href="/course/#/courses/CSE 999?id=1">Research &amp;lt;Practice&amp;gt;</a>
+          <div>1 Credit</div>
+        </main>
+      `,
+    });
+
+    expect(record.terms[0]?.summary).toContain('Research &lt;Practice&gt;');
+    expect(record.terms[0]?.summary).not.toContain('Research <Practice>');
+    expect(record.planLabel).toBe('Spring 2026');
+  });
+
   it('builds a planning substrate summary from a live MyPlan term page', () => {
     const record = buildMyPlanPlanningSubstrateFromHtml({
       url: 'https://myplan.uw.edu/plan/#/sp26',
