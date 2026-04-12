@@ -3,6 +3,7 @@
 This file is the canonical **Wave 1B contract freeze ledger**.
 
 For the current second-half program truth, also read [`12-wave4-7-omnibus-ledger.md`](12-wave4-7-omnibus-ledger.md).
+For the post-Planner-6 upgraded product bar, read [`18-v2-product-contract-freeze.md`](18-v2-product-contract-freeze.md).
 
 Its job is simple:
 
@@ -135,3 +136,4 @@ They are kept separate here so they do not silently masquerade as already-promis
 - Current locked implementation choices: [`09-implementation-decisions.md`](09-implementation-decisions.md)
 - Builder-facing current scope vs later: [`10-builder-api-and-ecosystem-fit.md`](10-builder-api-and-ecosystem-fit.md)
 - Per-site current capability baseline: [`site-capability-matrix.md`](site-capability-matrix.md)
+- Latest V2 contract freeze: [`18-v2-product-contract-freeze.md`](18-v2-product-contract-freeze.md)

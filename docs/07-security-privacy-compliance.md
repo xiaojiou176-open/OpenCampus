@@ -22,6 +22,7 @@ Current formal permissions are intentionally narrow:
 - `storage`
 
 Host permissions are limited to supported study surfaces plus local loopback BFF hosts.
+That now includes the read-only `myplan.uw.edu` planning/audit host lane for manual `MyPlan / DARS` capture work, but still excludes red-zone registration hosts and keeps the extension cookie-free.
 
 ## Sensitive Boundary Rules
 

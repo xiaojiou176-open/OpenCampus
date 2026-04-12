@@ -2,7 +2,7 @@
 
 ## Purpose
 
-这是解释层，不是聊天主界面。
+这是默认 companion 里的解释层，不是 generic chat 主界面。
 
 ## Override Rules
 

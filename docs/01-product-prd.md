@@ -45,6 +45,8 @@ This remains a hard cut against the wrong narrative:
 - read-only workflow
 - manual sync
 - local-first storage and workbench views
+- extension default assistant-first companion mode with explicit export/settings entry
+- site-scoped export mode instead of a preset-only sidebar story
 - local user-state overlay for personal judgment
 - Focus Queue, Weekly Load, and Change Journal as decision-facing surfaces
 - richer assignment submission context, discussion highlights, and class/exam location context when they normalize into existing canonical entities

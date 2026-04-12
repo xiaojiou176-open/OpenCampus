@@ -98,6 +98,10 @@ If you already know what kind of user you are, use this shorter router instead o
 Today the repository already includes:
 
 - a multi-site extension runtime for `Canvas`, `Gradescope`, `EdStem`, and `MyUW`
+- an extension information architecture that now distinguishes:
+  - a default assistant-first sidepanel mode
+  - an explicit site export mode
+  - a configuration/settings mode
 - a local canonical data layer backed by shared schema and Dexie read models
 - a learning decision layer with local overlay, `Focus Queue`, `Weekly Load`, and `Change Journal`
 - Wave 2 read-only depth for assignment submission context, discussion highlights, and class/exam location context on the same entity contract
@@ -106,6 +110,12 @@ Today the repository already includes:
 - export presets for current view, weekly assignments, recent updates, deadlines, focus queue, weekly load, and change journal
 - a shared AI consumer seam for `OpenAI`, `Gemini`, and an optional local `Switchyard` runtime on the same semantic contract
 - cited AI responses over structured workbench outputs
+
+The important UX distinction is now:
+
+- the **extension** should feel like a light browser companion first
+- the **web surface** remains the fuller workspace for long review and imported snapshots
+- export and settings are explicit modes, not just more cards stacked into the default scroll path
 
 ## Repo-Local Proof Path
 
@@ -174,11 +184,14 @@ Load this directory in Chrome:
 apps/extension/dist/chrome-mv3
 ```
 
-If you want AI responses from the sidepanel, set `BFF base URL` in Options to:
+If you want AI responses from the sidepanel, Campus Copilot now first checks the usual local loopback addresses automatically:
 
 ```text
 http://127.0.0.1:8787
+http://localhost:8787
 ```
+
+Only if autodiscovery fails do you need to open Settings and enter a manual `BFF base URL`.
 
 ## Verification
 

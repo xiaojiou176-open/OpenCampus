@@ -19,6 +19,7 @@ If you are new, pick one route and ignore the rest for now:
 - **I want to understand the four-site substrate**: start with [`02-system-architecture.md`](02-system-architecture.md), then [`03-domain-schema.md`](03-domain-schema.md), then [`04-adapter-spec.md`](04-adapter-spec.md)
 - **I want repo-local proof that the current story is real**: start with [`verification-matrix.md`](verification-matrix.md), then [`launch-packet.md`](launch-packet.md), then [`12-wave4-7-omnibus-ledger.md`](12-wave4-7-omnibus-ledger.md)
 - **I want the exact current-vs-next boundary**: start with [`11-wave1-contract-freeze-gap-matrix.md`](11-wave1-contract-freeze-gap-matrix.md), then [`13-site-depth-exhaustive-ledger.md`](13-site-depth-exhaustive-ledger.md), then [`08-phase-plan-and-repo-writing-brief.md`](08-phase-plan-and-repo-writing-brief.md)
+- **I want the latest V2 product contract**: start with [`18-v2-product-contract-freeze.md`](18-v2-product-contract-freeze.md), then [`11-wave1-contract-freeze-gap-matrix.md`](11-wave1-contract-freeze-gap-matrix.md), then [`17-academic-expansion-and-safety-contract.md`](17-academic-expansion-and-safety-contract.md)
 - **I want the academic expansion and safety rules**: start with [`17-academic-expansion-and-safety-contract.md`](17-academic-expansion-and-safety-contract.md), then [`07-security-privacy-compliance.md`](07-security-privacy-compliance.md), then [`integration-boundaries.md`](integration-boundaries.md)
 - **I want the builder/API surface after the product shape is clear**: start with [`10-builder-api-and-ecosystem-fit.md`](10-builder-api-and-ecosystem-fit.md), then [`api/openapi.yaml`](api/openapi.yaml), then [`05-ai-provider-and-runtime.md`](05-ai-provider-and-runtime.md)
 - **I want builder-facing examples and public skills**: start with [`../examples/README.md`](../examples/README.md), then [`../skills/README.md`](../skills/README.md), then [`10-builder-api-and-ecosystem-fit.md`](10-builder-api-and-ecosystem-fit.md)
@@ -35,7 +36,8 @@ If you only want one sane reading path, use this order:
 2. [`01-product-prd.md`](01-product-prd.md)
 3. [`06-export-and-user-surfaces.md`](06-export-and-user-surfaces.md)
 4. [`11-wave1-contract-freeze-gap-matrix.md`](11-wave1-contract-freeze-gap-matrix.md)
-5. [`verification-matrix.md`](verification-matrix.md)
+5. [`18-v2-product-contract-freeze.md`](18-v2-product-contract-freeze.md)
+6. [`verification-matrix.md`](verification-matrix.md)
 
 That gives you the product shape, the current surface, the scope boundary, and the proof boundary without dumping the full internal ledger on your head.
 
@@ -92,6 +94,7 @@ Builder truth stays intentionally narrow:
 | [`14-public-distribution-scoreboard.md`](14-public-distribution-scoreboard.md) | distribution ledger | bundle-grade, repo-public, and registry-blocked truth for current builder surfaces |
 | [`15-publication-submission-packet.md`](15-publication-submission-packet.md) | submission packet | exact publish order, official URLs, and owner-only next actions for current candidates |
 | [`17-academic-expansion-and-safety-contract.md`](17-academic-expansion-and-safety-contract.md) | academic expansion + safety contract | next read-only expansion targets, red-zone systems, AI/material boundaries, and cross-surface guardrails |
+| [`18-v2-product-contract-freeze.md`](18-v2-product-contract-freeze.md) | latest product contract freeze | freezes the upgraded V2 student-product bar without overclaiming current shipped truth |
 
 ## Canonical Reading Order For Maintainers
 
@@ -102,13 +105,14 @@ If you are a maintainer or contributor, read in this order:
 3. [`../CLAUDE.md`](../CLAUDE.md) for the public AI collaborator contract
 4. [`09-implementation-decisions.md`](09-implementation-decisions.md)
 5. [`11-wave1-contract-freeze-gap-matrix.md`](11-wave1-contract-freeze-gap-matrix.md)
-6. [`12-wave4-7-omnibus-ledger.md`](12-wave4-7-omnibus-ledger.md)
-7. [`13-site-depth-exhaustive-ledger.md`](13-site-depth-exhaustive-ledger.md)
-8. [`verification-matrix.md`](verification-matrix.md)
-9. [`integration-boundaries.md`](integration-boundaries.md)
-10. [`diagnostics-and-logging.md`](diagnostics-and-logging.md)
-11. [`disk-governance.md`](disk-governance.md)
-12. the relevant numbered brief below for the subsystem you are changing
+6. [`18-v2-product-contract-freeze.md`](18-v2-product-contract-freeze.md)
+7. [`12-wave4-7-omnibus-ledger.md`](12-wave4-7-omnibus-ledger.md)
+8. [`13-site-depth-exhaustive-ledger.md`](13-site-depth-exhaustive-ledger.md)
+9. [`verification-matrix.md`](verification-matrix.md)
+10. [`integration-boundaries.md`](integration-boundaries.md)
+11. [`diagnostics-and-logging.md`](diagnostics-and-logging.md)
+12. [`disk-governance.md`](disk-governance.md)
+13. the relevant numbered brief below for the subsystem you are changing
 
 ## Supporting Governance Docs
 

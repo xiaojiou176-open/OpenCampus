@@ -217,7 +217,14 @@ The repository already has real substrate pieces, and it now ships repo-public p
 - `packages/provider-runtime`: Switchyard compat seam that keeps Campus-owned answer semantics separate from runtime transport
 - `packages/gradescope-api`, `packages/edstem-api`, `packages/myuw-api`: read-only site API preview libraries over the current adapter clients
 
-The next academic builder lane may eventually add read-only planning/search surfaces such as `MyPlan`, `DARS`, `Time Schedule`, `DawgPath`, and class-search-only `ctcLink`, but those are still future contract work and should not be described here as current shipped surfaces.
+The next academic builder lane still includes read-only planning/search surfaces such as `MyPlan`, `DARS`, `Time Schedule`, `DawgPath`, and class-search-only `ctcLink`, but they no longer all sit at the same maturity level:
+
+- `MyPlan` now has a shared planning-substrate lane plus extension/web `Planning Pulse` adoption
+- `Time Schedule` now has a limited shared runtime/site lane on the public course-offerings carrier
+- `DARS` and `DawgPath` remain planned-only expansion lanes
+- class-search-only `ctcLink` remains an isolated proof/discovery lane
+
+Those lanes are still not the same thing as full shipped site parity, and should continue to be described with truthful partial/isolated wording rather than as current first-class site support.
 
 This is the honest builder statement:
 

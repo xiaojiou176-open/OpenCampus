@@ -26,7 +26,7 @@ The current formal surface goal is a **learning decision layer**, not a broader 
 
 That direction should materialize as:
 
-- `sidepanel` as the primary home for decision views
+- `sidepanel` as an assistant-first companion with explicit entry into export/settings
 - `Focus Queue` as the first-class “what should I do first?” surface
 - `Weekly Load` as the first-class planning surface
 - `Change Journal` as the first-class “what changed?” surface
@@ -58,15 +58,26 @@ The current web surface remains intentionally narrow:
 - export the same current-view/focus/weekly/change artifacts
 - ask cited AI through the same thin BFF contract
 
+The current extension surface should now be read as three distinct product modes:
+
+- `Default Assistant Mode`
+- `Site Export Mode`
+- `Configuration / Authorization Mode`
+
+This is not a license to turn the extension into a generic chat shell.
+It is a way to stop treating the default sidepanel like a compressed long-form workbench page.
+
 It must not be marketed as a site-syncing standalone shell until a later contract explicitly promotes that path.
 
 ## Surface Rules
 
 - show structured state before asking users to type
 - keep popup lightweight
-- use sidepanel as the main workbench surface
+- keep the sidepanel default view light enough to understand without a long first scroll
+- let the web surface remain the fuller workbench/review surface
 - let site status cards reflect the structured per-site entity counts from storage, including courses and events when present
 - keep export first-class, not hidden behind AI
+- make export an explicit mode with scope/resource-format choices instead of relying only on preset buttons
 - keep diagnostics honest about missing prerequisites
 - derive decision surfaces from storage read models and local overlay, not from raw site responses
 - keep priority alerts derived from current structured facts and sync state instead of treating them as a separate persisted source of truth
