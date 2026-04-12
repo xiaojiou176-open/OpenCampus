@@ -460,27 +460,27 @@ textarea:focus-visible,
 }
 
 .file-button--primary {
-  background: var(--cc-color-accent);
-  border-color: var(--cc-color-accent);
-  color: #fff7ed;
+  background: #8c4b1a;
+  border-color: #8c4b1a;
+  color: #fffaf5;
   box-shadow: var(--cc-shadow-sm);
 }
 
 .file-button--primary:hover {
-  background: #ea580c;
-  border-color: #ea580c;
+  background: #7a3f13;
+  border-color: #7a3f13;
 }
 
 .primary-button {
-  background: var(--cc-color-accent);
-  border-color: var(--cc-color-accent);
-  color: #fff7ed;
+  background: #8c4b1a;
+  border-color: #8c4b1a;
+  color: #fffaf5;
 }
 
 .primary-button:not(:disabled):hover {
-  background: #ea580c;
-  border-color: #ea580c;
-  color: #fff7ed;
+  background: #7a3f13;
+  border-color: #7a3f13;
+  color: #fffaf5;
 }
 
 .secondary-button {
@@ -591,22 +591,22 @@ textarea:focus-visible,
   justify-content: center;
   padding: 0.25rem 0.55rem;
   border-radius: 999px;
-  background: #d8f3ef;
-  color: var(--cc-color-primary);
+  background: #c3e8df;
+  color: #0f3f39;
   font-size: 0.82rem;
-  border: 1px solid rgba(20, 184, 166, 0.18);
+  border: 1px solid rgba(15, 63, 57, 0.12);
 }
 
 .badge-warning {
-  background: #ffedd5;
-  color: var(--cc-color-warning);
-  border-color: rgba(180, 83, 9, 0.18);
+  background: #f5ddc3;
+  color: #7a3f13;
+  border-color: rgba(122, 63, 19, 0.16);
 }
 
 .badge-success {
-  background: #d1fae5;
-  color: var(--cc-color-success);
-  border-color: rgba(4, 120, 87, 0.18);
+  background: #cdebdc;
+  color: #0f5132;
+  border-color: rgba(15, 81, 50, 0.16);
 }
 
 .ai-panel {
