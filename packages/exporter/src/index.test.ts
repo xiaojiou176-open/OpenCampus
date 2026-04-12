@@ -6,6 +6,31 @@ const generatedAt = '2026-03-24T18:00:00-07:00';
 const baseInput = {
   generatedAt,
   viewTitle: 'Status board',
+  scope: {
+    site: 'canvas',
+    courseIdOrKey: 'canvas:course:1',
+  },
+  authorization: {
+    policyVersion: 'wave1-skeleton',
+    rules: [
+      {
+        id: 'canvas-layer1',
+        layer: 'layer1_read_export' as const,
+        status: 'allowed' as const,
+        site: 'canvas',
+        courseIdOrKey: 'canvas:course:1',
+        resourceFamily: 'workspace_snapshot',
+      },
+      {
+        id: 'canvas-layer2',
+        layer: 'layer2_ai_read_analysis' as const,
+        status: 'blocked' as const,
+        site: 'canvas',
+        courseIdOrKey: 'canvas:course:1',
+        resourceFamily: 'workspace_snapshot',
+      },
+    ],
+  },
   assignments: [
     {
       id: 'canvas:assignment:1',
@@ -219,11 +244,16 @@ describe('exporter package', () => {
     });
 
     expect(artifact.mimeType).toBe('text/csv');
-    expect(artifact.content).toContain('kind,site,title');
+    expect(artifact.content).toContain(
+      'kind,site,scopeType,scopeSite,scopeCourseIdOrKey,resourceFamily,authorizationLevel,aiAllowed,riskLabel,matchConfidence,provenance,title',
+    );
     expect(artifact.content).toContain(',detail,');
-    expect(artifact.content).toContain('announcement,canvas,Project requirements changed');
+    expect(artifact.content).toContain('false');
+    expect(artifact.content).toContain('announcement,canvas,current_course,canvas,canvas:course:1,recent_updates');
     expect(artifact.content).toContain('Milestones and acceptance criteria were updated.');
-    expect(artifact.content).toContain('grade,gradescope,Midterm');
+    expect(artifact.content).toContain('grade,gradescope,current_course,canvas,canvas:course:1,recent_updates');
+    expect(artifact.content).toContain('Project requirements changed');
+    expect(artifact.content).toContain('Midterm');
   });
 
   it('builds all deadlines as calendar output', () => {
@@ -235,6 +265,10 @@ describe('exporter package', () => {
 
     expect(artifact.mimeType).toBe('text/calendar');
     expect(artifact.content).toContain('BEGIN:VCALENDAR');
+    expect(artifact.content).toContain('X-CAMPUS-COPILOT-AUTHORIZATION-LEVEL');
+    expect(artifact.content).toContain('X-CAMPUS-COPILOT-GENERATED-AT');
+    expect(artifact.content).toContain('X-CAMPUS-COPILOT-MATCH-CONFIDENCE');
+    expect(artifact.content).toContain('X-CAMPUS-COPILOT-PROVENANCE');
     expect(artifact.content).toContain('SUMMARY:Homework 5');
     expect(artifact.content).toContain('SUMMARY:Registration deadline');
   });
@@ -247,7 +281,16 @@ describe('exporter package', () => {
     });
 
     expect(artifact.mimeType).toBe('application/json');
+    expect(artifact.scope.site).toBe('canvas');
+    expect(artifact.scope.courseIdOrKey).toBe('canvas:course:1');
+    expect(artifact.packaging.authorizationLevel).toBe('allowed');
+    expect(artifact.packaging.aiAllowed).toBe(false);
     expect(artifact.content).toContain('"title": "Status board"');
+    expect(artifact.content).toContain('"scope"');
+    expect(artifact.content).toContain('"packaging"');
+    expect(artifact.content).toContain('"authorization_level": "allowed"');
+    expect(artifact.content).toContain('"ai_allowed": false');
+    expect(artifact.content).toContain('"match_confidence": "high"');
     expect(artifact.content).toContain('"assignments": 1');
     expect(artifact.content).toContain('"timelineEntries": 1');
     expect(artifact.content).toContain('"focusQueue": 1');
@@ -276,6 +319,7 @@ describe('exporter package', () => {
 
     expect(artifact.filename).toContain('focus-queue');
     expect(artifact.content).toContain('# Focus queue');
+    expect(artifact.content).toContain('## Policy Envelope');
     expect(artifact.content).toContain('Homework 5');
     expect(artifact.content).toContain('score 210');
     expect(artifact.content).toContain('Submitted draft is already in Canvas.');
@@ -308,5 +352,22 @@ describe('exporter package', () => {
     expect(artifact.content).toContain('Sync Runs');
     expect(artifact.content).toContain('Change Events');
     expect(artifact.content).toContain('Homework 5 due date changed');
+  });
+
+  it('falls back to a conservative packaging skeleton when no auth rules are provided', () => {
+    const artifact = createExportArtifact({
+      preset: 'focus_queue',
+      format: 'json',
+      input: {
+        generatedAt,
+        focusQueue: baseInput.focusQueue,
+      },
+    });
+
+    expect(artifact.scope.scopeType).toBe('multi_site');
+    expect(artifact.scope.resourceFamily).toBe('focus_queue');
+    expect(artifact.packaging.authorizationLevel).toBe('partial');
+    expect(artifact.packaging.aiAllowed).toBe(false);
+    expect(artifact.packaging.provenance).toHaveLength(2);
   });
 });

@@ -1,4 +1,20 @@
+import type { ExportArtifact, ExportPackagingMetadata, ExportScopeMetadata } from '@campus-copilot/exporter';
 import type { ImportedWorkbenchSnapshot } from '@campus-copilot/storage';
+
+export interface ImportedArtifactEnvelope {
+  title?: string;
+  generatedAt: string;
+  scope?: ExportScopeMetadata;
+  packaging?: ExportPackagingMetadata;
+}
+
+type ImportedPackagingRecord = Partial<ExportPackagingMetadata> & {
+  authorization_level?: ExportPackagingMetadata['authorizationLevel'];
+  ai_allowed?: ExportPackagingMetadata['aiAllowed'];
+  risk_label?: ExportPackagingMetadata['riskLabel'];
+  match_confidence?: ExportPackagingMetadata['matchConfidence'];
+  provenance?: ExportPackagingMetadata['provenance'];
+};
 
 export const DEMO_IMPORTED_SNAPSHOT: ImportedWorkbenchSnapshot = {
   generatedAt: '2026-04-03T09:00:00-07:00',
@@ -234,35 +250,102 @@ export const DEMO_IMPORTED_SNAPSHOT: ImportedWorkbenchSnapshot = {
   ],
 };
 
-export function snapshotFromImportedJson(raw: string): ImportedWorkbenchSnapshot {
+function toImportedWorkbenchSnapshot(
+  generatedAt: string,
+  snapshot: Partial<ImportedWorkbenchSnapshot>,
+): ImportedWorkbenchSnapshot {
+  return {
+    generatedAt,
+    resources: snapshot.resources,
+    assignments: snapshot.assignments,
+    announcements: snapshot.announcements,
+    messages: snapshot.messages,
+    grades: snapshot.grades,
+    events: snapshot.events,
+    syncRuns: snapshot.syncRuns,
+    changeEvents: snapshot.changeEvents,
+  };
+}
+
+function normalizeImportedPackaging(packaging: ImportedPackagingRecord | undefined): ExportPackagingMetadata | undefined {
+  if (!packaging) {
+    return undefined;
+  }
+
+  const authorizationLevel = packaging.authorizationLevel ?? packaging.authorization_level;
+  const aiAllowed = packaging.aiAllowed ?? packaging.ai_allowed;
+  const riskLabel = packaging.riskLabel ?? packaging.risk_label;
+  const matchConfidence = packaging.matchConfidence ?? packaging.match_confidence;
+  const provenance = packaging.provenance;
+
+  if (
+    authorizationLevel == null ||
+    aiAllowed == null ||
+    riskLabel == null ||
+    matchConfidence == null ||
+    provenance == null
+  ) {
+    return undefined;
+  }
+
+  return {
+    authorizationLevel,
+    aiAllowed,
+    riskLabel,
+    matchConfidence,
+    provenance,
+  };
+}
+
+export function parseImportedSnapshotArtifact(raw: string): {
+  snapshot: ImportedWorkbenchSnapshot;
+  envelope?: ImportedArtifactEnvelope;
+} {
   const parsed = JSON.parse(raw) as {
     generatedAt?: string;
+    title?: string;
+    scope?: ExportScopeMetadata;
+    packaging?: ImportedPackagingRecord;
     data?: Partial<ImportedWorkbenchSnapshot>;
   } & Partial<ImportedWorkbenchSnapshot>;
 
   if (parsed.data && typeof parsed.data === 'object') {
+    const generatedAt = parsed.generatedAt ?? parsed.data.generatedAt ?? new Date().toISOString();
+    const packaging = normalizeImportedPackaging(parsed.packaging);
     return {
-      generatedAt: parsed.generatedAt ?? parsed.data.generatedAt ?? new Date().toISOString(),
-      resources: parsed.data.resources,
-      assignments: parsed.data.assignments,
-      announcements: parsed.data.announcements,
-      messages: parsed.data.messages,
-      grades: parsed.data.grades,
-      events: parsed.data.events,
-      syncRuns: parsed.data.syncRuns,
-      changeEvents: parsed.data.changeEvents,
+      snapshot: toImportedWorkbenchSnapshot(generatedAt, parsed.data),
+      envelope:
+        parsed.scope || packaging
+          ? {
+              title: parsed.title,
+              generatedAt,
+              scope: parsed.scope,
+              packaging,
+            }
+          : undefined,
     };
   }
 
   return {
-    generatedAt: parsed.generatedAt ?? new Date().toISOString(),
-    resources: parsed.resources,
-    assignments: parsed.assignments,
-    announcements: parsed.announcements,
-    messages: parsed.messages,
-    grades: parsed.grades,
-    events: parsed.events,
-    syncRuns: parsed.syncRuns,
-    changeEvents: parsed.changeEvents,
+    snapshot: toImportedWorkbenchSnapshot(parsed.generatedAt ?? new Date().toISOString(), parsed),
+  };
+}
+
+export function snapshotFromImportedJson(raw: string): ImportedWorkbenchSnapshot {
+  return parseImportedSnapshotArtifact(raw).snapshot;
+}
+
+export function applyImportedEnvelopeToArtifact(
+  artifact: ExportArtifact,
+  envelope: ImportedArtifactEnvelope | undefined,
+): ExportArtifact {
+  if (!envelope) {
+    return artifact;
+  }
+
+  return {
+    ...artifact,
+    scope: envelope.scope ?? artifact.scope,
+    packaging: envelope.packaging ?? artifact.packaging,
   };
 }

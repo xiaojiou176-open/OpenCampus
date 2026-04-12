@@ -79,3 +79,12 @@ test('skips binary tracked files', () => {
 
   assert.deepEqual(failures, []);
 });
+
+test('skips tracked files that are already deleted from the working tree', () => {
+  const failures = collectSensitiveSurfaceFailures({
+    trackedFiles: ['design-system/campus-copilot/MASTER.md'],
+    readTrackedFile: () => undefined,
+  });
+
+  assert.deepEqual(failures, []);
+});

@@ -37,6 +37,19 @@ describe('extension config', () => {
     expect(config.ai.defaultProvider).toBe('openai');
     expect(config.ai.models.gemini).toBe('gemini-2.5-flash');
     expect(config.ai.models.switchyard).toBe('gpt-5');
+    expect(config.authorization.policyVersion).toBe('wave1-skeleton');
+    expect(config.authorization.rules.some((rule) => rule.site === 'canvas' && rule.layer === 'layer1_read_export')).toBe(true);
+    expect(config.authorization.rules.some((rule) => rule.site === 'time-schedule' && rule.layer === 'layer1_read_export')).toBe(true);
+    expect(
+      config.authorization.rules.some(
+        (rule) => rule.resourceFamily === 'degree_audit_summary' && rule.layer === 'layer2_ai_read_analysis' && rule.status === 'blocked',
+      ),
+    ).toBe(true);
+    expect(
+      config.authorization.rules.some(
+        (rule) => rule.resourceFamily === 'transcript_summary' && rule.layer === 'layer1_read_export' && rule.status === 'confirm_required',
+      ),
+    ).toBe(true);
   });
 
   it('merges partial updates without dropping nested models or site config', async () => {
@@ -56,6 +69,20 @@ describe('extension config', () => {
           threadsPath: '/api/courses/90031/threads?limit=30&sort=new',
         },
       },
+      authorization: {
+        updatedAt: '2026-04-11T10:00:00.000Z',
+        rules: [
+          ...current.authorization.rules,
+          {
+            id: 'canvas-course-opt-in',
+            layer: 'layer2_ai_read_analysis',
+            status: 'allowed',
+            site: 'canvas',
+            courseIdOrKey: 'canvas:course:1',
+            resourceFamily: 'course_material_excerpt',
+          },
+        ],
+      },
     });
 
     expect(next.ai.bffBaseUrl).toBe('http://127.0.0.1:8787');
@@ -64,6 +91,8 @@ describe('extension config', () => {
     expect(next.ai.models.switchyard).toBe('gpt-5');
     expect(next.uiLanguage).toBe('zh-CN');
     expect(next.sites.edstem.threadsPath).toBe('/api/courses/90031/threads?limit=30&sort=new');
+    expect(next.authorization.updatedAt).toBe('2026-04-11T10:00:00.000Z');
+    expect(next.authorization.rules.some((rule) => rule.id === 'canvas-course-opt-in')).toBe(true);
   });
 
   it('persists config and exposes derived helpers', async () => {
@@ -91,6 +120,18 @@ describe('extension config', () => {
             threadsPath: '/api/courses/90031/threads?limit=30&sort=new',
           },
         },
+        authorization: {
+          updatedAt: '2026-04-11T12:00:00.000Z',
+          rules: [
+            {
+              id: 'myuw-layer2-tightened',
+              layer: 'layer2_ai_read_analysis',
+              status: 'blocked',
+              site: 'myuw',
+              resourceFamily: 'workspace_snapshot',
+            },
+          ],
+        },
       }),
       storage,
     );
@@ -105,5 +146,15 @@ describe('extension config', () => {
       unreadPath: undefined,
       recentActivityPath: undefined,
     });
+    expect(saved.authorization.updatedAt).toBe('2026-04-11T12:00:00.000Z');
+    expect(saved.authorization.rules).toEqual([
+      {
+        id: 'myuw-layer2-tightened',
+        layer: 'layer2_ai_read_analysis',
+        status: 'blocked',
+        site: 'myuw',
+        resourceFamily: 'workspace_snapshot',
+      },
+    ]);
   });
 });

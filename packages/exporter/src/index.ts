@@ -27,6 +27,72 @@ export type ExportPreset =
   | 'weekly_load'
   | 'change_journal';
 export type ExportFormat = 'json' | 'csv' | 'markdown' | 'ics';
+export const AUTHORIZATION_LAYERS = ['layer1_read_export', 'layer2_ai_read_analysis'] as const;
+export type AuthorizationLayer = (typeof AUTHORIZATION_LAYERS)[number];
+export const AUTHORIZATION_STATUSES = ['allowed', 'blocked', 'partial', 'confirm_required'] as const;
+export type AuthorizationStatus = (typeof AUTHORIZATION_STATUSES)[number];
+export const EXPORT_SCOPE_TYPES = ['current_view', 'current_site', 'current_course', 'multi_site', 'custom'] as const;
+export type ExportScopeType = (typeof EXPORT_SCOPE_TYPES)[number];
+export const EXPORT_RISK_LABELS = ['low', 'medium', 'high'] as const;
+export type ExportRiskLabel = (typeof EXPORT_RISK_LABELS)[number];
+export const EXPORT_MATCH_CONFIDENCES = ['low', 'medium', 'high'] as const;
+export type ExportMatchConfidence = (typeof EXPORT_MATCH_CONFIDENCES)[number];
+export const COMMON_EXPORT_RESOURCE_FAMILIES = [
+  'workspace_snapshot',
+  'assignments',
+  'announcements',
+  'messages',
+  'grades',
+  'events',
+  'alerts',
+  'recent_updates',
+  'focus_queue',
+  'weekly_load',
+  'change_journal',
+  'course_material_excerpt',
+] as const;
+
+export interface AuthorizationRule {
+  id: string;
+  layer: AuthorizationLayer;
+  status: AuthorizationStatus;
+  site?: string;
+  courseIdOrKey?: string;
+  resourceFamily?: string;
+  scopeType?: ExportScopeType;
+  label?: string;
+  reason?: string;
+  updatedAt?: string;
+}
+
+export interface AuthorizationState {
+  policyVersion: string;
+  rules: AuthorizationRule[];
+  updatedAt?: string;
+}
+
+export interface ExportScopeMetadata {
+  scopeType: ExportScopeType;
+  preset: ExportPreset;
+  site?: string;
+  courseIdOrKey?: string;
+  resourceFamily: string;
+}
+
+export interface ExportProvenanceEntry {
+  sourceType: 'official_api' | 'session_interface' | 'page_state' | 'derived_read_model';
+  label: string;
+  detail?: string;
+  readOnly?: boolean;
+}
+
+export interface ExportPackagingMetadata {
+  authorizationLevel: AuthorizationStatus;
+  aiAllowed: boolean;
+  riskLabel: ExportRiskLabel;
+  matchConfidence: ExportMatchConfidence;
+  provenance: ExportProvenanceEntry[];
+}
 
 export interface FocusQueueExportItem {
   id: string;
@@ -103,6 +169,9 @@ export interface ChangeEventExportEntry {
 export interface ExportInput {
   generatedAt: string;
   viewTitle?: string;
+  scope?: Partial<ExportScopeMetadata>;
+  packaging?: Partial<ExportPackagingMetadata>;
+  authorization?: AuthorizationState;
   resources?: Resource[];
   assignments?: Assignment[];
   announcements?: Announcement[];
@@ -122,12 +191,17 @@ export interface ExportArtifact {
   format: ExportFormat;
   filename: string;
   mimeType: string;
+  scope: ExportScopeMetadata;
+  packaging: ExportPackagingMetadata;
   content: string;
 }
 
 interface NormalizedExportInput {
   generatedAt: string;
   viewTitle?: string;
+  scope?: Partial<ExportScopeMetadata>;
+  packaging?: Partial<ExportPackagingMetadata>;
+  authorization?: AuthorizationState;
   resources: Resource[];
   assignments: Assignment[];
   announcements: Announcement[];
@@ -142,13 +216,28 @@ interface NormalizedExportInput {
   changeEvents: ChangeEventExportEntry[];
 }
 
-interface ExportDataset extends NormalizedExportInput {
+interface PreparedExportDataset extends NormalizedExportInput {
   title: string;
+}
+
+interface ExportDataset extends PreparedExportDataset {
+  title: string;
+  scope: ExportScopeMetadata;
+  packaging: ExportPackagingMetadata;
 }
 
 interface CsvRow {
   kind: string;
   site: string;
+  scopeType: string;
+  scopeSite: string;
+  scopeCourseIdOrKey: string;
+  resourceFamily: string;
+  authorizationLevel: string;
+  aiAllowed: string;
+  riskLabel: string;
+  matchConfidence: string;
+  provenance: string;
   title: string;
   courseId: string;
   assignmentId: string;
@@ -192,6 +281,9 @@ function normalizeInput(input: ExportInput): NormalizedExportInput {
   return {
     generatedAt,
     viewTitle: input.viewTitle,
+    scope: input.scope,
+    packaging: input.packaging,
+    authorization: input.authorization,
     resources: (input.resources ?? []).map((record) => ResourceSchema.parse(record)),
     assignments: (input.assignments ?? []).map((record) => AssignmentSchema.parse(record)),
     announcements: (input.announcements ?? []).map((record) => AnnouncementSchema.parse(record)),
@@ -205,6 +297,178 @@ function normalizeInput(input: ExportInput): NormalizedExportInput {
     syncRuns: [...(input.syncRuns ?? [])],
     changeEvents: [...(input.changeEvents ?? [])],
   };
+}
+
+function inferScopeType(preset: ExportPreset, site?: string, courseIdOrKey?: string): ExportScopeType {
+  if (courseIdOrKey) {
+    return 'current_course';
+  }
+  if (site) {
+    return preset === 'current_view' ? 'current_view' : 'current_site';
+  }
+  return preset === 'current_view' ? 'current_view' : 'multi_site';
+}
+
+function inferResourceFamily(preset: ExportPreset): string {
+  switch (preset) {
+    case 'weekly_assignments':
+      return 'assignments';
+    case 'recent_updates':
+      return 'recent_updates';
+    case 'all_deadlines':
+      return 'events';
+    case 'focus_queue':
+      return 'focus_queue';
+    case 'weekly_load':
+      return 'weekly_load';
+    case 'change_journal':
+      return 'change_journal';
+    case 'current_view':
+    default:
+      return 'workspace_snapshot';
+  }
+}
+
+function resolveAuthorizationStatus(input: {
+  authorization?: AuthorizationState;
+  layer: AuthorizationLayer;
+  scope: ExportScopeMetadata;
+}): AuthorizationStatus {
+  const rules = input.authorization?.rules ?? [];
+  let match: AuthorizationRule | undefined;
+  let bestScore = -1;
+
+  for (const rule of rules) {
+    if (rule.layer !== input.layer) {
+      continue;
+    }
+    if (rule.site && rule.site !== input.scope.site) {
+      continue;
+    }
+    if (rule.courseIdOrKey && rule.courseIdOrKey !== input.scope.courseIdOrKey) {
+      continue;
+    }
+    if (rule.resourceFamily && rule.resourceFamily !== input.scope.resourceFamily) {
+      continue;
+    }
+    if (rule.scopeType && rule.scopeType !== input.scope.scopeType) {
+      continue;
+    }
+
+    const score =
+      (rule.courseIdOrKey ? 16 : 0) +
+      (rule.site ? 8 : 0) +
+      (rule.resourceFamily ? 4 : 0) +
+      (rule.scopeType ? 2 : 0);
+
+    if (score > bestScore) {
+      bestScore = score;
+      match = rule;
+    }
+  }
+
+  if (match) {
+    return match.status;
+  }
+
+  return input.layer === 'layer1_read_export' ? 'partial' : 'confirm_required';
+}
+
+function inferRiskLabel(scope: ExportScopeMetadata, authorizationLevel: AuthorizationStatus, aiStatus: AuthorizationStatus): ExportRiskLabel {
+  if (authorizationLevel === 'blocked' || aiStatus === 'blocked') {
+    return 'high';
+  }
+  if (
+    aiStatus === 'confirm_required' ||
+    scope.resourceFamily === 'grades' ||
+    scope.resourceFamily === 'messages' ||
+    scope.resourceFamily === 'course_material_excerpt'
+  ) {
+    return 'high';
+  }
+  if (authorizationLevel === 'partial' || aiStatus === 'partial' || scope.resourceFamily === 'workspace_snapshot') {
+    return 'medium';
+  }
+  return 'low';
+}
+
+function inferMatchConfidence(scope: ExportScopeMetadata): ExportMatchConfidence {
+  if (scope.scopeType === 'current_course') {
+    return 'high';
+  }
+  if (scope.scopeType === 'current_site' || scope.scopeType === 'current_view') {
+    return 'medium';
+  }
+  return 'low';
+}
+
+function buildDefaultProvenance(scope: ExportScopeMetadata): ExportProvenanceEntry[] {
+  return [
+    {
+      sourceType: 'derived_read_model',
+      label: 'Unified local read model',
+      detail: 'Built from normalized schema entities before export packaging.',
+      readOnly: true,
+    },
+    {
+      sourceType: 'session_interface',
+      label: scope.site ? `${scope.site} read-only campus session` : 'multi-site read-only campus session',
+      detail: 'Current Wave 1 skeleton keeps exports local-first and read-only.',
+      readOnly: true,
+    },
+  ];
+}
+
+function resolveScopeMetadata(input: {
+  preset: ExportPreset;
+  normalized: NormalizedExportInput;
+}): ExportScopeMetadata {
+  const requested = input.normalized.scope;
+  const site = requested?.site;
+  const courseIdOrKey = requested?.courseIdOrKey;
+  return {
+    scopeType: requested?.scopeType ?? inferScopeType(input.preset, site, courseIdOrKey),
+    preset: input.preset,
+    site,
+    courseIdOrKey,
+    resourceFamily: requested?.resourceFamily ?? inferResourceFamily(input.preset),
+  };
+}
+
+function resolvePackagingMetadata(input: {
+  normalized: NormalizedExportInput;
+  scope: ExportScopeMetadata;
+}): ExportPackagingMetadata {
+  const requested = input.normalized.packaging;
+  const layer1Status =
+    requested?.authorizationLevel ??
+    resolveAuthorizationStatus({
+      authorization: input.normalized.authorization,
+      layer: 'layer1_read_export',
+      scope: input.scope,
+    });
+  const layer2Status = resolveAuthorizationStatus({
+    authorization: input.normalized.authorization,
+    layer: 'layer2_ai_read_analysis',
+    scope: input.scope,
+  });
+
+  return {
+    authorizationLevel: layer1Status,
+    aiAllowed: requested?.aiAllowed ?? layer2Status === 'allowed',
+    riskLabel: requested?.riskLabel ?? inferRiskLabel(input.scope, layer1Status, layer2Status),
+    matchConfidence: requested?.matchConfidence ?? inferMatchConfidence(input.scope),
+    provenance: requested?.provenance ?? buildDefaultProvenance(input.scope),
+  };
+}
+
+function formatProvenance(entries: ExportProvenanceEntry[]) {
+  return entries
+    .map((entry) => {
+      const detail = entry.detail ? ` (${entry.detail})` : '';
+      return `${entry.sourceType}:${entry.label}${detail}`;
+    })
+    .join(' | ');
 }
 
 function addDays(isoString: string, days: number) {
@@ -221,7 +485,7 @@ function isWithinWindow(target: string | undefined, start: string, end: string) 
   return value >= new Date(start).getTime() && value <= new Date(end).getTime();
 }
 
-function buildPresetDataset(preset: ExportPreset, input: NormalizedExportInput): ExportDataset {
+function buildPresetDataset(preset: ExportPreset, input: NormalizedExportInput): PreparedExportDataset {
   const weekEnd = addDays(input.generatedAt, 7);
   const recentStart = addDays(input.generatedAt, -7);
 
@@ -351,9 +615,21 @@ function formatOptionalString(value: string | undefined) {
 
 function buildCsvRows(dataset: ExportDataset): CsvRow[] {
   const rows: CsvRow[] = [];
+  const sharedFields = {
+    scopeType: dataset.scope.scopeType,
+    scopeSite: formatOptionalString(dataset.scope.site),
+    scopeCourseIdOrKey: formatOptionalString(dataset.scope.courseIdOrKey),
+    resourceFamily: dataset.scope.resourceFamily,
+    authorizationLevel: dataset.packaging.authorizationLevel,
+    aiAllowed: String(dataset.packaging.aiAllowed),
+    riskLabel: dataset.packaging.riskLabel,
+    matchConfidence: dataset.packaging.matchConfidence,
+    provenance: formatProvenance(dataset.packaging.provenance),
+  };
 
   for (const resource of dataset.resources) {
     rows.push({
+      ...sharedFields,
       kind: resource.kind,
       site: resource.site,
       title: resource.title,
@@ -380,6 +656,7 @@ function buildCsvRows(dataset: ExportDataset): CsvRow[] {
 
   for (const assignment of dataset.assignments) {
     rows.push({
+      ...sharedFields,
       kind: assignment.kind,
       site: assignment.site,
       title: assignment.title,
@@ -406,6 +683,7 @@ function buildCsvRows(dataset: ExportDataset): CsvRow[] {
 
   for (const announcement of dataset.announcements) {
     rows.push({
+      ...sharedFields,
       kind: announcement.kind,
       site: announcement.site,
       title: announcement.title,
@@ -432,6 +710,7 @@ function buildCsvRows(dataset: ExportDataset): CsvRow[] {
 
   for (const message of dataset.messages) {
     rows.push({
+      ...sharedFields,
       kind: message.kind,
       site: message.site,
       title: formatOptionalString(message.title),
@@ -458,6 +737,7 @@ function buildCsvRows(dataset: ExportDataset): CsvRow[] {
 
   for (const grade of dataset.grades) {
     rows.push({
+      ...sharedFields,
       kind: grade.kind,
       site: grade.site,
       title: grade.title,
@@ -484,6 +764,7 @@ function buildCsvRows(dataset: ExportDataset): CsvRow[] {
 
   for (const event of dataset.events) {
     rows.push({
+      ...sharedFields,
       kind: event.kind,
       site: event.site,
       title: event.title,
@@ -510,6 +791,7 @@ function buildCsvRows(dataset: ExportDataset): CsvRow[] {
 
   for (const alert of dataset.alerts) {
     rows.push({
+      ...sharedFields,
       kind: alert.kind,
       site: alert.site,
       title: alert.title,
@@ -536,6 +818,7 @@ function buildCsvRows(dataset: ExportDataset): CsvRow[] {
 
   for (const entry of dataset.timelineEntries) {
     rows.push({
+      ...sharedFields,
       kind: entry.kind,
       site: entry.site,
       title: entry.title,
@@ -562,6 +845,7 @@ function buildCsvRows(dataset: ExportDataset): CsvRow[] {
 
   for (const item of dataset.focusQueue) {
     rows.push({
+      ...sharedFields,
       kind: 'focus_item',
       site: item.site,
       title: item.title,
@@ -590,6 +874,7 @@ function buildCsvRows(dataset: ExportDataset): CsvRow[] {
 
   for (const entry of dataset.weeklyLoad) {
     rows.push({
+      ...sharedFields,
       kind: 'weekly_load',
       site: '',
       title: `Load for ${entry.dateKey}`,
@@ -618,6 +903,7 @@ function buildCsvRows(dataset: ExportDataset): CsvRow[] {
 
   for (const run of dataset.syncRuns) {
     rows.push({
+      ...sharedFields,
       kind: 'sync_run',
       site: run.site,
       title: `${run.site} sync`,
@@ -644,6 +930,7 @@ function buildCsvRows(dataset: ExportDataset): CsvRow[] {
 
   for (const event of dataset.changeEvents) {
     rows.push({
+      ...sharedFields,
       kind: 'change_event',
       site: event.site,
       title: event.title,
@@ -676,6 +963,14 @@ function renderJson(dataset: ExportDataset) {
     {
       title: dataset.title,
       generatedAt: dataset.generatedAt,
+      scope: dataset.scope,
+      packaging: {
+        authorization_level: dataset.packaging.authorizationLevel,
+        ai_allowed: dataset.packaging.aiAllowed,
+        risk_label: dataset.packaging.riskLabel,
+        match_confidence: dataset.packaging.matchConfidence,
+        provenance: dataset.packaging.provenance,
+      },
       counts: {
         assignments: dataset.assignments.length,
         announcements: dataset.announcements.length,
@@ -701,6 +996,15 @@ function renderCsv(dataset: ExportDataset) {
   const headers: (keyof CsvRow)[] = [
     'kind',
     'site',
+    'scopeType',
+    'scopeSite',
+    'scopeCourseIdOrKey',
+    'resourceFamily',
+    'authorizationLevel',
+    'aiAllowed',
+    'riskLabel',
+    'matchConfidence',
+    'provenance',
     'title',
     'courseId',
     'assignmentId',
@@ -743,6 +1047,28 @@ function renderMarkdown(dataset: ExportDataset) {
   sections.push(`# ${dataset.title}`);
   sections.push('');
   sections.push(`Generated at: ${dataset.generatedAt}`);
+  sections.push(`Scope: ${dataset.scope.scopeType} · ${dataset.scope.resourceFamily}`);
+  if (dataset.scope.site) {
+    sections.push(`Site: ${dataset.scope.site}`);
+  }
+  if (dataset.scope.courseIdOrKey) {
+    sections.push(`Course: ${dataset.scope.courseIdOrKey}`);
+  }
+  sections.push(`Authorization: ${dataset.packaging.authorizationLevel}`);
+  sections.push(`AI allowed: ${dataset.packaging.aiAllowed ? 'yes' : 'no'}`);
+  sections.push(`Risk label: ${dataset.packaging.riskLabel}`);
+  sections.push(`Match confidence: ${dataset.packaging.matchConfidence}`);
+  sections.push('');
+
+  sections.push(
+    renderMarkdownSection(
+      'Policy Envelope',
+      dataset.packaging.provenance.map((entry) => {
+        const detail = entry.detail ? ` - ${entry.detail}` : '';
+        return `- ${entry.sourceType}: ${entry.label}${detail}`;
+      }),
+    ),
+  );
   sections.push('');
 
   sections.push(
@@ -924,6 +1250,16 @@ function renderIcs(dataset: ExportDataset) {
     'VERSION:2.0',
     'PRODID:-//Campus Copilot//Exporter//EN',
     'CALSCALE:GREGORIAN',
+    `X-CAMPUS-COPILOT-GENERATED-AT:${escapeIcsText(dataset.generatedAt)}`,
+    `X-CAMPUS-COPILOT-SCOPE-TYPE:${escapeIcsText(dataset.scope.scopeType)}`,
+    `X-CAMPUS-COPILOT-SITE:${escapeIcsText(dataset.scope.site ?? 'multi-site')}`,
+    `X-CAMPUS-COPILOT-COURSE-ID-OR-KEY:${escapeIcsText(dataset.scope.courseIdOrKey ?? 'all-courses')}`,
+    `X-CAMPUS-COPILOT-RESOURCE-FAMILY:${escapeIcsText(dataset.scope.resourceFamily)}`,
+    `X-CAMPUS-COPILOT-AUTHORIZATION-LEVEL:${escapeIcsText(dataset.packaging.authorizationLevel)}`,
+    `X-CAMPUS-COPILOT-AI-ALLOWED:${dataset.packaging.aiAllowed ? 'TRUE' : 'FALSE'}`,
+    `X-CAMPUS-COPILOT-RISK-LABEL:${escapeIcsText(dataset.packaging.riskLabel)}`,
+    `X-CAMPUS-COPILOT-MATCH-CONFIDENCE:${escapeIcsText(dataset.packaging.matchConfidence)}`,
+    `X-CAMPUS-COPILOT-PROVENANCE:${escapeIcsText(formatProvenance(dataset.packaging.provenance))}`,
     ...events,
     'END:VCALENDAR',
   ].join('\r\n');
@@ -940,7 +1276,19 @@ export function createExportArtifact(request: {
   input: ExportInput;
 }): ExportArtifact {
   const normalized = normalizeInput(request.input);
-  const dataset = buildPresetDataset(request.preset, normalized);
+  const scope = resolveScopeMetadata({
+    preset: request.preset,
+    normalized,
+  });
+  const packaging = resolvePackagingMetadata({
+    normalized,
+    scope,
+  });
+  const dataset = {
+    ...buildPresetDataset(request.preset, normalized),
+    scope,
+    packaging,
+  };
 
   const content =
     request.format === 'json'
@@ -956,6 +1304,8 @@ export function createExportArtifact(request: {
     format: request.format,
     filename: buildFilename(request.preset, request.format, normalized.generatedAt),
     mimeType: MIME_TYPES[request.format],
+    scope,
+    packaging,
     content,
   };
 }

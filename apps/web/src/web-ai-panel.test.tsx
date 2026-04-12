@@ -19,6 +19,55 @@ describe('web ai panel guardrails', () => {
         aiBaseUrl: 'http://127.0.0.1:8787',
         question: 'What changed this week?',
         aiPending: false,
+        currentViewExport: {
+          preset: 'current_view',
+          format: 'markdown',
+          filename: 'current-view.md',
+          mimeType: 'text/markdown',
+          scope: {
+            scopeType: 'current_view',
+            preset: 'current_view',
+            site: 'canvas',
+            resourceFamily: 'workspace_snapshot',
+          },
+          packaging: {
+            authorizationLevel: 'partial',
+            aiAllowed: false,
+            riskLabel: 'medium',
+            matchConfidence: 'medium',
+            provenance: [
+              {
+                sourceType: 'derived_read_model',
+                label: 'Unified local read model',
+                readOnly: true,
+              },
+            ],
+          },
+          content: '# Current view',
+        },
+        importedEnvelope: {
+          title: 'Imported current view',
+          generatedAt: '2026-04-03T12:00:00-07:00',
+          scope: {
+            scopeType: 'current_view',
+            preset: 'current_view',
+            site: 'canvas',
+            resourceFamily: 'workspace_snapshot',
+          },
+          packaging: {
+            authorizationLevel: 'allowed',
+            aiAllowed: false,
+            riskLabel: 'medium',
+            matchConfidence: 'medium',
+            provenance: [
+              {
+                sourceType: 'derived_read_model',
+                label: 'Imported local read model',
+                readOnly: true,
+              },
+            ],
+          },
+        },
         availableCourses: [{ id: 'canvas:course:1', label: 'Canvas · CSE 142' }],
         advancedMaterialEnabled: false,
         advancedMaterialCourseId: '',
@@ -38,6 +87,10 @@ describe('web ai panel guardrails', () => {
       }),
     );
 
+    expect(html).toContain('Current policy envelope');
+    expect(html).toContain('Layered policy');
+    expect(html).toContain('Ask AI stays blocked on the web surface until the current export envelope carries Layer 2 approval.');
+    expect(html).toContain('Imported snapshot envelope');
     expect(html).toContain('What AI can see');
     expect(html).toContain('What AI cannot do');
     expect(html).toContain('Workspace explanation strip');
@@ -52,6 +105,7 @@ describe('web ai panel guardrails', () => {
     expect(html).toContain('BFF base URL');
     expect(html).toContain('Provider');
     expect(html).toContain('Model');
+    expect(html).toContain('disabled=""');
     expect(html).toContain('type="checkbox"');
     expect(html).toContain('Enable excerpt analysis for one course');
   });

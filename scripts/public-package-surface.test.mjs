@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -25,7 +25,7 @@ function resolvePackageManagerCommand(binaryName) {
 
   const matchesEntrypoint = binaryName === 'pnpm' && entrypointBase.startsWith('pnpm');
 
-  if (typeof entrypoint === 'string' && matchesEntrypoint) {
+  if (typeof entrypoint === 'string' && matchesEntrypoint && existsSync(entrypoint)) {
     return { command: process.execPath, prefixArgs: [entrypoint] };
   }
 

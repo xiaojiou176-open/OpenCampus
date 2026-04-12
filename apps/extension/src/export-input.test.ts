@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildWorkbenchExportInput } from './export-input';
+import { buildWorkbenchExportInput, summarizeAuthorizationState } from './export-input';
 
 describe('workbench export input builder', () => {
   it('keeps decision layer and change journal data attached to current view exports', () => {
@@ -227,5 +227,46 @@ describe('workbench export input builder', () => {
     expect(weeklyLoad[0]?.summary).toContain('active planning day');
     expect(changeEvents[0]?.title).toBe('Homework 5 due date changed');
     expect(changeEvents[0]?.summary).toContain('Due date changed');
+  });
+
+  it('summarizes layer 1 and layer 2 authorization rules without inventing shadow state', () => {
+    const summary = summarizeAuthorizationState({
+      policyVersion: 'wave2',
+      rules: [
+        {
+          id: 'layer1-allowed',
+          layer: 'layer1_read_export',
+          status: 'allowed',
+        },
+        {
+          id: 'layer1-partial',
+          layer: 'layer1_read_export',
+          status: 'partial',
+        },
+        {
+          id: 'layer2-confirm',
+          layer: 'layer2_ai_read_analysis',
+          status: 'confirm_required',
+        },
+        {
+          id: 'layer2-blocked',
+          layer: 'layer2_ai_read_analysis',
+          status: 'blocked',
+        },
+      ],
+    });
+
+    expect(summary[0]).toMatchObject({
+      layer: 'layer1_read_export',
+      allowed: 1,
+      partial: 1,
+      total: 2,
+    });
+    expect(summary[1]).toMatchObject({
+      layer: 'layer2_ai_read_analysis',
+      confirmRequired: 1,
+      blocked: 1,
+      total: 2,
+    });
   });
 });

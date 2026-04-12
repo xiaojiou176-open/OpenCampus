@@ -5,6 +5,8 @@ import {
   type SwitchyardLane,
   type SwitchyardRuntimeProvider,
 } from '@campus-copilot/ai';
+import type { ExportArtifact } from '@campus-copilot/exporter';
+import type { ImportedArtifactEnvelope } from './import-export-snapshot';
 
 export function WebAiPanel(props: {
   provider: ProviderId;
@@ -16,10 +18,12 @@ export function WebAiPanel(props: {
   question: string;
   aiPending: boolean;
   aiError?: string;
-  aiNotice?: string;
-  aiAnswer?: string;
-  aiStructured?: AiStructuredAnswer;
-  availableCourses: Array<{ id: string; label: string }>;
+    aiNotice?: string;
+    aiAnswer?: string;
+    aiStructured?: AiStructuredAnswer;
+    currentViewExport?: ExportArtifact;
+    importedEnvelope?: ImportedArtifactEnvelope;
+    availableCourses: Array<{ id: string; label: string }>;
   advancedMaterialEnabled: boolean;
   advancedMaterialCourseId: string;
   advancedMaterialExcerpt: string;
@@ -39,6 +43,17 @@ export function WebAiPanel(props: {
   const aiGuardrails = getAcademicAiCallerGuardrails();
   const redZoneHardStop = aiGuardrails.redZone.primaryHardStop;
   const advancedMaterialGuard = aiGuardrails.advancedMaterial;
+  const currentPackaging = props.currentViewExport?.packaging;
+  const currentScope = props.currentViewExport?.scope;
+  const currentAiBlocked = currentPackaging ? !currentPackaging.aiAllowed : true;
+  const importedPackaging = props.importedEnvelope?.packaging;
+
+  function formatProvenance(labels: ExportArtifact['packaging']['provenance'] | undefined) {
+    if (!labels?.length) {
+      return 'No provenance chain carried into this surface yet.';
+    }
+    return labels.map((entry) => entry.label).join(' · ');
+  }
 
   return (
     <section className="panel ai-panel">
@@ -83,6 +98,52 @@ export function WebAiPanel(props: {
         </article>
       </div>
 
+      <div>
+        <p className="meta-title">Current policy envelope</p>
+      </div>
+      <div className="ai-explanation-strip" aria-label="Current export and policy envelope">
+        <article className="guidance-card">
+          <p className="meta-title">Current view export</p>
+          <strong>
+            {currentScope ? `${currentScope.scopeType} · ${currentScope.resourceFamily}` : 'Waiting for a loaded workspace'}
+          </strong>
+          <p>
+            {currentScope?.site ? `Site: ${currentScope.site}. ` : 'Site: multi-site. '}
+            {currentScope?.courseIdOrKey ? `Course: ${currentScope.courseIdOrKey}.` : 'Course scope: all visible courses.'}
+          </p>
+        </article>
+        <article className={`guidance-card ${currentAiBlocked ? 'guidance-card--warning' : ''}`}>
+          <p className="meta-title">Layered policy</p>
+          <strong>
+            {currentPackaging
+              ? `Read/export ${currentPackaging.authorizationLevel} · AI ${currentPackaging.aiAllowed ? 'allowed' : 'blocked'}`
+              : 'No live policy envelope yet'}
+          </strong>
+          <p>
+            {currentPackaging
+              ? `Risk ${currentPackaging.riskLabel} · match ${currentPackaging.matchConfidence}.`
+              : 'Load a workspace snapshot before asking AI or exporting from the web surface.'}
+          </p>
+        </article>
+        <article className="guidance-card">
+          <p className="meta-title">Provenance</p>
+          <strong>{importedPackaging ? 'Imported truth is preserved' : 'Using current web workbench packaging'}</strong>
+          <p>{formatProvenance(importedPackaging?.provenance ?? currentPackaging?.provenance)}</p>
+        </article>
+      </div>
+      {props.importedEnvelope ? (
+        <p className="meta">
+          Imported snapshot envelope: {props.importedEnvelope.title ?? 'Untitled artifact'} ·{' '}
+          {props.importedEnvelope.scope?.scopeType ?? 'unknown scope'} · AI{' '}
+          {props.importedEnvelope.packaging?.aiAllowed ? 'allowed' : 'blocked'}.
+        </p>
+      ) : null}
+      {currentAiBlocked ? (
+        <p className="feedback">
+          Ask AI stays blocked on the web surface until the current export envelope carries Layer 2 approval.
+        </p>
+      ) : null}
+
       <div className="ai-question-block">
         <div className="ai-question-copy">
           <p className="meta-title">Question</p>
@@ -98,7 +159,12 @@ export function WebAiPanel(props: {
           <span className="badge badge-warning">What AI cannot do</span>
         </div>
         <div className="toolbar-row ai-actions">
-          <button type="button" className="primary-button" onClick={() => void props.onAskAi()} disabled={props.aiPending}>
+          <button
+            type="button"
+            className="primary-button"
+            onClick={() => void props.onAskAi()}
+            disabled={props.aiPending || currentAiBlocked}
+          >
             {props.aiPending ? 'Asking AI…' : 'Ask AI'}
           </button>
         </div>

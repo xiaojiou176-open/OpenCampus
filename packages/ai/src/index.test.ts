@@ -18,6 +18,7 @@ import {
   getAcademicRedZoneUiGuard,
   getAcademicRedZoneUiGuards,
   getAiMaterialBoundaryVerdict,
+  getAiSitePolicyOverlay,
   getAdvancedMaterialAnalysisGuard,
   getToolDefinitions,
   parseAiStructuredAnswer,
@@ -152,11 +153,40 @@ describe('ai runtime contracts', () => {
     ]);
   });
 
+  it('exposes a static site-policy overlay registry for the current shipped plus planning-carrier lane', () => {
+    expect(getAiSitePolicyOverlay('canvas')).toEqual({
+      site: 'canvas',
+      siteLabel: 'Canvas',
+      allowedFamilies: ['assignments', 'announcements', 'grades', 'calendar'],
+      exportOnlyFamilies: ['course_material_excerpt'],
+      forbiddenAiObjects: ['unfinished assignment detail pages', 'raw course files', 'raw submission payloads'],
+      carrierHonesty:
+        'Treat Canvas data as a read-only campus carrier and never present session-backed paths as official public APIs.',
+      operatorNote:
+        'Canvas answers should stay grounded in structured entities, cited exports, and explicit trust gaps.',
+    });
+    expect(getAiSitePolicyOverlay('time-schedule')).toEqual({
+      site: 'time-schedule',
+      siteLabel: 'Time Schedule',
+      allowedFamilies: ['public course offerings', 'meeting times', 'section identity'],
+      exportOnlyFamilies: ['planning context snapshots'],
+      forbiddenAiObjects: ['registration automation advice', 'seat-watcher polling', 'private student records'],
+      carrierHonesty:
+        "Treat Time Schedule as a public planning carrier, not as proof of the student's enrolled reality or any registration entitlement.",
+      operatorNote:
+        'Time Schedule answers should stay planning-oriented, cite public section context, and defer enrolled-state claims to MyUW.',
+    });
+    expect(getAiSitePolicyOverlay('myuw')?.forbiddenAiObjects).toContain('degree audit detail');
+    expect(getAiSitePolicyOverlay('myuw')?.exportOnlyFamilies).toContain('transcript summaries');
+    expect(getAiSitePolicyOverlay('unsupported-site')).toBeUndefined();
+  });
+
   it('builds prompts that enforce AI-after-structure boundaries', () => {
     const messages = buildAiRuntimeMessages({
       provider: 'openai',
       model: 'gpt-test',
       question: '我现在最该关注什么？',
+      sitePolicyOverlay: getAiSitePolicyOverlay('canvas'),
       toolResults: [
         {
           name: 'get_priority_alerts',
@@ -169,6 +199,9 @@ describe('ai runtime contracts', () => {
     expect(messages.systemPrompt).toContain('raw course files');
     expect(messages.systemPrompt).toContain('assignment PDFs');
     expect(messages.systemPrompt).toContain('Advanced material analysis stays default-disabled');
+    expect(messages.systemPrompt).toContain('Current site policy overlay: Canvas.');
+    expect(messages.systemPrompt).toContain('Allowed structured families: assignments, announcements, grades, calendar.');
+    expect(messages.systemPrompt).toContain('Export-only but not default AI families: course_material_excerpt.');
     expect(messages.systemPrompt).toContain('"summary"');
     expect(messages.systemPrompt).toContain('"nextActions"');
     expect(messages.systemPrompt).toContain('"trustGaps"');

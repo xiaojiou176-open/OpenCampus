@@ -1,11 +1,136 @@
 import type { Dispatch, SetStateAction } from 'react';
 import type { ProviderId } from '@campus-copilot/ai';
 import type { ExportFormat, ExportPreset } from '@campus-copilot/exporter';
-import { buildNextConfig, type ExtensionConfig } from './config';
+import {
+  ADMIN_HIGH_SENSITIVITY_FAMILY_DESCRIPTORS,
+  MANAGED_POLICY_SITES,
+  buildNextConfig,
+  type ExtensionConfig,
+} from './config';
 import { formatProviderReason, formatProviderStatusError, type ProviderStatusLike } from './diagnostics';
 import { formatRelativeTime, type ResolvedUiLanguage } from './i18n';
-import { EXPORT_FORMAT_OPTIONS, PROVIDER_OPTIONS } from './surface-shell-model';
+import { EXPORT_FORMAT_OPTIONS, PROVIDER_OPTIONS, SITE_LABELS } from './surface-shell-model';
 import { type UiText } from './surface-shell-view-helpers';
+
+const AUTHORIZATION_STATUS_OPTIONS: Array<ExtensionConfig['authorization']['rules'][number]['status']> = [
+  'allowed',
+  'partial',
+  'confirm_required',
+  'blocked',
+];
+
+function getSiteAuthorizationStatus(
+  config: ExtensionConfig,
+  site: (typeof MANAGED_POLICY_SITES)[number],
+  layer: ExtensionConfig['authorization']['rules'][number]['layer'],
+) {
+  return (
+    config.authorization.rules.find(
+      (rule) => rule.site === site && rule.layer === layer && rule.resourceFamily === 'workspace_snapshot',
+    )?.status ?? (layer === 'layer1_read_export' ? 'partial' : 'confirm_required')
+  );
+}
+
+function getWorkspaceAuthorizationStatus(
+  config: ExtensionConfig,
+  layer: ExtensionConfig['authorization']['rules'][number]['layer'],
+) {
+  return (
+    config.authorization.rules.find(
+      (rule) =>
+        !rule.site &&
+        !rule.courseIdOrKey &&
+        rule.layer === layer &&
+        rule.resourceFamily === 'workspace_snapshot',
+    )?.status ?? (layer === 'layer1_read_export' ? 'allowed' : 'confirm_required')
+  );
+}
+
+function getResourceFamilyAuthorizationStatus(
+  config: ExtensionConfig,
+  resourceFamily: (typeof ADMIN_HIGH_SENSITIVITY_FAMILY_DESCRIPTORS)[number]['resourceFamily'],
+  layer: ExtensionConfig['authorization']['rules'][number]['layer'],
+) {
+  return (
+    config.authorization.rules.find(
+      (rule) =>
+        !rule.site &&
+        !rule.courseIdOrKey &&
+        rule.layer === layer &&
+        rule.resourceFamily === resourceFamily,
+    )?.status ?? (layer === 'layer1_read_export' ? 'confirm_required' : 'blocked')
+  );
+}
+
+function updateWorkspaceAuthorizationStatus(
+  config: ExtensionConfig,
+  layer: ExtensionConfig['authorization']['rules'][number]['layer'],
+  status: ExtensionConfig['authorization']['rules'][number]['status'],
+) {
+  const nextRules = config.authorization.rules.filter(
+    (rule) =>
+      !(
+        !rule.site &&
+        !rule.courseIdOrKey &&
+        rule.layer === layer &&
+        rule.resourceFamily === 'workspace_snapshot'
+      ),
+  );
+  nextRules.push({
+    id: `global-${layer}-workspace`,
+    layer,
+    status,
+    resourceFamily: 'workspace_snapshot',
+    label:
+      layer === 'layer1_read_export'
+        ? 'All sites structured read/export'
+        : 'All sites AI read/analysis status',
+  });
+
+  return buildNextConfig({
+    current: config,
+    authorization: {
+      updatedAt: new Date().toISOString(),
+      rules: nextRules,
+    },
+  });
+}
+
+function updateSiteAuthorizationStatus(
+  config: ExtensionConfig,
+  site: (typeof MANAGED_POLICY_SITES)[number],
+  layer: ExtensionConfig['authorization']['rules'][number]['layer'],
+  status: ExtensionConfig['authorization']['rules'][number]['status'],
+) {
+  const nextRules = config.authorization.rules.filter(
+    (rule) =>
+      !(
+        rule.site === site &&
+        rule.layer === layer &&
+        rule.resourceFamily === 'workspace_snapshot' &&
+        !rule.courseIdOrKey
+      ),
+  );
+  nextRules.push({
+    id: `${site}-${layer}-workspace`,
+    layer,
+    status,
+    site,
+    resourceFamily: 'workspace_snapshot',
+    label:
+      layer === 'layer1_read_export'
+        ? `${site} structured read/export`
+        : `${site} AI read/analysis status`,
+  });
+
+  return buildNextConfig({
+    current: config,
+    authorization: {
+      updatedAt: new Date().toISOString(),
+      rules: nextRules,
+    },
+  });
+}
 
 export function OptionsPanels(props: {
   text: UiText;
@@ -305,6 +430,125 @@ export function OptionsPanels(props: {
             ))}
           </select>
         </label>
+        <div className="surface__stack">
+          <h3>Authorization skeleton</h3>
+          <p className="surface__meta">
+            Layer 1 controls structured plugin read/export. Layer 2 controls AI read/analysis separately.
+          </p>
+          <p className="surface__meta">
+            Policy version: {optionsDraft.authorization.policyVersion} · Course-material excerpts stay confirm-required until per-course opt-in.
+          </p>
+          <p className="surface__meta">
+            Time Schedule now has its own site skeleton. Degree-audit, transcript, finaid, and tuition/account families below are shared policy placeholders only, not landed runtime lanes.
+          </p>
+          <div className="surface__grid surface__grid--split">
+            <label className="surface__field">
+              <span>All sites · Layer 1 read/export</span>
+              <select
+                value={getWorkspaceAuthorizationStatus(optionsDraft, 'layer1_read_export')}
+                onChange={(event) =>
+                  setOptionsDraft((current) =>
+                    updateWorkspaceAuthorizationStatus(
+                      current,
+                      'layer1_read_export',
+                      event.target.value as ExtensionConfig['authorization']['rules'][number]['status'],
+                    ),
+                  )
+                }
+              >
+                {AUTHORIZATION_STATUS_OPTIONS.map((option) => (
+                  <option key={`global-layer1-${option}`} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="surface__field">
+              <span>All sites · Layer 2 AI read/analysis</span>
+              <select
+                value={getWorkspaceAuthorizationStatus(optionsDraft, 'layer2_ai_read_analysis')}
+                onChange={(event) =>
+                  setOptionsDraft((current) =>
+                    updateWorkspaceAuthorizationStatus(
+                      current,
+                      'layer2_ai_read_analysis',
+                      event.target.value as ExtensionConfig['authorization']['rules'][number]['status'],
+                    ),
+                  )
+                }
+              >
+                {AUTHORIZATION_STATUS_OPTIONS.map((option) => (
+                  <option key={`global-layer2-${option}`} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          {MANAGED_POLICY_SITES.map((site) => (
+            <div className="surface__grid surface__grid--split" key={site}>
+              <label className="surface__field">
+                <span>{SITE_LABELS[site]} · Layer 1 read/export</span>
+                <select
+                  value={getSiteAuthorizationStatus(optionsDraft, site, 'layer1_read_export')}
+                  onChange={(event) =>
+                    setOptionsDraft((current) =>
+                      updateSiteAuthorizationStatus(
+                        current,
+                        site,
+                        'layer1_read_export',
+                        event.target.value as ExtensionConfig['authorization']['rules'][number]['status'],
+                      ),
+                    )
+                  }
+                >
+                  {AUTHORIZATION_STATUS_OPTIONS.map((option) => (
+                    <option key={`${site}-layer1-${option}`} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="surface__field">
+                <span>{SITE_LABELS[site]} · Layer 2 AI read/analysis</span>
+                <select
+                  value={getSiteAuthorizationStatus(optionsDraft, site, 'layer2_ai_read_analysis')}
+                  onChange={(event) =>
+                    setOptionsDraft((current) =>
+                      updateSiteAuthorizationStatus(
+                        current,
+                        site,
+                        'layer2_ai_read_analysis',
+                        event.target.value as ExtensionConfig['authorization']['rules'][number]['status'],
+                      ),
+                    )
+                  }
+                >
+                  {AUTHORIZATION_STATUS_OPTIONS.map((option) => (
+                    <option key={`${site}-layer2-${option}`} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          ))}
+          <div className="surface__stack">
+            <h3>Reserved admin high-sensitivity families</h3>
+            <p className="surface__meta">
+              These entries reserve shared auth vocabulary for future DARS/transcript/finaid lanes without claiming that those runtime adapters already exist.
+            </p>
+            {ADMIN_HIGH_SENSITIVITY_FAMILY_DESCRIPTORS.map((family) => (
+              <div className="surface__stack" key={family.resourceFamily}>
+                <p className="surface__meta">
+                  <strong>{family.label}</strong> · Layer 1 {getResourceFamilyAuthorizationStatus(optionsDraft, family.resourceFamily, 'layer1_read_export')} · Layer 2{' '}
+                  {getResourceFamilyAuthorizationStatus(optionsDraft, family.resourceFamily, 'layer2_ai_read_analysis')}
+                </p>
+                <p className="surface__meta">{family.note}</p>
+              </div>
+            ))}
+          </div>
+        </div>
         <div className="surface__actions surface__actions--wrap">
           <button className="surface__button" onClick={() => void onSaveOptions()}>
             {text.options.saveConfiguration}

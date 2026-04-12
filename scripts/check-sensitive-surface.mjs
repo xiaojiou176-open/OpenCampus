@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 
 export const forbiddenTrackedPathRules = [
   { pattern: /^\.env$/, code: 'tracked_secret_env_file' },
@@ -85,7 +85,19 @@ export function collectSensitiveSurfaceFailures({ trackedFiles, readTrackedFile 
   for (const file of trackedFiles) {
     failures.push(...collectTrackedPathFailures({ files: [file] }));
 
-    const buffer = readTrackedFile(file);
+    let buffer;
+    try {
+      buffer = readTrackedFile(file);
+    } catch (error) {
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') {
+        continue;
+      }
+      throw error;
+    }
+
+    if (!buffer) {
+      continue;
+    }
     failures.push(...collectContentFailures({ file, buffer }));
   }
 
@@ -107,7 +119,7 @@ function listTrackedFiles() {
 function main() {
   const failures = collectSensitiveSurfaceFailures({
     trackedFiles: listTrackedFiles(),
-    readTrackedFile: (file) => readFileSync(file),
+    readTrackedFile: (file) => (existsSync(file) ? readFileSync(file) : undefined),
   });
 
   if (failures.length > 0) {

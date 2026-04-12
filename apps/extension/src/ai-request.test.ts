@@ -141,6 +141,25 @@ describe('ai request wiring', () => {
         format: 'markdown',
         filename: 'current-view.md',
         mimeType: 'text/markdown',
+        scope: {
+          scopeType: 'current_view',
+          preset: 'current_view',
+          site: 'canvas',
+          resourceFamily: 'workspace_snapshot',
+        },
+        packaging: {
+          authorizationLevel: 'allowed',
+          aiAllowed: false,
+          riskLabel: 'medium',
+          matchConfidence: 'medium',
+          provenance: [
+            {
+              sourceType: 'derived_read_model',
+              label: 'Unified local read model',
+              readOnly: true,
+            },
+          ],
+        },
         content: '# Current view',
       },
     });
@@ -149,6 +168,7 @@ describe('ai request wiring', () => {
     expect(request.body.messages[0]?.content).toContain('Never request raw DOM');
     expect(request.body.messages[0]?.content).toContain('raw course files');
     expect(request.body.messages[0]?.content).toContain('Advanced material analysis stays default-disabled');
+    expect(request.body.messages[0]?.content).toContain('Current site policy overlay: Canvas.');
     expect(request.body.messages[1]?.content).toContain('Homework 5 is due soon');
     expect(request.body.messages[1]?.content).toContain('Due date changed from empty to empty.');
     expect(request.body.messages[1]?.content).toContain('current-view.md');
@@ -183,6 +203,25 @@ describe('ai request wiring', () => {
           format: 'markdown',
           filename: 'current-view.md',
           mimeType: 'text/markdown',
+          scope: {
+            scopeType: 'current_view',
+            preset: 'current_view',
+            site: 'canvas',
+            resourceFamily: 'workspace_snapshot',
+          },
+          packaging: {
+            authorizationLevel: 'allowed',
+            aiAllowed: false,
+            riskLabel: 'medium',
+            matchConfidence: 'medium',
+            provenance: [
+              {
+                sourceType: 'derived_read_model',
+                label: 'Unified local read model',
+                readOnly: true,
+              },
+            ],
+          },
           content: '# Current view',
         },
       }),
@@ -222,6 +261,25 @@ describe('ai request wiring', () => {
         format: 'markdown',
         filename: 'current-view.md',
         mimeType: 'text/markdown',
+        scope: {
+          scopeType: 'current_view',
+          preset: 'current_view',
+          site: 'canvas',
+          resourceFamily: 'workspace_snapshot',
+        },
+        packaging: {
+          authorizationLevel: 'allowed',
+          aiAllowed: false,
+          riskLabel: 'medium',
+          matchConfidence: 'medium',
+          provenance: [
+            {
+              sourceType: 'derived_read_model',
+              label: 'Unified local read model',
+              readOnly: true,
+            },
+          ],
+        },
         content: '# Current view',
       },
     });

@@ -89,6 +89,79 @@ export const AdvancedMaterialAnalysisRequestSchema = z.union([
 ]);
 export type AdvancedMaterialAnalysisRequest = z.infer<typeof AdvancedMaterialAnalysisRequestSchema>;
 
+export const AiPolicySiteSchema = z.enum(['canvas', 'gradescope', 'edstem', 'myuw', 'time-schedule']);
+export type AiPolicySite = z.infer<typeof AiPolicySiteSchema>;
+
+export const AiSitePolicyOverlaySchema = z
+  .object({
+    site: AiPolicySiteSchema,
+    siteLabel: z.string().trim().min(1),
+    allowedFamilies: z.array(z.string().trim().min(1)).min(1),
+    exportOnlyFamilies: z.array(z.string().trim().min(1)),
+    forbiddenAiObjects: z.array(z.string().trim().min(1)).min(1),
+    carrierHonesty: z.string().trim().min(1),
+    operatorNote: z.string().trim().min(1),
+  })
+  .strict();
+export type AiSitePolicyOverlay = z.infer<typeof AiSitePolicyOverlaySchema>;
+
+const AI_SITE_POLICY_OVERLAYS: Record<AiPolicySite, AiSitePolicyOverlay> = {
+  canvas: {
+    site: 'canvas',
+    siteLabel: 'Canvas',
+    allowedFamilies: ['assignments', 'announcements', 'grades', 'calendar'],
+    exportOnlyFamilies: ['course_material_excerpt'],
+    forbiddenAiObjects: ['unfinished assignment detail pages', 'raw course files', 'raw submission payloads'],
+    carrierHonesty: 'Treat Canvas data as a read-only campus carrier and never present session-backed paths as official public APIs.',
+    operatorNote: 'Canvas answers should stay grounded in structured entities, cited exports, and explicit trust gaps.',
+  },
+  gradescope: {
+    site: 'gradescope',
+    siteLabel: 'Gradescope',
+    allowedFamilies: ['assignments', 'grades', 'rubric summary'],
+    exportOnlyFamilies: ['submission review artifacts'],
+    forbiddenAiObjects: ['raw submission bodies', 'unreleased rubric detail', 'in-progress submission detail'],
+    carrierHonesty: 'Treat Gradescope as a read-only session-backed grading carrier and keep reviewer uncertainty explicit.',
+    operatorNote: 'Gradescope answers should summarize structured scores and rubric outcomes instead of inventing reviewer intent.',
+  },
+  edstem: {
+    site: 'edstem',
+    siteLabel: 'EdStem',
+    allowedFamilies: ['threads', 'announcements', 'course links'],
+    exportOnlyFamilies: ['thread attachments'],
+    forbiddenAiObjects: ['private draft replies', 'raw attachment bodies', 'hidden thread content'],
+    carrierHonesty: 'Treat EdStem as a read-only classroom discussion carrier and avoid implying official LMS parity.',
+    operatorNote: 'EdStem answers should focus on structured discussion context and keep thread uncertainty visible.',
+  },
+  myuw: {
+    site: 'myuw',
+    siteLabel: 'MyUW',
+    allowedFamilies: ['events', 'announcements', 'time-sensitive notices', 'current schedule context'],
+    exportOnlyFamilies: [
+      'degree-audit summaries',
+      'transcript summaries',
+      'financial aid summaries',
+      'tuition and account summaries',
+    ],
+    forbiddenAiObjects: ['degree audit detail', 'transcript detail', 'financial aid detail', 'tuition or account detail'],
+    carrierHonesty:
+      'Treat MyUW as a read-only student status carrier; current notices can inform the desk, but DARS/transcript/finaid/tuition detail still need explicit future lanes and stronger human confirmation.',
+    operatorNote:
+      'MyUW answers should separate current notices from high-sensitivity records and prefer export-first handoff when an administrative detail lane is not yet landed.',
+  },
+  'time-schedule': {
+    site: 'time-schedule',
+    siteLabel: 'Time Schedule',
+    allowedFamilies: ['public course offerings', 'meeting times', 'section identity'],
+    exportOnlyFamilies: ['planning context snapshots'],
+    forbiddenAiObjects: ['registration automation advice', 'seat-watcher polling', 'private student records'],
+    carrierHonesty:
+      "Treat Time Schedule as a public planning carrier, not as proof of the student's enrolled reality or any registration entitlement.",
+    operatorNote:
+      'Time Schedule answers should stay planning-oriented, cite public section context, and defer enrolled-state claims to MyUW.',
+  },
+};
+
 const DEFAULT_ADVANCED_MATERIAL_ANALYSIS: AdvancedMaterialAnalysisDefault = {
   enabled: false,
   policy: 'default_disabled',
@@ -211,6 +284,7 @@ export const AiRuntimeRequestSchema = z.object({
   switchyardProvider: SwitchyardRuntimeProviderSchema.optional(),
   switchyardLane: SwitchyardLaneSchema.optional(),
   advancedMaterialAnalysis: AdvancedMaterialAnalysisRequestSchema.default(DEFAULT_ADVANCED_MATERIAL_ANALYSIS),
+  sitePolicyOverlay: AiSitePolicyOverlaySchema.optional(),
   toolResults: z.array(ToolResultSchema).default([]),
 });
 export type AiRuntimeRequest = z.infer<typeof AiRuntimeRequestSchema>;
@@ -254,6 +328,14 @@ export interface ToolDefinition {
 export interface AiRuntimeMessages {
   systemPrompt: string;
   userPrompt: string;
+}
+
+export function getAiSitePolicyOverlay(site?: string | null): AiSitePolicyOverlay | undefined {
+  if (!site) {
+    return undefined;
+  }
+
+  return AI_SITE_POLICY_OVERLAYS[site as AiPolicySite];
 }
 
 export interface ProviderProxyRequest {
@@ -597,9 +679,19 @@ export function buildAiRuntimeMessages(input: z.input<typeof AiRuntimeRequestSch
         "Keep the answer scoped to what the excerpt says and make any uncertainty explicit in 'trustGaps'.",
       ]
     : [
-        'Never request or consume raw course files, lecture slides, instructor-authored notes, exams, quizzes, assignment PDFs, solution documents, or copyright-sensitive or sharing-unclear course materials.',
-        'Advanced material analysis stays default-disabled; do not promote raw course-material analysis unless a future per-course opt-in contract explicitly enables it.',
+      'Never request or consume raw course files, lecture slides, instructor-authored notes, exams, quizzes, assignment PDFs, solution documents, or copyright-sensitive or sharing-unclear course materials.',
+      'Advanced material analysis stays default-disabled; do not promote raw course-material analysis unless a future per-course opt-in contract explicitly enables it.',
       ];
+  const sitePolicyPromptLines = request.sitePolicyOverlay
+    ? [
+        `Current site policy overlay: ${request.sitePolicyOverlay.siteLabel}.`,
+        `Allowed structured families: ${request.sitePolicyOverlay.allowedFamilies.join(', ')}.`,
+        `Export-only but not default AI families: ${request.sitePolicyOverlay.exportOnlyFamilies.join(', ') || 'none'}.`,
+        `Forbidden AI objects: ${request.sitePolicyOverlay.forbiddenAiObjects.join(', ')}.`,
+        request.sitePolicyOverlay.carrierHonesty,
+        request.sitePolicyOverlay.operatorNote,
+      ]
+    : [];
 
   return {
     systemPrompt: [
@@ -607,6 +699,7 @@ export function buildAiRuntimeMessages(input: z.input<typeof AiRuntimeRequestSch
       'You operate strictly after structure: use only unified schema, read-model, and export results.',
       'Never request raw DOM, raw HTML, cookies, or site-specific payloads.',
       ...advancedMaterialPromptLines,
+      ...sitePolicyPromptLines,
       'Return a JSON object with keys "summary", "bullets", "nextActions", "trustGaps", and "citations".',
       'Use "nextActions" for concrete operator next steps and "trustGaps" for uncertainty, blockers, or evidence gaps. Use empty arrays when there is nothing to list.',
       'Each citation must include "entityId", "kind", "site", "title", and optional "url".',

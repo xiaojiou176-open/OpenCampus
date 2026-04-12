@@ -1,5 +1,11 @@
 import { buildWorkbenchExportInput as buildSharedWorkbenchExportInput } from '@campus-copilot/core';
-import type { ExportInput, ExportPreset } from '@campus-copilot/exporter';
+import type {
+  AuthorizationState,
+  ExportInput,
+  ExportPackagingMetadata,
+  ExportPreset,
+  ExportScopeMetadata,
+} from '@campus-copilot/exporter';
 import type { Alert, Announcement, Assignment, Event, Grade, Message, Resource } from '@campus-copilot/schema';
 import type {
   ChangeEvent,
@@ -19,11 +25,24 @@ import {
   buildLocalizedWeeklyLoadPresentation,
 } from './workbench-presentation';
 
+export type AuthorizationLayerSummary = {
+  layer: 'layer1_read_export' | 'layer2_ai_read_analysis';
+  allowed: number;
+  blocked: number;
+  partial: number;
+  confirmRequired: number;
+  total: number;
+};
+
 type BuildWorkbenchExportInputArgs = {
   preset: ExportPreset;
   generatedAt: string;
   uiLanguage: ResolvedUiLanguage;
   filters: WorkbenchFilter;
+  viewTitleOverride?: string;
+  exportScope?: Partial<ExportScopeMetadata>;
+  packaging?: Partial<ExportPackagingMetadata>;
+  authorization?: AuthorizationState;
   resources: Resource[];
   assignments: Assignment[];
   announcements: Announcement[];
@@ -66,6 +85,9 @@ export function buildWorkbenchExportInput(args: BuildWorkbenchExportInputArgs): 
     preset: args.preset,
     generatedAt: args.generatedAt,
     filters: args.filters,
+    exportScope: args.exportScope,
+    packaging: args.packaging,
+    authorization: args.authorization,
     resources: args.resources,
     assignments: args.assignments,
     announcements: args.announcements,
@@ -79,7 +101,7 @@ export function buildWorkbenchExportInput(args: BuildWorkbenchExportInputArgs): 
     syncRuns: args.syncRuns,
     changeEvents: args.changeEvents,
     presentation: {
-      viewTitle: buildViewTitle(args.preset, args.filters, text),
+      viewTitle: args.viewTitleOverride ?? buildViewTitle(args.preset, args.filters, text),
       alerts: buildLocalizedAlertPresentation(args.alerts, args.uiLanguage),
       recentUpdates: buildLocalizedRecentUpdatesPresentation(args.recentUpdates?.items ?? [], args.uiLanguage),
       focusQueue: buildLocalizedFocusQueuePresentation(args.focusQueue, args.uiLanguage),
@@ -87,4 +109,44 @@ export function buildWorkbenchExportInput(args: BuildWorkbenchExportInputArgs): 
       changeEvents: buildLocalizedChangeEventPresentation(args.changeEvents, args.uiLanguage),
     },
   });
+}
+
+export function summarizeAuthorizationState(authorization?: AuthorizationState): AuthorizationLayerSummary[] {
+  const layers: AuthorizationLayerSummary[] = [
+    {
+      layer: 'layer1_read_export',
+      allowed: 0,
+      blocked: 0,
+      partial: 0,
+      confirmRequired: 0,
+      total: 0,
+    },
+    {
+      layer: 'layer2_ai_read_analysis',
+      allowed: 0,
+      blocked: 0,
+      partial: 0,
+      confirmRequired: 0,
+      total: 0,
+    },
+  ];
+
+  for (const rule of authorization?.rules ?? []) {
+    const summary = layers.find((entry) => entry.layer === rule.layer);
+    if (!summary) {
+      continue;
+    }
+    summary.total += 1;
+    if (rule.status === 'allowed') {
+      summary.allowed += 1;
+    } else if (rule.status === 'blocked') {
+      summary.blocked += 1;
+    } else if (rule.status === 'partial') {
+      summary.partial += 1;
+    } else if (rule.status === 'confirm_required') {
+      summary.confirmRequired += 1;
+    }
+  }
+
+  return layers;
 }

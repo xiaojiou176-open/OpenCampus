@@ -1,13 +1,22 @@
 import {
   type AiRuntimeRequest,
+  type AiSitePolicyOverlay,
   type AdvancedMaterialAnalysisRequest,
   buildAiRuntimeMessages,
   createProviderProxyRequest,
+  getAiSitePolicyOverlay,
   type ProviderId,
   type SwitchyardLane,
   type SwitchyardRuntimeProvider,
 } from '@campus-copilot/ai';
-import type { ExportArtifact, ExportInput, ExportPreset } from '@campus-copilot/exporter';
+import type {
+  AuthorizationState,
+  ExportArtifact,
+  ExportInput,
+  ExportPackagingMetadata,
+  ExportPreset,
+  ExportScopeMetadata,
+} from '@campus-copilot/exporter';
 import type { Alert, Announcement, Assignment, Event, Grade, Message, Resource, TimelineEntry } from '@campus-copilot/schema';
 import type {
   ChangeEvent,
@@ -33,6 +42,9 @@ export interface BuildWorkbenchExportInputArgs {
   preset: ExportPreset;
   generatedAt: string;
   filters: WorkbenchFilter;
+  exportScope?: Partial<ExportScopeMetadata>;
+  packaging?: Partial<ExportPackagingMetadata>;
+  authorization?: AuthorizationState;
   resources: Resource[];
   assignments: Assignment[];
   announcements: Announcement[];
@@ -63,6 +75,7 @@ export interface BuildWorkbenchAiProxyRequestArgs {
   syncRuns: SyncRun[];
   recentChanges: ChangeEvent[];
   currentViewExport: ExportArtifact;
+  sitePolicyOverlay?: AiSitePolicyOverlay;
   planningSubstrates?: WorkbenchView['planningSubstrates'];
   workbenchView?: Pick<WorkbenchView, 'planningSubstrates'>;
   presentation?: Omit<WorkbenchPresentationOverrides, 'viewTitle'>;
@@ -97,6 +110,12 @@ export function buildWorkbenchExportInput(args: BuildWorkbenchExportInputArgs): 
   return {
     generatedAt: args.generatedAt,
     viewTitle: presentation?.viewTitle ?? buildDefaultViewTitle(args.preset, args.filters),
+    scope: {
+      site: args.filters.site === 'all' ? undefined : args.filters.site,
+      ...args.exportScope,
+    },
+    packaging: args.packaging,
+    authorization: args.authorization,
     resources: args.resources,
     assignments: args.assignments,
     announcements: args.announcements,
@@ -114,6 +133,7 @@ export function buildWorkbenchExportInput(args: BuildWorkbenchExportInputArgs): 
 
 export function buildWorkbenchAiProxyRequest(args: BuildWorkbenchAiProxyRequestArgs) {
   const presentation = args.presentation;
+  const sitePolicyOverlay = args.sitePolicyOverlay ?? getAiSitePolicyOverlay(args.currentViewExport.scope.site);
   const advancedMaterialAnalysis = args.advancedMaterialAnalysis ?? {
     enabled: false,
     policy: 'default_disabled',
@@ -133,12 +153,14 @@ export function buildWorkbenchAiProxyRequest(args: BuildWorkbenchAiProxyRequestA
     },
     {
       name: 'export_current_view' as const,
-      payload: {
-        filename: args.currentViewExport.filename,
-        format: args.currentViewExport.format,
-        content: args.currentViewExport.content,
-        decisionContext: {
-          focusQueue: presentation?.focusQueue ?? args.focusQueue,
+        payload: {
+          filename: args.currentViewExport.filename,
+          format: args.currentViewExport.format,
+          scope: args.currentViewExport.scope,
+          packaging: args.currentViewExport.packaging,
+          content: args.currentViewExport.content,
+          decisionContext: {
+            focusQueue: presentation?.focusQueue ?? args.focusQueue,
           weeklyLoad: presentation?.weeklyLoad ?? args.weeklyLoad,
           syncRuns: args.syncRuns,
           recentChanges: presentation?.changeEvents ?? args.recentChanges,
@@ -171,6 +193,7 @@ export function buildWorkbenchAiProxyRequest(args: BuildWorkbenchAiProxyRequestA
     switchyardLane: args.switchyardLane,
     question: args.question,
     advancedMaterialAnalysis,
+    sitePolicyOverlay,
     toolResults,
   });
 
