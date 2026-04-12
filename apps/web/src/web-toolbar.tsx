@@ -61,18 +61,18 @@ export function WebSupportRail(props: WebToolbarBaseProps) {
         <h2>Diagnostics and receipts</h2>
         <p className="support-copy">This layer only reports what the imported workspace can currently prove.</p>
         <div className="support-metrics" role="list" aria-label="Workspace diagnostics">
-          <article className="support-metric" role="listitem">
+          <div className="support-metric" role="listitem">
             <span>Imported sites with data</span>
             <strong>{props.populatedSiteCount}</strong>
-          </article>
-          <article className="support-metric" role="listitem">
+          </div>
+          <div className="support-metric" role="listitem">
             <span>Tracked entities</span>
             <strong>{props.trackedEntityCount}</strong>
-          </article>
-          <article className="support-metric" role="listitem">
+          </div>
+          <div className="support-metric" role="listitem">
             <span>Unseen updates</span>
             <strong>{props.unseenUpdateCount}</strong>
-          </article>
+          </div>
         </div>
         <p className="support-note support-note--receipt">
           {props.topSyncRun
