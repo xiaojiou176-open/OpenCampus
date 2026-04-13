@@ -2,7 +2,20 @@
 
 ## 1. Visual Theme & Atmosphere
 
-Campus Copilot should feel like a calm academic operations desk, not a chatbot showroom and not a developer console. The atmosphere is steady, trustworthy, and desk-like: local-first, read-only, student-first, and structured before clever. The visual density sits in the middle: enough information to make decisions quickly, but never a wall of cards. Motion should stay restrained and purposeful, like a drawer opening on a well-built cabinet rather than a marketing animation.
+Campus Copilot should feel like a calm academic desk, not a chatbot showroom, not a developer console, and not a fintech dashboard. The atmosphere is steady, trustworthy, and desk-like: local-first, read-only, student-first, and structured before clever. The visual density sits in the middle: enough information to make decisions quickly, but never a wall of equal-weight cards. Motion should stay restrained and purposeful, like a drawer opening on a well-built cabinet rather than a marketing animation.
+
+Donor order is fixed:
+
+- **Notion = primary** for layout rhythm, information hierarchy, borders, and paper-like workbench structure
+- **Claude = secondary** only for the warmth and humanity of the AI explanation lane
+- **Raycast = secondary** only for the compact shell and launcher feel of the extension chrome
+
+Never invert this donor order:
+
+- do not make the whole product Claude-first
+- do not make the whole product Raycast/Linear-first
+- do not make the web surface feel like a landing page before it feels like a desk
+- do not make the extension feel like a mini dashboard before it feels like a companion
 
 ## 2. Color Palette & Roles
 
@@ -19,7 +32,7 @@ Campus Copilot should feel like a calm academic operations desk, not a chatbot s
 Rules:
 - Use one accent family at a time. `Copper Signal` should only appear when the interface is guiding the next meaningful action.
 - Never use pure black.
-- Never use neon purple, neon blue, or glowing gradients.
+- Never use neon purple, neon blue, glowing gradients, or the old teal/orange SaaS wash as the dominant atmosphere.
 - Keep the background family warm-neutral and stable across extension and web.
 
 ## 3. Typography Rules
@@ -49,6 +62,14 @@ Banned:
 
 ## 5. Layout Principles
 
+Surface roles are fixed:
+
+- **Extension sidepanel** = Raycast shell + Notion content order
+- **Extension popup** = launcher-first pulse surface
+- **Extension options** = trust center and authorization desk
+- **Web** = broader Notion-style workbench for review, comparison, and export
+- **AI lane** = Claude-like warm explanation strip, never the global protagonist
+
 - Extension sidepanel is assistant-first:
   - Top bar
   - context + trust + readiness companion card
@@ -71,6 +92,12 @@ Banned:
   - trust rail and AI rail within the first 1.5 screens
   - decision workspace below
   - tool rows support the workbench instead of leading the story
+
+Hierarchy rules:
+- Extension first fold should read like **1 primary card + 2 supporting blocks**, not 4 equal panels.
+- Popup should look like a launcher, not a mini workbench.
+- Web should feel like “sit at the desk now”, not “see a marketing hero first, then enter the desk”.
+- Cluster/review/admin surfaces can be deep, but they must still preserve a clear primary vs secondary rhythm.
 
 Responsive rules:
 - Below `768px`, all multi-column sections collapse to one column.
@@ -111,8 +138,11 @@ Responsive rules:
 - No neon purple or blue
 - No centered marketing hero shell
 - No equal-weight three-card feature row as the main story
+- No equal-weight panel wall in the extension first fold
 - No “AI first, facts later” layout
 - No empty demo-dashboard metrics with fabricated numbers
 - No long settings wall that starts with technical fields
 - No popup that behaves like a mini dashboard
 - No extension default view that requires scrolling before the user sees context, trust, and next action
+- No full-product teal/orange SaaS atmosphere
+- No Claude-like chat page as the main product shell

@@ -1,10 +1,11 @@
-import type { Dispatch, SetStateAction } from 'react';
-import type { ProviderId } from '@campus-copilot/ai';
+import { useState, type Dispatch, type SetStateAction } from 'react';
+import { getAiSitePolicyOverlay, type ProviderId } from '@campus-copilot/ai';
 import type { ExportFormat, ExportPreset } from '@campus-copilot/exporter';
 import {
   ADMIN_HIGH_SENSITIVITY_FAMILY_DESCRIPTORS,
   MANAGED_POLICY_SITES,
   buildNextConfig,
+  upsertAuthorizationRule,
   type ExtensionConfig,
 } from './config';
 import { formatProviderReason, formatProviderStatusError, type ProviderStatusLike } from './diagnostics';
@@ -27,6 +28,13 @@ function getAuthorizationStatusTone(status: ExtensionConfig['authorization']['ru
     return 'danger';
   }
   return 'warning';
+}
+
+function getManagedPolicySiteLabel(site: (typeof MANAGED_POLICY_SITES)[number]) {
+  if (site === 'myplan') {
+    return 'MyPlan';
+  }
+  return SITE_LABELS[site];
 }
 
 function formatAuthorizationStatusLabel(
@@ -175,6 +183,28 @@ function updateSiteAuthorizationStatus(
   });
 }
 
+function updateAuthorizationRuleStatus(
+  config: ExtensionConfig,
+  ruleId: string,
+  status: ExtensionConfig['authorization']['rules'][number]['status'],
+) {
+  return buildNextConfig({
+    current: config,
+    authorization: {
+      updatedAt: new Date().toISOString(),
+      rules: config.authorization.rules.map((rule) =>
+        rule.id === ruleId
+          ? {
+              ...rule,
+              status,
+              updatedAt: new Date().toISOString(),
+            }
+          : rule,
+      ),
+    },
+  });
+}
+
 export function OptionsPanels(props: {
   text: UiText;
   uiLanguage: ResolvedUiLanguage;
@@ -182,6 +212,7 @@ export function OptionsPanels(props: {
   setOptionsDraft: Dispatch<SetStateAction<ExtensionConfig>>;
   providerStatus: ProviderStatusLike;
   providerStatusPending: boolean;
+  availableCourses: Array<{ id: string; site: string; label: string; title?: string }>;
   optionsFeedback?: string;
   onRefreshProviderStatus: () => Promise<void>;
   onSaveOptions: () => Promise<void>;
@@ -194,6 +225,7 @@ export function OptionsPanels(props: {
     setOptionsDraft,
     providerStatus,
     providerStatusPending,
+    availableCourses,
     optionsFeedback,
     onRefreshProviderStatus,
     onSaveOptions,
@@ -212,11 +244,29 @@ export function OptionsPanels(props: {
     uiLanguage === 'zh-CN' ? '站点授权快照' : 'Site authorization snapshot';
   const highSensitivitySnapshotLabel =
     uiLanguage === 'zh-CN' ? '高敏感资源族' : 'High-sensitivity families';
+  const sitePolicyOverlayLabel =
+    uiLanguage === 'zh-CN' ? '站点 AI 策略覆盖层' : 'Site AI policy overlays';
+  const courseLevelAuthorizationLabel =
+    uiLanguage === 'zh-CN' ? '课程级 AI 确认' : 'Course-level AI confirmations';
+  const noCourseLevelAuthorizationLabel =
+    uiLanguage === 'zh-CN'
+      ? '当前还没有记录任何课程级 AI opt-in。'
+      : 'No course-level AI opt-ins have been captured yet.';
   const managedSiteAuthorizationSnapshot = MANAGED_POLICY_SITES.map((site) => ({
     site,
     layer1: getSiteAuthorizationStatus(optionsDraft, site, 'layer1_read_export'),
     layer2: getSiteAuthorizationStatus(optionsDraft, site, 'layer2_ai_read_analysis'),
   }));
+  const sitePolicyOverlays = MANAGED_POLICY_SITES.map((site) => ({
+    site,
+    overlay: getAiSitePolicyOverlay(site),
+  })).filter((entry) => Boolean(entry.overlay));
+  const courseScopedAuthorizationRules = optionsDraft.authorization.rules.filter((rule) => rule.courseIdOrKey);
+  const [courseAuthorizationDraftId, setCourseAuthorizationDraftId] = useState('');
+  const [courseAuthorizationDraftStatus, setCourseAuthorizationDraftStatus] = useState<
+    ExtensionConfig['authorization']['rules'][number]['status']
+  >('confirm_required');
+  const selectedCourseAuthorizationDraft = availableCourses.find((course) => course.id === courseAuthorizationDraftId);
 
   return (
     <div className="surface__grid surface__grid--split">
@@ -316,13 +366,44 @@ export function OptionsPanels(props: {
             {managedSiteAuthorizationSnapshot.map((entry) => (
               <article className="surface__evidence-card" key={entry.site}>
                 <div className="surface__item-header">
-                  <strong>{SITE_LABELS[entry.site]}</strong>
+                  <strong>{getManagedPolicySiteLabel(entry.site)}</strong>
                   <span className={`surface__badge surface__badge--${getAuthorizationStatusTone(entry.layer2)}`}>
                     {formatAuthorizationStatusLabel(entry.layer2, uiLanguage)}
                   </span>
                 </div>
                 <p className="surface__meta">
                   Layer 1 {formatAuthorizationStatusLabel(entry.layer1, uiLanguage)} · Layer 2 {formatAuthorizationStatusLabel(entry.layer2, uiLanguage)}
+                </p>
+              </article>
+            ))}
+          </div>
+        </div>
+        <div className="surface__stack">
+          <h3>{sitePolicyOverlayLabel}</h3>
+          <p className="surface__meta">
+            Wave 2 AI policy is no longer just a backend prompt. These cards show the current site-level overlay that
+            the product should make visible to the operator.
+          </p>
+          <div className="surface__grid">
+            {sitePolicyOverlays.map((entry) => (
+              <article className="surface__evidence-card" key={entry.site}>
+                <div className="surface__item-header">
+                  <strong>{entry.overlay?.siteLabel ?? getManagedPolicySiteLabel(entry.site)}</strong>
+                  <span className="surface__badge surface__badge--neutral">
+                    {formatAuthorizationStatusLabel(
+                      getSiteAuthorizationStatus(optionsDraft, entry.site, 'layer2_ai_read_analysis'),
+                      uiLanguage,
+                    )}
+                  </span>
+                </div>
+                <p className="surface__meta">
+                  Allowed {entry.overlay?.allowedFamilies.join(', ') || 'none'}.
+                </p>
+                <p className="surface__meta">
+                  Export-first {entry.overlay?.exportOnlyFamilies.join(', ') || 'none'}.
+                </p>
+                <p className="surface__meta">
+                  Forbidden {entry.overlay?.forbiddenAiObjects.join(', ') || 'none'}.
                 </p>
               </article>
             ))}
@@ -411,7 +492,7 @@ export function OptionsPanels(props: {
             {MANAGED_POLICY_SITES.map((site) => (
               <div className="surface__grid surface__grid--split" key={site}>
                 <label className="surface__field">
-                  <span>{SITE_LABELS[site]} · Layer 1 read/export</span>
+                  <span>{getManagedPolicySiteLabel(site)} · Layer 1 read/export</span>
                   <select
                     value={getSiteAuthorizationStatus(optionsDraft, site, 'layer1_read_export')}
                     onChange={(event) =>
@@ -433,7 +514,7 @@ export function OptionsPanels(props: {
                   </select>
                 </label>
                 <label className="surface__field">
-                  <span>{SITE_LABELS[site]} · Layer 2 AI read/analysis</span>
+                  <span>{getManagedPolicySiteLabel(site)} · Layer 2 AI read/analysis</span>
                   <select
                     value={getSiteAuthorizationStatus(optionsDraft, site, 'layer2_ai_read_analysis')}
                     onChange={(event) =>
@@ -456,6 +537,99 @@ export function OptionsPanels(props: {
                 </label>
               </div>
             ))}
+            <div className="surface__stack">
+              <h3>{courseLevelAuthorizationLabel}</h3>
+              <div className="surface__grid surface__grid--split">
+                <label className="surface__field">
+                  <span>{courseLevelAuthorizationLabel}</span>
+                  <select value={courseAuthorizationDraftId} onChange={(event) => setCourseAuthorizationDraftId(event.target.value)}>
+                    <option value="">
+                      {uiLanguage === 'zh-CN' ? '选择一门课来添加或更新 AI 确认' : 'Choose a course to add or update an AI confirmation'}
+                    </option>
+                    {availableCourses.map((course) => (
+                      <option key={course.id} value={course.id}>
+                        {course.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="surface__field">
+                  <span>{uiLanguage === 'zh-CN' ? 'Layer 2 AI 状态' : 'Layer 2 AI status'}</span>
+                  <select
+                    value={courseAuthorizationDraftStatus}
+                    onChange={(event) =>
+                      setCourseAuthorizationDraftStatus(
+                        event.target.value as ExtensionConfig['authorization']['rules'][number]['status'],
+                      )
+                    }
+                  >
+                    {AUTHORIZATION_STATUS_OPTIONS.map((option) => (
+                      <option key={`course-draft-${option}`} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <div className="surface__actions surface__actions--wrap">
+                <button
+                  className="surface__button surface__button--secondary"
+                  disabled={!selectedCourseAuthorizationDraft}
+                  onClick={() =>
+                    selectedCourseAuthorizationDraft
+                      ? setOptionsDraft((current) =>
+                          upsertAuthorizationRule(current, {
+                            id: `course-material-ai:${selectedCourseAuthorizationDraft.id}`,
+                            layer: 'layer2_ai_read_analysis',
+                            status: courseAuthorizationDraftStatus,
+                            site: selectedCourseAuthorizationDraft.site as ExtensionConfig['authorization']['rules'][number]['site'],
+                            courseIdOrKey: selectedCourseAuthorizationDraft.id,
+                            resourceFamily: 'course_material_excerpt',
+                            label: `${selectedCourseAuthorizationDraft.label} course-material AI analysis`,
+                            reason: 'Course-level advanced material analysis confirmation.',
+                          }),
+                        )
+                      : undefined
+                  }
+                  type="button"
+                >
+                  {uiLanguage === 'zh-CN' ? '保存课程级 AI 确认' : 'Save course-level AI confirmation'}
+                </button>
+              </div>
+              {courseScopedAuthorizationRules.length ? (
+                courseScopedAuthorizationRules.map((rule) => (
+                  <div className="surface__grid surface__grid--split" key={rule.id}>
+                    <label className="surface__field">
+                      <span>{rule.label ?? rule.courseIdOrKey ?? rule.id}</span>
+                      <input readOnly value={rule.courseIdOrKey ?? ''} />
+                    </label>
+                    <label className="surface__field">
+                      <span>{rule.layer === 'layer2_ai_read_analysis' ? 'Layer 2 AI read/analysis' : 'Layer 1 read/export'}</span>
+                      <select
+                        value={rule.status}
+                        onChange={(event) =>
+                          setOptionsDraft((current) =>
+                            updateAuthorizationRuleStatus(
+                              current,
+                              rule.id,
+                              event.target.value as ExtensionConfig['authorization']['rules'][number]['status'],
+                            ),
+                          )
+                        }
+                      >
+                        {AUTHORIZATION_STATUS_OPTIONS.map((option) => (
+                          <option key={`${rule.id}-${option}`} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                ))
+              ) : (
+                <p className="surface__meta">{noCourseLevelAuthorizationLabel}</p>
+              )}
+            </div>
           </div>
         </details>
       </article>

@@ -27,6 +27,7 @@ describe('ask ai panel guardrails', () => {
         switchyardLane: 'web',
         aiQuestion: 'What should I do first?',
         aiPending: false,
+        currentPolicySite: 'canvas',
         availableCourses: [{ id: 'canvas:course:1', label: 'Canvas · CSE 142' }],
         advancedMaterialEnabled: false,
         advancedMaterialCourseId: '',
@@ -67,6 +68,8 @@ describe('ask ai panel guardrails', () => {
     expect(html).toContain('type="checkbox"');
     expect(html).toContain('Enable excerpt analysis for one course');
     expect(html).toContain('Policy review and visible evidence');
+    expect(html).toContain('Current site policy overlay');
+    expect(html).toContain('Allowed structured families: assignments, announcements, grades, calendar');
     expect(html).toContain('Layer 1 read/export');
     expect(html).toContain('Layer 2 AI read');
     expect(html).toContain('Ask AI still re-checks the current view packaging before anything leaves the extension.');

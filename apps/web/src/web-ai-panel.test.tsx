@@ -87,13 +87,16 @@ describe('web ai panel guardrails', () => {
       }),
     );
 
-    expect(html).toContain('Current policy envelope');
+    expect(html).toContain('AI access summary');
     expect(html).toContain('Layered policy');
+    expect(html).toContain('Site policy overlay');
+    expect(html).toContain('Allowed structured families: assignments, announcements, grades, calendar.');
     expect(html).toContain('Ask AI stays blocked on the web surface until the current export envelope carries Layer 2 approval.');
     expect(html).toContain('Imported snapshot envelope');
     expect(html).toContain('What AI can see');
     expect(html).toContain('What AI cannot do');
     expect(html).toContain('Workspace explanation strip');
+    expect(html).toContain('Review scope, export posture, and trust notes in the Auth &amp; Export Management section first.');
     expect(html).toContain('Manual-only guardrail');
     expect(html).toContain('The current workbench slice, focus queue, weekly load, planning pulse, and exported current view');
     expect(html).toContain('Cited answer zone');

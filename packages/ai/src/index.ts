@@ -89,7 +89,15 @@ export const AdvancedMaterialAnalysisRequestSchema = z.union([
 ]);
 export type AdvancedMaterialAnalysisRequest = z.infer<typeof AdvancedMaterialAnalysisRequestSchema>;
 
-export const AiPolicySiteSchema = z.enum(['canvas', 'gradescope', 'edstem', 'myuw', 'time-schedule', 'course-sites']);
+export const AiPolicySiteSchema = z.enum([
+  'canvas',
+  'gradescope',
+  'edstem',
+  'myuw',
+  'myplan',
+  'time-schedule',
+  'course-sites',
+]);
 export type AiPolicySite = z.infer<typeof AiPolicySiteSchema>;
 
 export const AiSitePolicyOverlaySchema = z
@@ -148,6 +156,17 @@ const AI_SITE_POLICY_OVERLAYS: Record<AiPolicySite, AiSitePolicyOverlay> = {
       'Treat MyUW as a read-only student status carrier; current notices can inform the desk, but DARS/transcript/finaid/tuition detail still need explicit future lanes and stronger human confirmation.',
     operatorNote:
       'MyUW answers should separate current notices from high-sensitivity records and prefer export-first handoff when an administrative detail lane is not yet landed.',
+  },
+  myplan: {
+    site: 'myplan',
+    siteLabel: 'MyPlan',
+    allowedFamilies: ['planning substrates', 'degree requirement summaries', 'schedule option context'],
+    exportOnlyFamilies: ['degree-audit summaries', 'comparison review packets'],
+    forbiddenAiObjects: ['raw degree audit detail', 'registration automation advice', 'private student records'],
+    carrierHonesty:
+      'Treat MyPlan as a read-only planning substrate and comparison-oriented carrier, not as proof of enrollment entitlement or registration execution state.',
+    operatorNote:
+      'MyPlan answers should stay planning-oriented, keep requirement uncertainty visible, and prefer export-first review when the current lane is still summary-first.',
   },
   'time-schedule': {
     site: 'time-schedule',

@@ -454,9 +454,41 @@ function inferRiskLabel(scope: ExportScopeMetadata, authorizationLevel: Authoriz
   return 'low';
 }
 
-function inferMatchConfidence(scope: ExportScopeMetadata): ExportMatchConfidence {
+function inferMatchConfidence(input: {
+  scope: ExportScopeMetadata;
+  normalized: NormalizedExportInput;
+}): ExportMatchConfidence {
+  const reviewSignalsPresent =
+    (input.normalized.mergeHealth?.possibleMatchCount ?? 0) > 0 ||
+    (input.normalized.mergeHealth?.unresolvedCount ?? 0) > 0 ||
+    input.normalized.courseClusters.some((cluster) => cluster.needsReview) ||
+    input.normalized.workItemClusters.some((cluster) => cluster.needsReview);
+
+  if (input.scope.resourceFamily === 'cluster_merge_review') {
+    if (
+      input.normalized.courseClusters.length === 0 &&
+      input.normalized.workItemClusters.length === 0 &&
+      !input.normalized.mergeHealth
+    ) {
+      return 'low';
+    }
+    return reviewSignalsPresent ? 'medium' : 'high';
+  }
+
+  if (input.scope.resourceFamily === 'course_panorama') {
+    if (input.normalized.courseClusters.length === 0) {
+      return 'low';
+    }
+    return reviewSignalsPresent ? 'medium' : 'high';
+  }
+
+  if (input.scope.resourceFamily === 'administrative_snapshot') {
+    return input.normalized.administrativeSummaries.length > 0 ? 'medium' : 'low';
+  }
+
+  const scope = input.scope;
   if (scope.scopeType === 'current_course') {
-    return 'high';
+    return reviewSignalsPresent ? 'medium' : 'high';
   }
   if (scope.scopeType === 'current_site' || scope.scopeType === 'current_view') {
     return 'medium';
@@ -464,21 +496,105 @@ function inferMatchConfidence(scope: ExportScopeMetadata): ExportMatchConfidence
   return 'low';
 }
 
-function buildDefaultProvenance(scope: ExportScopeMetadata): ExportProvenanceEntry[] {
-  return [
+function buildDefaultProvenance(input: {
+  scope: ExportScopeMetadata;
+  normalized: NormalizedExportInput;
+}): ExportProvenanceEntry[] {
+  const entries: ExportProvenanceEntry[] = [
     {
       sourceType: 'derived_read_model',
       label: 'Unified local read model',
       detail: 'Built from normalized schema entities before export packaging.',
       readOnly: true,
     },
-    {
-      sourceType: 'session_interface',
-      label: scope.site ? `${scope.site} read-only campus session` : 'multi-site read-only campus session',
-      detail: 'Current Wave 1 skeleton keeps exports local-first and read-only.',
-      readOnly: true,
-    },
   ];
+
+  if (input.scope.resourceFamily === 'cluster_merge_review' || input.scope.resourceFamily === 'course_panorama') {
+    entries.push({
+      sourceType: 'derived_read_model',
+      label: 'Cross-site authority and review ledger',
+      detail: 'Includes authority winners, match confidence, and possible-match review flags from the cluster substrate.',
+      readOnly: true,
+    });
+  }
+
+  if (input.scope.resourceFamily === 'administrative_snapshot' || input.normalized.administrativeSummaries.length > 0) {
+    entries.push({
+      sourceType: 'derived_read_model',
+      label: 'Administrative summary-first substrate',
+      detail: 'High-sensitivity academic and administrative records stay review-first and export-first until a stronger lane is promoted.',
+      readOnly: true,
+    });
+  }
+
+  switch (input.scope.site) {
+    case 'canvas':
+      entries.push({
+        sourceType: 'official_api',
+        label: 'Canvas official API carrier',
+        detail: 'Assignments, resources, messages, grades, and events stay grounded in official Canvas read-only responses.',
+        readOnly: true,
+      });
+      break;
+    case 'gradescope':
+      entries.push({
+        sourceType: 'session_interface',
+        label: 'Gradescope session-backed grading carrier',
+        detail: 'Private grading endpoints and DOM fallback remain read-only and are never presented as official public APIs.',
+        readOnly: true,
+      });
+      break;
+    case 'edstem':
+      entries.push({
+        sourceType: 'session_interface',
+        label: 'EdStem session-backed discussion carrier',
+        detail: 'Thread and resource context stay read-only; resource DOM fallback is still narrower than the thread lane.',
+        readOnly: true,
+      });
+      break;
+    case 'myuw':
+      entries.push({
+        sourceType: 'session_interface',
+        label: 'MyUW student-status carrier',
+        detail: 'Notice and schedule signals can promote into the decision desk while transcript, finaid, and account detail remain summary-first.',
+        readOnly: true,
+      });
+      break;
+    case 'myplan':
+      entries.push({
+        sourceType: 'page_state',
+        label: 'MyPlan planning substrate capture',
+        detail: 'Current MyPlan depth remains comparison-oriented and still awaits stronger live promotion.',
+        readOnly: true,
+      });
+      break;
+    case 'time-schedule':
+      entries.push({
+        sourceType: 'page_state',
+        label: 'Time Schedule public planning carrier',
+        detail: 'Public section context supports planning, not enrolled-state truth or registration entitlement.',
+        readOnly: true,
+      });
+      break;
+    case 'course-sites':
+      entries.push({
+        sourceType: 'page_state',
+        label: 'Course website DOM carrier',
+        detail: 'Course websites contribute metadata and schedule context, not default AI-readable raw materials.',
+        readOnly: true,
+      });
+      break;
+    default:
+      entries.push({
+        sourceType: 'session_interface',
+        label: 'Multi-site read-only campus session',
+        detail: 'Current Wave 2 exports may combine official, session-backed, and DOM-derived carriers through the shared read model.',
+        readOnly: true,
+      });
+      break;
+  }
+
+  return entries;
 }
 
 function resolveScopeMetadata(input: {
@@ -519,8 +635,8 @@ function resolvePackagingMetadata(input: {
     authorizationLevel: layer1Status,
     aiAllowed: requested?.aiAllowed ?? layer2Status === 'allowed',
     riskLabel: requested?.riskLabel ?? inferRiskLabel(input.scope, layer1Status, layer2Status),
-    matchConfidence: requested?.matchConfidence ?? inferMatchConfidence(input.scope),
-    provenance: requested?.provenance ?? buildDefaultProvenance(input.scope),
+    matchConfidence: requested?.matchConfidence ?? inferMatchConfidence(input),
+    provenance: requested?.provenance ?? buildDefaultProvenance(input),
   };
 }
 

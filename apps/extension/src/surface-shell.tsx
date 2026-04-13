@@ -49,6 +49,7 @@ import {
   saveExtensionConfig,
   subscribeExtensionConfig,
   type ExtensionConfig,
+  upsertAuthorizationRule,
 } from './config';
 import './styles.css';
 import { buildAiProxyRequest } from './ai-request';
@@ -339,6 +340,8 @@ export function SurfaceShell({ surface }: { surface: SurfaceKind }) {
     .filter((course) => filters.site === 'all' || course.site === filters.site)
     .map((course) => ({
       id: course.id,
+      site: course.site,
+      title: course.title,
       label: `${SITE_LABELS[course.site]} · ${course.title}`,
     }));
   const exportScopedCourses = allCourses
@@ -763,6 +766,7 @@ export function SurfaceShell({ surface }: { surface: SurfaceKind }) {
             enabled: false,
             policy: 'default_disabled',
           };
+    let effectiveAuthorization = config.authorization;
 
     setAiPending(true);
     setAiError(undefined);
@@ -770,6 +774,23 @@ export function SurfaceShell({ surface }: { surface: SurfaceKind }) {
     setAiStructuredAnswer(undefined);
 
     try {
+      if (advancedMaterialEnabled && selectedCourse) {
+        const nextConfig = upsertAuthorizationRule(config, {
+          id: `course-material-ai:${selectedCourse.id}`,
+          layer: 'layer2_ai_read_analysis',
+          status: 'allowed',
+          site: selectedCourse.site,
+          courseIdOrKey: selectedCourse.id,
+          resourceFamily: 'course_material_excerpt',
+          label: `${SITE_LABELS[selectedCourse.site]} · ${selectedCourse.title} course-material AI analysis`,
+          reason: 'Explicit per-course opt-in for user-pasted excerpts only.',
+        });
+        const saved = await saveExtensionConfig(nextConfig);
+        setConfig(saved);
+        setOptionsDraft(saved);
+        effectiveAuthorization = saved.authorization;
+      }
+
       const { currentViewExport: exportArtifact, proxyRequest } = buildSurfaceAiRequest({
         provider: aiProvider,
         model: aiModel,
@@ -777,7 +798,7 @@ export function SurfaceShell({ surface }: { surface: SurfaceKind }) {
         switchyardLane,
         question: aiQuestion,
         advancedMaterialAnalysis,
-        authorization: config.authorization,
+        authorization: effectiveAuthorization,
         todaySnapshot: todaySnapshot ?? {
           totalAssignments: 0,
           dueSoonAssignments: 0,
@@ -1414,6 +1435,7 @@ export function SurfaceShell({ surface }: { surface: SurfaceKind }) {
                   aiStructuredAnswer={aiStructuredAnswer}
                   aiNotice={aiNotice}
                   aiError={aiError}
+                  currentPolicySite={filters.site === 'all' ? undefined : filters.site}
                   availableCourses={availableCourses}
                   advancedMaterialEnabled={advancedMaterialEnabled}
                   advancedMaterialCourseId={advancedMaterialCourseId}
@@ -1860,6 +1882,7 @@ export function SurfaceShell({ surface }: { surface: SurfaceKind }) {
               setOptionsDraft={setOptionsDraft}
               providerStatus={providerStatus}
               providerStatusPending={providerStatusPending}
+              availableCourses={availableCourses}
               optionsFeedback={optionsFeedback}
               onRefreshProviderStatus={refreshProviderStatus}
               onSaveOptions={handleSaveOptions}

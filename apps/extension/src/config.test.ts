@@ -37,8 +37,9 @@ describe('extension config', () => {
     expect(config.ai.defaultProvider).toBe('openai');
     expect(config.ai.models.gemini).toBe('gemini-2.5-flash');
     expect(config.ai.models.switchyard).toBe('gpt-5');
-    expect(config.authorization.policyVersion).toBe('wave1-skeleton');
+    expect(config.authorization.policyVersion).toBe('wave2-deepwater-productization');
     expect(config.authorization.rules.some((rule) => rule.site === 'canvas' && rule.layer === 'layer1_read_export')).toBe(true);
+    expect(config.authorization.rules.some((rule) => rule.site === 'myplan' && rule.layer === 'layer1_read_export')).toBe(true);
     expect(config.authorization.rules.some((rule) => rule.site === 'time-schedule' && rule.layer === 'layer1_read_export')).toBe(true);
     expect(
       config.authorization.rules.some(

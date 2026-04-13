@@ -37,13 +37,21 @@ const AuthorizationRuleSchema = z
   .strict();
 const AuthorizationStateSchema = z
   .object({
-    policyVersion: z.string().min(1).default('wave1-skeleton'),
+    policyVersion: z.string().min(1).default('wave2-deepwater-productization'),
     rules: z.array(AuthorizationRuleSchema).default([]),
     updatedAt: z.string().min(1).optional(),
   })
   .strict();
 
-export const MANAGED_POLICY_SITES = ['canvas', 'gradescope', 'edstem', 'myuw', 'time-schedule', 'course-sites'] as const;
+export const MANAGED_POLICY_SITES = [
+  'canvas',
+  'gradescope',
+  'edstem',
+  'myuw',
+  'myplan',
+  'time-schedule',
+  'course-sites',
+] as const;
 
 export const ADMIN_HIGH_SENSITIVITY_FAMILY_DESCRIPTORS = [
   {
@@ -147,6 +155,22 @@ function buildDefaultAuthorizationRules(): AuthorizationState['rules'] {
       site: 'myuw',
       resourceFamily: 'workspace_snapshot',
       label: 'MyUW AI analysis stays separately gated',
+    },
+    {
+      id: 'myplan-layer1-workspace',
+      layer: 'layer1_read_export',
+      status: 'allowed',
+      site: 'myplan',
+      resourceFamily: 'workspace_snapshot',
+      label: 'MyPlan structured planning export',
+    },
+    {
+      id: 'myplan-layer2-workspace',
+      layer: 'layer2_ai_read_analysis',
+      status: 'confirm_required',
+      site: 'myplan',
+      resourceFamily: 'workspace_snapshot',
+      label: 'MyPlan AI analysis stays separately gated',
     },
     {
       id: 'time-schedule-layer1-workspace',
@@ -273,7 +297,7 @@ const DEFAULT_EXTENSION_CONFIG = {
     edstem: {},
   },
   authorization: {
-    policyVersion: 'wave1-skeleton',
+    policyVersion: 'wave2-deepwater-productization',
     rules: buildDefaultAuthorizationRules(),
   },
 } as const;
@@ -504,5 +528,24 @@ export function buildNextConfig(input: {
           },
         }
       : {}),
+  });
+}
+
+export function upsertAuthorizationRule(
+  config: ExtensionConfig,
+  rule: ExtensionConfig['authorization']['rules'][number],
+) {
+  const nextRules = config.authorization.rules.filter((entry) => entry.id !== rule.id);
+  nextRules.push({
+    ...rule,
+    updatedAt: rule.updatedAt ?? new Date().toISOString(),
+  });
+
+  return buildNextConfig({
+    current: config,
+    authorization: {
+      updatedAt: new Date().toISOString(),
+      rules: nextRules,
+    },
   });
 }

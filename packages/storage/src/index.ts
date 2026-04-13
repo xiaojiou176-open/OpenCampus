@@ -6,6 +6,9 @@ export {
   AdministrativeSummarySchema,
   ChangeEventSchema,
   ChangeEventTypeSchema,
+  ClusterReviewDecisionSchema,
+  ClusterReviewOverrideSchema,
+  ClusterReviewTargetKindSchema,
   ClusterMemberKindSchema,
   ClusterMemberRefSchema,
   ClusterSurfaceSchema,
@@ -41,6 +44,9 @@ export {
   type ApplySiteSnapshotWithLedgerOptions,
   type ChangeEvent,
   type ChangeEventType,
+  type ClusterReviewDecision,
+  type ClusterReviewOverride,
+  type ClusterReviewTargetKind,
   type ClusterMemberKind,
   type ClusterMemberRef,
   type ClusterSurface,
@@ -98,6 +104,11 @@ export {
   putSyncState,
   recordSiteSyncError,
 } from './sync-ledger.ts';
+export {
+  clearClusterReviewDecision,
+  getClusterReviewOverrides,
+  setClusterReviewDecision,
+} from './cluster-review-overrides.ts';
 export {
   getAdministrativeSummaries,
   getAllCourseClusters,
