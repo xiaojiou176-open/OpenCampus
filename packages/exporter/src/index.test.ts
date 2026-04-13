@@ -285,6 +285,7 @@ describe('exporter package', () => {
     expect(artifact.scope.courseIdOrKey).toBe('canvas:course:1');
     expect(artifact.packaging.authorizationLevel).toBe('allowed');
     expect(artifact.packaging.aiAllowed).toBe(false);
+    expect(artifact.packaging.provenance.some((entry) => entry.label === 'Canvas official API carrier')).toBe(true);
     expect(artifact.content).toContain('"title": "Status board"');
     expect(artifact.content).toContain('"scope"');
     expect(artifact.content).toContain('"packaging"');

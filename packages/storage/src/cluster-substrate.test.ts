@@ -6,7 +6,8 @@ import { createCampusCopilotDb } from './db.ts';
 import { upsertAdminCarriers } from './admin-high-sensitivity-substrate.ts';
 import { replaceSiteSnapshot } from './snapshot-write.ts';
 import { replacePlanningSubstratesBySource } from './planning-substrate.ts';
-import { getMergeHealthSummary } from './cluster-substrate.ts';
+import { getMergeHealthSummary, recomputeClusterSubstrate } from './cluster-substrate.ts';
+import { setClusterReviewDecision } from './cluster-review-overrides.ts';
 import { getWorkbenchView } from './derived-workbench.ts';
 import { getFocusQueue, getPriorityAlerts, getRecentChangeEvents, getWeeklyLoad } from './index.ts';
 
@@ -231,6 +232,7 @@ describe('cluster substrate', () => {
 
     expect(view.courseClusters).toHaveLength(1);
     expect(view.courseClusters[0]?.confidenceBand).toBe('high');
+    expect(view.courseClusters[0]?.authoritySurface).toBe('course-sites');
     expect(view.workItemClusters.some((cluster) => cluster.title === 'Homework 5')).toBe(true);
     expect(view.workItemClusters.find((cluster) => cluster.title === 'Homework 5')?.authoritySurface).toBe('course-sites');
     expect(view.administrativeSummaries.some((summary) => summary.family === 'dars')).toBe(true);
@@ -251,5 +253,80 @@ describe('cluster substrate', () => {
     expect(weeklyLoad.some((entry) => entry.items.some((item) => item.id === 'course-sites:assignment:hw5'))).toBe(true);
     expect(alerts.some((alert) => alert.source.resourceType === 'cluster_alert')).toBe(true);
     expect(changeEvents.some((event) => event.id.startsWith('cluster-change:'))).toBe(true);
+  });
+
+  it('persists local cluster review decisions and projects them back onto the shared surface', async () => {
+    const db = createCampusCopilotDb('cluster-substrate-review-override-test');
+
+    const canvasCourse: Course = {
+      id: 'canvas:course:seminar',
+      kind: 'course',
+      site: 'canvas',
+      source: { site: 'canvas', resourceId: 'seminar', resourceType: 'course' },
+      title: 'Foundations Seminar',
+      url: 'https://canvas.uw.edu/courses/1883999',
+    };
+    const edstemCourse: Course = {
+      id: 'edstem:course:seminar',
+      kind: 'course',
+      site: 'edstem',
+      source: { site: 'edstem', resourceId: 'seminar', resourceType: 'course' },
+      title: 'Foundations Seminar',
+      url: 'https://edstem.org/us/courses/22/discussion/',
+    };
+
+    await replaceSiteSnapshot(
+      'canvas',
+      {
+        courses: [canvasCourse],
+      },
+      {
+        status: 'success',
+        lastSyncedAt: now,
+      },
+      db,
+    );
+
+    await replaceSiteSnapshot(
+      'edstem',
+      {
+        courses: [edstemCourse],
+      },
+      {
+        status: 'success',
+        lastSyncedAt: now,
+      },
+      db,
+    );
+
+    const initialView = await getWorkbenchView(now, { site: 'all', onlyUnseenUpdates: false }, db);
+    const reviewCluster = initialView.courseClusters[0];
+
+    expect(reviewCluster).toBeDefined();
+    expect(reviewCluster?.needsReview).toBe(true);
+    expect(reviewCluster?.reviewDecision).toBeUndefined();
+
+    await setClusterReviewDecision(
+      {
+        targetKind: 'course_cluster',
+        targetId: reviewCluster!.id,
+        decision: 'accepted',
+      },
+      db,
+    );
+
+    await recomputeClusterSubstrate(db);
+
+    const [reviewedView, mergeHealth] = await Promise.all([
+      getWorkbenchView(now, { site: 'all', onlyUnseenUpdates: false }, db),
+      getMergeHealthSummary(db),
+    ]);
+    const acceptedCluster = reviewedView.courseClusters[0];
+
+    expect(acceptedCluster?.needsReview).toBe(true);
+    expect(acceptedCluster?.reviewDecision).toBe('accepted');
+    expect(acceptedCluster?.reviewDecidedAt).toBeTruthy();
+    expect(mergeHealth.possibleMatchCount).toBe(1);
+    expect(mergeHealth.unresolvedCount).toBe(0);
   });
 });

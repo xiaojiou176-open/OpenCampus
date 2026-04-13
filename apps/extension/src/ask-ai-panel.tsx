@@ -1,5 +1,6 @@
 import {
   AiStructuredAnswerSchema,
+  getAiSitePolicyOverlay,
   type ProviderId,
   type SwitchyardLane,
   type SwitchyardRuntimeProvider,
@@ -29,6 +30,7 @@ export function AskAiPanel(props: {
   aiStructuredAnswer?: unknown;
   aiNotice?: string;
   aiError?: string;
+  currentPolicySite?: string;
   availableCourses: Array<{ id: string; label: string }>;
   advancedMaterialEnabled: boolean;
   advancedMaterialCourseId: string;
@@ -78,6 +80,7 @@ export function AskAiPanel(props: {
     aiStructuredAnswer,
     aiNotice,
     aiError,
+    currentPolicySite,
     availableCourses,
     advancedMaterialEnabled,
     advancedMaterialCourseId,
@@ -110,6 +113,7 @@ export function AskAiPanel(props: {
   const aiGuardrails = getAcademicAiCallerGuardrails();
   const redZoneHardStop = aiGuardrails.redZone.primaryHardStop;
   const advancedMaterialGuard = aiGuardrails.advancedMaterial;
+  const currentPolicyOverlay = getAiSitePolicyOverlay(currentPolicySite);
   const [readExportSummary, aiReadSummary] = summarizeAuthorizationState(config.authorization);
   const structuredInputs = [
     {
@@ -285,6 +289,24 @@ export function AskAiPanel(props: {
                   <p className="surface__meta">{aiGuardrails.redZone.summary}</p>
                   <p className="surface__meta">{redZoneHardStop.manualOnlyNote}</p>
                 </article>
+
+                {currentPolicyOverlay ? (
+                  <article className="surface__status-card">
+                    <div className="surface__item-header">
+                      <h3>Current site policy overlay</h3>
+                      <span className="surface__badge surface__badge--neutral">{currentPolicyOverlay.siteLabel}</span>
+                    </div>
+                    <p className="surface__item-lead">
+                      Allowed structured families: {currentPolicyOverlay.allowedFamilies.join(', ')}
+                    </p>
+                    <p className="surface__meta">
+                      Export-first only: {currentPolicyOverlay.exportOnlyFamilies.join(', ') || 'none'}.
+                    </p>
+                    <p className="surface__meta">
+                      Forbidden AI objects: {currentPolicyOverlay.forbiddenAiObjects.join(', ')}.
+                    </p>
+                  </article>
+                ) : null}
 
                 <aside aria-live="polite" className="surface__status-intro surface__status-intro--compact surface__status-intro--supporting">
                   <div className="surface__item-header">

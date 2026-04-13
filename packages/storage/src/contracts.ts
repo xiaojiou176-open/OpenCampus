@@ -361,6 +361,8 @@ export const CourseClusterSchema = z
     members: z.array(ClusterMemberRefSchema),
     evidenceBundle: z.array(CrossSiteEvidenceItemSchema),
     summary: z.string().min(1),
+    reviewDecision: z.enum(['accepted', 'review_later', 'dismissed']).optional(),
+    reviewDecidedAt: IsoDateTimeSchema.optional(),
     createdAt: IsoDateTimeSchema,
     updatedAt: IsoDateTimeSchema,
   })
@@ -397,11 +399,30 @@ export const WorkItemClusterSchema = z
     members: z.array(ClusterMemberRefSchema),
     evidenceBundle: z.array(CrossSiteEvidenceItemSchema),
     summary: z.string().min(1),
+    reviewDecision: z.enum(['accepted', 'review_later', 'dismissed']).optional(),
+    reviewDecidedAt: IsoDateTimeSchema.optional(),
     createdAt: IsoDateTimeSchema,
     updatedAt: IsoDateTimeSchema,
   })
   .strict();
 export type WorkItemCluster = z.infer<typeof WorkItemClusterSchema>;
+
+export const ClusterReviewTargetKindSchema = z.enum(['course_cluster', 'work_item_cluster']);
+export type ClusterReviewTargetKind = z.infer<typeof ClusterReviewTargetKindSchema>;
+
+export const ClusterReviewDecisionSchema = z.enum(['accepted', 'review_later', 'dismissed']);
+export type ClusterReviewDecision = z.infer<typeof ClusterReviewDecisionSchema>;
+
+export const ClusterReviewOverrideSchema = z
+  .object({
+    id: z.string().min(1),
+    targetKind: ClusterReviewTargetKindSchema,
+    targetId: z.string().min(1),
+    decision: ClusterReviewDecisionSchema,
+    decidedAt: IsoDateTimeSchema,
+  })
+  .strict();
+export type ClusterReviewOverride = z.infer<typeof ClusterReviewOverrideSchema>;
 
 export const MergeLedgerDecisionSchema = z.enum(['merged', 'candidate', 'singleton']);
 export type MergeLedgerDecision = z.infer<typeof MergeLedgerDecisionSchema>;

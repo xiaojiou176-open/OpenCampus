@@ -1,4 +1,5 @@
-import type { AiStructuredAnswer, ProviderId, SwitchyardLane, SwitchyardRuntimeProvider } from '@campus-copilot/ai';
+import { getAiSitePolicyOverlay, type AiStructuredAnswer, type ProviderId, type SwitchyardLane, type SwitchyardRuntimeProvider } from '@campus-copilot/ai';
+import type { ExportArtifact } from '@campus-copilot/exporter';
 import type { Site } from '@campus-copilot/schema';
 import type {
   AdministrativeSummary,
@@ -14,6 +15,7 @@ import type {
   WeeklyLoadEntry,
   WorkItemCluster,
 } from '@campus-copilot/storage';
+import type { ImportedArtifactEnvelope } from './import-export-snapshot';
 import { LoadingStatValue, ReadyStateBlock, formatDateTime, formatWeeklyLoadSummary, getResourceActionLabel } from './web-view-helpers';
 
 const ADMINISTRATIVE_SITES = new Set<Site>(['myuw', 'time-schedule']);
@@ -34,6 +36,8 @@ export function WebWorkbenchPanels(props: {
   workbenchReady: boolean;
   todaySnapshot?: TodaySnapshot;
   recentUpdates?: RecentUpdatesFeed;
+  currentViewExport?: ExportArtifact;
+  importedEnvelope?: ImportedArtifactEnvelope;
   focusQueue: FocusQueueItem[];
   planningSubstrates: PlanningSubstrateOwner[];
   weeklyLoad: WeeklyLoadEntry[];
@@ -112,6 +116,31 @@ export function WebWorkbenchPanels(props: {
   const administrativeSummaries = props.administrativeSummaries ?? [];
   const mergedCourseCount = courseClusters.length;
   const mergedWorkItemCount = workItemClusters.length;
+  const currentScope = props.currentViewExport?.scope;
+  const currentPackaging = props.currentViewExport?.packaging;
+  const importedScope = props.importedEnvelope?.scope;
+  const importedPackaging = props.importedEnvelope?.packaging;
+  const currentOverlay = getAiSitePolicyOverlay(currentScope?.site);
+  const summaryFamilies = [...new Set(administrativeSummaries.map((summary) => summary.family))];
+  const exportFirstFamilies = [...new Set(currentOverlay?.exportOnlyFamilies ?? [])];
+
+  function getSiteLabel(site?: string) {
+    if (!site) {
+      return 'All visible sites';
+    }
+    if (site === 'myplan') {
+      return 'MyPlan';
+    }
+    return props.siteLabels[site as Site] ?? site;
+  }
+
+  function formatScopeLine(scope?: { site?: string; scopeType?: string; resourceFamily?: string; courseIdOrKey?: string }) {
+    if (!scope) {
+      return 'Waiting for a loaded workbench slice';
+    }
+    const courseLabel = scope.courseIdOrKey ? ` · ${scope.courseIdOrKey}` : '';
+    return `${getSiteLabel(scope.site)} · ${scope.scopeType ?? 'unknown scope'} · ${scope.resourceFamily ?? 'unknown family'}${courseLabel}`;
+  }
 
   return (
     <>
@@ -171,6 +200,75 @@ export function WebWorkbenchPanels(props: {
           </p>
           <p className="meta">{administrativeScheduleCount} schedule context item(s)</p>
         </article>
+      </section>
+
+      <section className="panel">
+        <p className="eyebrow">Trust rail</p>
+        <h2>Auth &amp; Export Management</h2>
+        <p>
+          Review the current scope, imported envelope, and site policy before exporting or asking AI. This
+          lane stays read-only and explains what the web surface is allowed to carry forward.
+        </p>
+        <div className="ai-explanation-strip" aria-label="Auth and export management">
+          <article className="guidance-card">
+            <p className="meta-title">Current imported / current scope truth</p>
+            <strong>{formatScopeLine(currentScope)}</strong>
+            <p>
+              {props.importedEnvelope
+                ? `Imported snapshot: ${props.importedEnvelope.title ?? 'Untitled artifact'} · ${formatScopeLine(importedScope)} · generated ${formatDateTime(
+                    props.importedEnvelope.generatedAt,
+                  )}.`
+                : 'No imported envelope is overriding the current local read-model view.'}
+            </p>
+          </article>
+          <article className={`guidance-card ${currentPackaging?.aiAllowed ? '' : 'guidance-card--warning'}`}>
+            <p className="meta-title">Current policy envelope</p>
+            <strong>
+              {currentPackaging
+                ? `Read/export ${currentPackaging.authorizationLevel} · AI ${currentPackaging.aiAllowed ? 'allowed' : 'blocked'}`
+                : 'No live export envelope yet'}
+            </strong>
+            <p>
+              {currentPackaging
+                ? `Risk ${currentPackaging.riskLabel} · match ${currentPackaging.matchConfidence} · provenance ${currentPackaging.provenance.length}.`
+                : 'Load a shared workbench slice before treating this web surface as export-ready.'}
+            </p>
+          </article>
+          <article className="guidance-card">
+            <p className="meta-title">Site policy overlay</p>
+            <strong>{currentOverlay ? currentOverlay.siteLabel : 'Multi-site or unloaded view'}</strong>
+            <p>
+              {currentOverlay
+                ? `Allowed: ${currentOverlay.allowedFamilies.join(', ')}. Export-first: ${
+                    currentOverlay.exportOnlyFamilies.join(', ') || 'none'
+                  }.`
+                : 'Choose a site-scoped slice to review the active site overlay and carrier honesty notes.'}
+            </p>
+          </article>
+          <article className="guidance-card">
+            <p className="meta-title">High-sensitivity and export-first</p>
+            <strong>
+              {exportFirstFamilies.length} export-first family(ies) · {summaryFamilies.length} summary-first admin lane(s)
+            </strong>
+            <p>
+              {exportFirstFamilies.length > 0
+                ? `Export-first families: ${exportFirstFamilies.join(', ')}. `
+                : 'No site-scoped export-first families are visible in this slice yet. '}
+              {summaryFamilies.length > 0
+                ? `Administrative summaries visible here: ${summaryFamilies.join(', ')}. `
+                : 'No administrative summary families are visible in this slice. '}
+              {props.planningSubstrates.length > 0
+                ? `Planning substrate(s): ${props.planningSubstrates.length} read-only lane(s).`
+                : 'No planning substrate is visible in this slice.'}
+            </p>
+          </article>
+        </div>
+        {importedPackaging ? (
+          <p className="meta">
+            Imported envelope keeps its own posture: read/export {importedPackaging.authorizationLevel} · AI{' '}
+            {importedPackaging.aiAllowed ? 'allowed' : 'blocked'} · risk {importedPackaging.riskLabel}.
+          </p>
+        ) : null}
       </section>
 
       <section className="split-grid split-grid--primary">

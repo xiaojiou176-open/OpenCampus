@@ -595,6 +595,8 @@ export function App() {
             workbenchReady={workbenchReady}
             todaySnapshot={todaySnapshot ?? undefined}
             recentUpdates={recentUpdates ?? undefined}
+            currentViewExport={currentViewExport}
+            importedEnvelope={importedEnvelope}
             focusQueue={focusQueue}
             planningSubstrates={planningSubstrates}
             weeklyLoad={weeklyLoad}

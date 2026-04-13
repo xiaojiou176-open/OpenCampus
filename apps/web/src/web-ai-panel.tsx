@@ -1,5 +1,6 @@
 import {
   getAcademicAiCallerGuardrails,
+  getAiSitePolicyOverlay,
   type AiStructuredAnswer,
   type ProviderId,
   type SwitchyardLane,
@@ -46,6 +47,7 @@ export function WebAiPanel(props: {
   const currentPackaging = props.currentViewExport?.packaging;
   const currentScope = props.currentViewExport?.scope;
   const currentAiBlocked = currentPackaging ? !currentPackaging.aiAllowed : true;
+  const currentPolicyOverlay = getAiSitePolicyOverlay(currentScope?.site);
   const importedPackaging = props.importedEnvelope?.packaging;
 
   function formatProvenance(labels: ExportArtifact['packaging']['provenance'] | undefined) {
@@ -66,8 +68,8 @@ export function WebAiPanel(props: {
           <span className="badge">explanation layer</span>
         </div>
         <p className="meta">
-          Ask after the workspace is loaded. The model explains the current local workbench; it does not
-          replace the workbench.
+          Review scope, export posture, and trust notes in the Auth &amp; Export Management section first.
+          This panel explains the current local workbench; it does not replace the workbench.
         </p>
       </div>
 
@@ -99,7 +101,7 @@ export function WebAiPanel(props: {
       </div>
 
       <div>
-        <p className="meta-title">Current policy envelope</p>
+        <p className="meta-title">AI access summary</p>
       </div>
       <div className="ai-explanation-strip" aria-label="Current export and policy envelope">
         <article className="guidance-card">
@@ -123,6 +125,17 @@ export function WebAiPanel(props: {
             {currentPackaging
               ? `Risk ${currentPackaging.riskLabel} · match ${currentPackaging.matchConfidence}.`
               : 'Load a workspace snapshot before asking AI or exporting from the web surface.'}
+          </p>
+        </article>
+        <article className="guidance-card">
+          <p className="meta-title">Site policy overlay</p>
+          <strong>{currentPolicyOverlay ? currentPolicyOverlay.siteLabel : 'No site-specific overlay yet'}</strong>
+          <p>
+            {currentPolicyOverlay
+              ? `Allowed structured families: ${currentPolicyOverlay.allowedFamilies.join(', ')}. Export-first only: ${
+                  currentPolicyOverlay.exportOnlyFamilies.join(', ') || 'none'
+                }.`
+              : 'Load a site-scoped workspace slice to review the active overlay before asking AI.'}
           </p>
         </article>
         <article className="guidance-card">

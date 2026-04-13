@@ -1,4 +1,9 @@
 import type { PriorityReason, Site } from '@campus-copilot/schema';
+import {
+  setClusterReviewDecision,
+  type ClusterReviewDecision,
+  type ClusterReviewTargetKind,
+} from '@campus-copilot/storage';
 import { formatDateTime, formatRelativeTime } from './i18n';
 import { SITE_LABELS } from './surface-shell-model';
 import { getAcademicRedZoneHardStops } from './academic-safety-guards';
@@ -133,6 +138,92 @@ function getWeeklyLoadTone(entry: DecisionSectionProps['weeklyLoad'][number]) {
 function toSortableTimestamp(value?: string) {
   const parsed = value ? Date.parse(value) : Number.NaN;
   return Number.isNaN(parsed) ? 0 : parsed;
+}
+
+function getClusterReviewStatusText(
+  decision: ClusterReviewDecision | undefined,
+  needsReview: boolean,
+  uiLanguage: WorkbenchPanelsProps['uiLanguage'],
+) {
+  if (decision === 'accepted') {
+    return uiLanguage === 'en' ? 'Accepted locally' : '已接受本地裁决';
+  }
+  if (decision === 'review_later') {
+    return uiLanguage === 'en' ? 'Review later' : '稍后复核';
+  }
+  if (decision === 'dismissed') {
+    return uiLanguage === 'en' ? 'Dismissed locally' : '已忽略本地匹配';
+  }
+  return needsReview ? (uiLanguage === 'en' ? 'Possible match' : '可能匹配') : uiLanguage === 'en' ? 'Merged' : '已合并';
+}
+
+function getClusterReviewStatusTone(decision: ClusterReviewDecision | undefined, needsReview: boolean) {
+  if (decision === 'accepted') {
+    return 'success';
+  }
+  if (decision === 'dismissed') {
+    return 'neutral';
+  }
+  if (decision === 'review_later') {
+    return 'warning';
+  }
+  return needsReview ? 'warning' : 'success';
+}
+
+function getClusterReviewButtonText(
+  decision: ClusterReviewDecision,
+  uiLanguage: WorkbenchPanelsProps['uiLanguage'],
+) {
+  if (decision === 'accepted') {
+    return uiLanguage === 'en' ? 'Accept' : '接受';
+  }
+  if (decision === 'review_later') {
+    return uiLanguage === 'en' ? 'Review later' : '稍后复核';
+  }
+  return uiLanguage === 'en' ? 'Dismiss' : '忽略';
+}
+
+function renderClusterReviewControls(input: {
+  targetKind: ClusterReviewTargetKind;
+  cluster: {
+    id: string;
+    needsReview: boolean;
+    reviewDecision?: ClusterReviewDecision;
+    reviewDecidedAt?: string;
+  };
+  uiLanguage: WorkbenchPanelsProps['uiLanguage'];
+}) {
+  const { targetKind, cluster, uiLanguage } = input;
+  if (!cluster.needsReview && !cluster.reviewDecision) {
+    return null;
+  }
+
+  const statusText = getClusterReviewStatusText(cluster.reviewDecision, cluster.needsReview, uiLanguage);
+  const statusTone = getClusterReviewStatusTone(cluster.reviewDecision, cluster.needsReview);
+
+  return (
+    <>
+      <div className="surface__pill-row">
+        <span className={`surface__badge surface__badge--${statusTone}`}>{statusText}</span>
+        {cluster.reviewDecidedAt ? (
+          <span className="surface__badge surface__badge--neutral">{formatDateTime(uiLanguage, cluster.reviewDecidedAt)}</span>
+        ) : null}
+      </div>
+      <div className="surface__actions surface__actions--wrap">
+        {(['accepted', 'review_later', 'dismissed'] as const).map((decision) => (
+          <button
+            key={decision}
+            className={`surface__button ${cluster.reviewDecision === decision ? '' : 'surface__button--ghost'}`}
+            disabled={cluster.reviewDecision === decision}
+            onClick={() => void setClusterReviewDecision({ targetKind, targetId: cluster.id, decision })}
+            type="button"
+          >
+            {getClusterReviewButtonText(decision, uiLanguage)}
+          </button>
+        ))}
+      </div>
+    </>
+  );
 }
 
 function getResourceActionLabel(
@@ -1159,13 +1250,23 @@ export function WorkbenchOperationsSections({
   currentEvents,
   orderedSiteStatus,
   syncFeedback,
+  exportFeedback,
   onSyncSite,
   onExport,
   latestSyncRun,
   recentChangeEvents,
 }: OperationsSectionProps) {
   if (surface === 'popup') {
-    return null;
+    if (!syncFeedback.message && !exportFeedback) {
+      return null;
+    }
+
+    return (
+      <div aria-live="polite" role="status">
+        {syncFeedback.message ? <p>{syncFeedback.message}</p> : null}
+        {exportFeedback ? <p>{exportFeedback}</p> : null}
+      </div>
+    );
   }
 
   const latestPlanningSubstrate = [...planningSubstrates].sort(
@@ -1231,17 +1332,25 @@ export function WorkbenchOperationsSections({
                     <strong>{cluster.displayTitle}</strong>
                     <div className="surface__pill-row">
                       <span className="surface__badge surface__badge--neutral">{cluster.confidenceBand}</span>
-                      {cluster.needsReview ? (
-                        <span className="surface__badge surface__badge--warning">可能匹配</span>
-                      ) : (
-                        <span className="surface__badge surface__badge--success">已合并</span>
-                      )}
+                      <span
+                        className={`surface__badge surface__badge--${getClusterReviewStatusTone(
+                          cluster.reviewDecision,
+                          cluster.needsReview,
+                        )}`}
+                      >
+                        {getClusterReviewStatusText(cluster.reviewDecision, cluster.needsReview, uiLanguage)}
+                      </span>
                     </div>
                   </div>
                   <p>{cluster.summary}</p>
                   <p className="surface__meta">
                     Authority: {cluster.authoritySurface} · Sites: {cluster.relatedSites.join(' / ')}
                   </p>
+                  {renderClusterReviewControls({
+                    targetKind: 'course_cluster',
+                    cluster,
+                    uiLanguage,
+                  })}
                 </article>
               ))
             ) : (
@@ -1261,8 +1370,14 @@ export function WorkbenchOperationsSections({
                     <strong>{cluster.title}</strong>
                     <div className="surface__pill-row">
                       <span className="surface__badge surface__badge--neutral">{cluster.workType}</span>
-                      <span className={`surface__badge surface__badge--${cluster.needsReview ? 'warning' : 'success'}`}>
-                        {cluster.confidenceBand}
+                      <span className="surface__badge surface__badge--neutral">{cluster.confidenceBand}</span>
+                      <span
+                        className={`surface__badge surface__badge--${getClusterReviewStatusTone(
+                          cluster.reviewDecision,
+                          cluster.needsReview,
+                        )}`}
+                      >
+                        {getClusterReviewStatusText(cluster.reviewDecision, cluster.needsReview, uiLanguage)}
                       </span>
                     </div>
                   </div>
@@ -1271,6 +1386,11 @@ export function WorkbenchOperationsSections({
                     Authority: {cluster.authoritySurface}
                     {cluster.dueAt ? ` · ${text.currentTasks.dueAt(formatDateTime(uiLanguage, cluster.dueAt))}` : ''}
                   </p>
+                  {renderClusterReviewControls({
+                    targetKind: 'work_item_cluster',
+                    cluster,
+                    uiLanguage,
+                  })}
                 </article>
               ))
             ) : (

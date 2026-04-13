@@ -381,6 +381,77 @@ describe('workbench operations sections', () => {
     expect(markup).toContain('MEB 246');
   });
 
+  it('shows local review decision controls for cluster matches instead of leaving possible matches read-only', () => {
+    const markup = renderToStaticMarkup(
+      <WorkbenchOperationsSections
+        text={getUiText('en')}
+        uiLanguage="en"
+        surface="sidepanel"
+        planningSubstrates={[]}
+        courseClusters={[
+          {
+            id: 'cluster:course:seminar',
+            canonicalCourseKey: 'active:foundations-seminar',
+            displayTitle: 'Foundations Seminar',
+            authoritySurface: 'canvas',
+            authorityEntityKey: 'canvas:course:seminar',
+            authorityResourceType: 'course',
+            confidenceBand: 'medium',
+            confidenceScore: 0.7,
+            needsReview: true,
+            reviewDecision: 'accepted',
+            reviewDecidedAt: '2026-04-12T12:00:00.000Z',
+            relatedSites: ['canvas', 'edstem'],
+            memberEntityKeys: ['canvas:course:seminar', 'edstem:course:seminar'],
+            members: [],
+            evidenceBundle: [],
+            summary: 'Shared title alignment created a reviewable course cluster.',
+            createdAt: '2026-04-12T11:00:00.000Z',
+            updatedAt: '2026-04-12T11:00:00.000Z',
+          },
+        ]}
+        workItemClusters={[
+          {
+            id: 'cluster:work:seminar:deadline',
+            workType: 'assignment',
+            title: 'Project milestone',
+            authoritySurface: 'canvas',
+            authorityEntityKey: 'canvas:assignment:milestone',
+            authorityResourceType: 'assignment',
+            confidenceBand: 'medium',
+            confidenceScore: 0.7,
+            needsReview: true,
+            reviewDecision: 'review_later',
+            reviewDecidedAt: '2026-04-12T12:05:00.000Z',
+            relatedSites: ['canvas', 'course-sites'],
+            memberEntityKeys: ['canvas:assignment:milestone', 'course-sites:assignment:milestone'],
+            members: [],
+            evidenceBundle: [],
+            summary: 'This work item still needs a human decision.',
+            createdAt: '2026-04-12T11:00:00.000Z',
+            updatedAt: '2026-04-12T11:00:00.000Z',
+          },
+        ]}
+        currentResources={[]}
+        currentAssignments={[]}
+        currentAnnouncements={[]}
+        currentMessages={[]}
+        currentEvents={[]}
+        orderedSiteStatus={[]}
+        syncFeedback={{}}
+        onSyncSite={async () => {}}
+        onExport={async () => {}}
+        latestSyncRun={undefined}
+        recentChangeEvents={[]}
+      />,
+    );
+
+    expect(markup).toContain('Accepted locally');
+    expect(markup).toContain('Review later');
+    expect(markup).toContain('Accept');
+    expect(markup).toContain('Dismiss');
+  });
+
   it('announces sync and export feedback through live regions on landed quick-action surfaces', () => {
     const markup = renderToStaticMarkup(
       <WorkbenchOperationsSections

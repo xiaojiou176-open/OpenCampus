@@ -959,7 +959,7 @@ const TEXT: Record<ResolvedUiLanguage, UiText> = {
         'EdStem first tries to infer the threads path from the active course tab. Only override it manually when auto-inference is not enough. Unread and recent activity paths are optional.',
       authorizationCenter: 'Authorization center',
       authorizationCenterDescription:
-        'Keep Layer 1 read/export separate from Layer 2 AI analysis so the product stays structured-before-AI.',
+        'Keep Layer 1 read/export separate from Layer 2 AI analysis, surface the current site overlays, and record course-level confirmations so the product stays structured-before-AI.',
       readyProviders: 'Ready providers',
       confirmRequired: 'Confirm required',
       blockedFamilies: 'Blocked families',
@@ -1572,7 +1572,7 @@ const TEXT: Record<ResolvedUiLanguage, UiText> = {
         'EdStem 会优先尝试从当前课程标签页自动推导 threads 路径；只有自动推导不够时，才需要你手动覆盖。unread / recent activity 路径都是可选项。',
       authorizationCenter: '授权中心',
       authorizationCenterDescription:
-        '把 Layer 1 的 read/export 和 Layer 2 的 AI analysis 分开讲清楚，让产品继续保持“先结构、后 AI”。',
+        '把 Layer 1 的 read/export 和 Layer 2 的 AI analysis 分开讲清楚，同时显式展示站点策略覆盖层与课程级确认，让产品继续保持“先结构、后 AI”。',
       readyProviders: '已就绪服务商',
       confirmRequired: '需要确认',
       blockedFamilies: '被阻止家族',

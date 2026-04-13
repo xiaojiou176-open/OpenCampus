@@ -20,6 +20,7 @@ import {
 } from './contracts.ts';
 import { isMyUWDecisionSignalAnnouncement, isMyUWDecisionSignalEvent } from './storage-shared.ts';
 import { getAdminCarriers } from './admin-high-sensitivity-substrate.ts';
+import { applyClusterReviewOverrides, getClusterReviewOverrides } from './cluster-review-overrides.ts';
 
 const COURSE_AUTHORITY_PRIORITY: Record<Site, number> = {
   myuw: 100,
@@ -81,6 +82,10 @@ function extractCourseCode(value: string | undefined) {
 
 function normalizeCourseCode(course: Course) {
   return normalizeWhitespace(course.code ?? extractCourseCode(course.title) ?? '').toUpperCase() || undefined;
+}
+
+function isCsCourseCode(code: string | undefined) {
+  return /^(CSE|C SCI)\b/i.test(code ?? '');
 }
 
 function extractTermKey(url: string | undefined) {
@@ -181,15 +186,33 @@ function buildCourseClusters(courses: Course[]) {
   const now = new Date().toISOString();
 
   for (const [canonicalCourseKey, members] of grouped.entries()) {
+    const canonicalCourseCode = [...new Set(members.map((member) => normalizeCourseCode(member)).filter(Boolean))][0];
+    const exactAnchor = members.some(
+      (member) =>
+        member.site === 'course-sites' &&
+        /gradescope|canvas\.uw\.edu|edstem/i.test(member.url ?? ''),
+    );
+    const courseSitesCsAuthorityOverride =
+      isCsCourseCode(canonicalCourseCode) && members.some((member) => member.site === 'course-sites');
+    const getCourseAuthorityScore = (course: Course) => {
+      if (courseSitesCsAuthorityOverride) {
+        if (course.site === 'course-sites') return 100;
+        if (course.site === 'edstem' || course.site === 'gradescope') return 97;
+        if (course.site === 'canvas') return 88;
+      }
+      return COURSE_AUTHORITY_PRIORITY[course.site] ?? 0;
+    };
     const authority = [...members].sort(
-      (left, right) => (COURSE_AUTHORITY_PRIORITY[right.site] ?? 0) - (COURSE_AUTHORITY_PRIORITY[left.site] ?? 0),
+      (left, right) => getCourseAuthorityScore(right) - getCourseAuthorityScore(left),
     )[0]!;
     const relatedSites = [...new Set(members.map((member) => member.site))];
-    const normalizedCourseCode = normalizeCourseCode(authority);
-    const band = confidenceFromSites(relatedSites.length, Boolean(normalizedCourseCode));
+    const normalizedCourseCode = canonicalCourseCode ?? normalizeCourseCode(authority);
+    const band = confidenceFromSites(relatedSites.length, exactAnchor || Boolean(normalizedCourseCode));
     const summary =
       members.length === 1
         ? `${authority.title} 当前来自单站课程 carrier，等待后续跨站证据补齐。`
+        : courseSitesCsAuthorityOverride
+        ? `${authority.title} 已形成跨站课程簇；当前 CS 课程优先由课程网站担任课程级 authority。`
         : band === 'high'
         ? `${authority.title} 已由 ${relatedSites.length} 个站点事实对齐成同一门课程。`
         : band === 'medium'
@@ -218,13 +241,23 @@ function buildCourseClusters(courses: Course[]) {
           surfaceKey: member.site,
           entityKind: 'course',
           decision: band === 'low' && members.length > 1 ? 'candidate' : members.length > 1 ? 'merged' : 'singleton',
-          rule: normalizedCourseCode ? 'course_code_alignment' : 'title_alignment_only',
+          rule: exactAnchor
+            ? 'course_sites_exact_anchor'
+            : courseSitesCsAuthorityOverride
+            ? 'course_sites_cs_authority_override'
+            : normalizedCourseCode
+            ? 'course_code_alignment'
+            : 'title_alignment_only',
           confidenceBand: band,
           confidenceScore: confidenceScore(band),
-          matchedFields: normalizedCourseCode ? ['code', 'title'] : ['title'],
+          matchedFields: exactAnchor ? ['deep_link', 'code', 'title'] : normalizedCourseCode ? ['code', 'title'] : ['title'],
           authorityWinner: authority.id,
           reason:
-            normalizedCourseCode != null
+            exactAnchor
+              ? 'An exact course-site link points at another course carrier, so the course cluster can anchor on the shared course identity.'
+              : courseSitesCsAuthorityOverride
+              ? 'CS course clusters prefer the course website as course-level authority when a course-site carrier is present.'
+              : normalizedCourseCode != null
               ? 'Shared course code or equivalent title alignment established this course cluster.'
               : 'Only title-level alignment is currently available for this course cluster.',
           decidedAt: now,
@@ -251,6 +284,10 @@ function buildCourseClusters(courses: Course[]) {
         evidenceBundle: [
           evidence('authority_surface', `Primary course identity comes from ${authority.site}.`),
           evidence('member_count', `${members.length} course carrier(s) participate in this cluster.`),
+          ...(courseSitesCsAuthorityOverride
+            ? [evidence('cs_course_sites_authority', 'CS course clusters currently prefer course websites when a course-site carrier is present.')]
+            : []),
+          ...(exactAnchor ? [evidence('exact_anchor', 'A course-site link points directly at another course carrier.')] : []),
         ],
         summary,
         createdAt: now,
@@ -618,23 +655,31 @@ function buildAdministrativeSummaries(
 }
 
 export async function recomputeClusterSubstrate(db: CampusCopilotDB = campusCopilotDb) {
-  const [courses, assignments, grades, events, planningSubstrates, announcements, adminCarriers] = await Promise.all([
-    db.courses.toArray(),
-    db.assignments.toArray(),
-    db.grades.toArray(),
-    db.events.toArray(),
-    db.planning_substrates.toArray(),
-    db.announcements.toArray(),
-    getAdminCarriers(db),
-  ]);
+  const [courses, assignments, grades, events, planningSubstrates, announcements, adminCarriers, reviewOverrides] =
+    await Promise.all([
+      db.courses.toArray(),
+      db.assignments.toArray(),
+      db.grades.toArray(),
+      db.events.toArray(),
+      db.planning_substrates.toArray(),
+      db.announcements.toArray(),
+      getAdminCarriers(db),
+      getClusterReviewOverrides(db),
+    ]);
 
-  const { clusters: courseClusters, ledger: courseLedger, courseToClusterId, courseClusterById } = buildCourseClusters(courses);
-  const { clusters: workItemClusters, ledger: workItemLedger } = buildWorkItemClusters(
+  const { clusters: rawCourseClusters, ledger: courseLedger, courseToClusterId, courseClusterById } = buildCourseClusters(courses);
+  const { clusters: rawWorkItemClusters, ledger: workItemLedger } = buildWorkItemClusters(
     assignments,
     grades,
     events,
     courseToClusterId,
     courseClusterById,
+  );
+  const courseClusters = applyClusterReviewOverrides('course_cluster', rawCourseClusters, reviewOverrides).map((cluster) =>
+    CourseClusterSchema.parse(cluster),
+  );
+  const workItemClusters = applyClusterReviewOverrides('work_item_cluster', rawWorkItemClusters, reviewOverrides).map(
+    (cluster) => WorkItemClusterSchema.parse(cluster),
   );
   const administrativeSummaries = buildAdministrativeSummaries(planningSubstrates, announcements, events, adminCarriers);
   const mergeLedger = [...courseLedger, ...workItemLedger];
@@ -686,10 +731,9 @@ export async function getAdministrativeSummaries(db: CampusCopilotDB = campusCop
 }
 
 export async function getMergeHealthSummary(db: CampusCopilotDB = campusCopilotDb): Promise<MergeHealthSummary> {
-  const [courseClusters, workItemClusters, mergeLedger] = await Promise.all([
+  const [courseClusters, workItemClusters] = await Promise.all([
     db.course_clusters.toArray(),
     db.work_item_clusters.toArray(),
-    db.merge_ledger.toArray(),
   ]);
 
   const authorityConflictCount = [...courseClusters, ...workItemClusters].filter((cluster) => {
@@ -721,7 +765,10 @@ export async function getMergeHealthSummary(db: CampusCopilotDB = campusCopilotD
   return MergeHealthSummarySchema.parse({
     mergedCount: [...courseClusters, ...workItemClusters].filter((cluster) => cluster.confidenceBand !== 'low').length,
     possibleMatchCount: [...courseClusters, ...workItemClusters].filter((cluster) => cluster.needsReview).length,
-    unresolvedCount: mergeLedger.filter((entry) => entry.decision === 'candidate').length,
+    unresolvedCount: [...courseClusters, ...workItemClusters].filter(
+      (cluster) =>
+        cluster.needsReview && cluster.reviewDecision !== 'accepted' && cluster.reviewDecision !== 'dismissed',
+    ).length,
     authorityConflictCount,
   });
 }

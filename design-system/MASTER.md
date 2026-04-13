@@ -18,6 +18,18 @@
 - 不应该像开发者 playground
 - 不应该像营销 landing page
 
+Donor order 固定为：
+
+- **Notion primary**：整体布局、信息层级、边框与留白节奏
+- **Claude secondary**：只借 AI explanation lane 的温度和人味
+- **Raycast secondary**：只借 extension 外壳的紧凑 launcher 感
+
+禁止反过来：
+
+- 不准把整体产品做成 Claude-first chat 页
+- 不准把整体产品做成 Raycast/Linear-first 开发工具
+- 不准让 web 首屏先像 marketing hero，再像工作台
+
 ## Truth Rules
 
 所有 surface 都必须守住这 5 条：
@@ -34,24 +46,24 @@
 
 | Token | Value | 用途 |
 | :-- | :-- | :-- |
-| `--cc-color-primary` | `#0D9488` | 主品牌色，信息组织、主导航、重点状态 |
-| `--cc-color-primary-2` | `#14B8A6` | 次级主色，hover / active / supporting accents |
-| `--cc-color-accent` | `#F97316` | 高价值 CTA，仅给真正主要动作 |
-| `--cc-color-bg` | `#F7FAF9` | 页面背景 |
-| `--cc-color-surface` | `#FFFFFF` | 卡片背景 |
-| `--cc-color-surface-muted` | `#ECFDF5` | 次级卡片 / summary / panel group |
-| `--cc-color-text` | `#134E4A` | 主文本 |
-| `--cc-color-text-muted` | `#4B635F` | 次级文本 |
-| `--cc-color-border` | `#CFE7E3` | 轻边框 |
-| `--cc-color-warning` | `#B45309` | warning / partial / trust gap |
-| `--cc-color-danger` | `#B91C1C` | blocker / red-zone |
-| `--cc-color-success` | `#047857` | ready / synced / verified |
+| `--cc-color-primary` | `#1F5D4B` | 主品牌色，trusted action、active state、focus ring |
+| `--cc-color-primary-2` | `#27483D` | 深色文字与主层级标题 |
+| `--cc-color-accent` | `#A8622A` | 高价值 CTA，仅给真正主要动作与 export guidance |
+| `--cc-color-bg` | `#F5F4EE` | 页面背景，paper canvas |
+| `--cc-color-surface` | `#FBFAF6` | 卡片背景，ivory surface |
+| `--cc-color-surface-muted` | `#F1EEE5` | 次级卡片 / summary / panel group |
+| `--cc-color-text` | `#27483D` | 主文本 |
+| `--cc-color-text-muted` | `#4E665E` | 次级文本 |
+| `--cc-color-border` | `#DCE8E1` | 轻边框 |
+| `--cc-color-warning` | `#B36B2C` | warning / partial / trust gap |
+| `--cc-color-danger` | `#A14343` | blocker / red-zone |
+| `--cc-color-success` | `#1F5D4B` | ready / synced / verified |
 
 ### Typography
 
 | Token | Value | 用途 |
 | :-- | :-- | :-- |
-| `--cc-font-family` | `Plus Jakarta Sans, system-ui, sans-serif` | extension + web 统一字体 |
+| `--cc-font-family` | `Geist, "Plus Jakarta Sans", system-ui, sans-serif` | extension + web 统一字体 |
 | `--cc-font-size-xs` | `12px` | badge / meta |
 | `--cc-font-size-sm` | `14px` | secondary body |
 | `--cc-font-size-md` | `16px` | default body |
@@ -174,7 +186,8 @@
 2. 把 AI 面板从“主角”降成“解释层”
 3. popup 从“导出抽屉”改成“quick pulse”
 4. 把 trust / diagnostics 做成第一屏真相层
-5. 补齐 focus / skip link / reduced-motion / empty-state 指路
+5. 拉开 extension/web 首屏的主次层级，避免 equal-weight card wall
+6. 补齐 focus / skip link / reduced-motion / empty-state 指路
 
 ## Page Overrides
 

@@ -17,6 +17,57 @@ describe('web workbench planning pulse', () => {
           syncedSites: 4,
         },
         recentUpdates: { unseenCount: 0, items: [] },
+        currentViewExport: {
+          preset: 'current_view',
+          format: 'markdown',
+          filename: 'web-current-view.md',
+          mimeType: 'text/markdown',
+          scope: {
+            scopeType: 'current_course',
+            preset: 'current_view',
+            site: 'myplan',
+            courseIdOrKey: 'plan:cse',
+            resourceFamily: 'workspace_snapshot',
+          },
+          packaging: {
+            authorizationLevel: 'partial',
+            aiAllowed: false,
+            riskLabel: 'high',
+            matchConfidence: 'medium',
+            provenance: [
+              {
+                sourceType: 'derived_read_model',
+                label: 'Unified local read model',
+                readOnly: true,
+              },
+            ],
+          },
+          content: '# Current view',
+        },
+        importedEnvelope: {
+          title: 'Imported planning packet',
+          generatedAt: '2026-04-01T02:00:00.000Z',
+          scope: {
+            scopeType: 'current_course',
+            preset: 'current_view',
+            site: 'myplan',
+            courseIdOrKey: 'plan:cse',
+            resourceFamily: 'workspace_snapshot',
+          },
+          packaging: {
+            authorizationLevel: 'confirm_required',
+            aiAllowed: false,
+            riskLabel: 'high',
+            matchConfidence: 'medium',
+            provenance: [
+              {
+                sourceType: 'derived_read_model',
+                label: 'Imported planning packet',
+                readOnly: true,
+              },
+            ],
+          },
+        },
         focusQueue: [],
         planningSubstrates: [
           {
@@ -50,7 +101,20 @@ describe('web workbench planning pulse', () => {
         weeklyLoad: [],
         courseClusters: [],
         workItemClusters: [],
-        administrativeSummaries: [],
+        administrativeSummaries: [
+          {
+            id: 'admin:transcript:1',
+            family: 'transcript',
+            title: 'Transcript summary',
+            summary: 'Latest transcript lane is still summary-first and export-first.',
+            importance: 'high',
+            aiDefault: 'confirm_required',
+            authoritySource: 'myuw summary lane',
+            sourceSurface: 'myuw',
+            nextAction: 'Export before sharing with AI.',
+            updatedAt: '2026-04-01T03:00:00.000Z',
+          },
+        ],
         mergeHealth: {
           mergedCount: 0,
           possibleMatchCount: 0,
@@ -78,10 +142,22 @@ describe('web workbench planning pulse', () => {
     expect(html).toContain('Grouped student view');
     expect(html).toContain('Academic lane');
     expect(html).toContain('Administrative lane');
+    expect(html).toContain('Auth &amp; Export Management');
+    expect(html).toContain('Current imported / current scope truth');
+    expect(html).toContain('Current policy envelope');
+    expect(html).toContain('Site policy overlay');
+    expect(html).toContain('High-sensitivity and export-first');
+    expect(html).toContain('MyPlan · current_course · workspace_snapshot · plan:cse');
+    expect(html).toContain('Imported snapshot: Imported planning packet');
+    expect(html).toContain('Read/export partial · AI blocked');
+    expect(html).toContain('Allowed: planning substrates, degree requirement summaries, schedule option context.');
+    expect(html).toContain('Administrative summaries visible here: transcript.');
     expect(html).toContain('Planning Pulse');
     expect(html).toContain('Allen School planning draft');
     expect(html).toContain('3 term(s) · 9 planned course(s) · 2 backup course(s) · 4 schedule option(s)');
     expect(html).toContain('Degree progress: Core degree requirements still need one systems elective.');
     expect(html).toContain('Spring 2026: 3 planned · 1 backup · 2 option(s)');
+    expect(html.indexOf('Auth &amp; Export Management')).toBeGreaterThan(html.indexOf('Administrative lane'));
+    expect(html.indexOf('Auth &amp; Export Management')).toBeLessThan(html.indexOf('Focus Queue'));
   });
 });

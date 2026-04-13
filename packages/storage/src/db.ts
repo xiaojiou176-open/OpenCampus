@@ -4,6 +4,7 @@ import type {
   AdminCarrierRecord,
   AdministrativeSummary,
   ChangeEvent,
+  ClusterReviewOverride,
   CourseCluster,
   EntityState,
   LocalEntityOverlay,
@@ -30,6 +31,7 @@ export class CampusCopilotDB extends Dexie {
   course_clusters!: Table<CourseCluster, string>;
   work_item_clusters!: Table<WorkItemCluster, string>;
   merge_ledger!: Table<MergeLedgerEntry, string>;
+  cluster_review_overrides!: Table<ClusterReviewOverride, string>;
   administrative_summaries!: Table<AdministrativeSummary, string>;
   sync_runs!: Table<SyncRun, string>;
   change_events!: Table<ChangeEvent, string>;
@@ -169,6 +171,28 @@ export class CampusCopilotDB extends Dexie {
       course_clusters: '&id, canonicalCourseKey, termKey, authoritySurface, confidenceBand, *memberEntityKeys, updatedAt',
       work_item_clusters: '&id, courseClusterId, workType, dueAt, confidenceBand, *memberEntityKeys, updatedAt',
       merge_ledger: '&id, [targetKind+targetId], [surfaceKey+entityKey], decision, decidedAt',
+      administrative_summaries: '&id, family, sourceSurface, importance, updatedAt',
+      sync_runs: '&id, site, completedAt, startedAt, outcome',
+      change_events: '&id, runId, site, entityId, changeType, occurredAt',
+    });
+    this.version(11).stores({
+      courses: '&id, site, title, code',
+      resources: '&id, site, courseId, releasedAt, resourceKind',
+      assignments: '&id, site, courseId, dueAt, status',
+      announcements: '&id, site, courseId, postedAt',
+      grades: '&id, site, courseId, assignmentId, releasedAt, gradedAt',
+      messages: '&id, site, courseId, createdAt, unread',
+      events: '&id, site, eventKind, startAt, endAt',
+      alerts: null,
+      sync_state: '&key, site, status, lastSyncedAt, lastOutcome',
+      entity_state: '&key, site, kind, firstSeenAt, lastSyncedAt, seenAt',
+      local_entity_overlay: '&entityId, site, kind, updatedAt, pinnedAt, snoozeUntil, dismissUntil',
+      planning_substrates: '&id, source, fit, capturedAt, planId',
+      admin_carriers: '&id, family, sourceSurface, updatedAt',
+      course_clusters: '&id, canonicalCourseKey, termKey, authoritySurface, confidenceBand, *memberEntityKeys, updatedAt',
+      work_item_clusters: '&id, courseClusterId, workType, dueAt, confidenceBand, *memberEntityKeys, updatedAt',
+      merge_ledger: '&id, [targetKind+targetId], [surfaceKey+entityKey], decision, decidedAt',
+      cluster_review_overrides: '&id, targetKind, targetId, decision, decidedAt',
       administrative_summaries: '&id, family, sourceSurface, importance, updatedAt',
       sync_runs: '&id, site, completedAt, startedAt, outcome',
       change_events: '&id, runId, site, entityId, changeType, occurredAt',
