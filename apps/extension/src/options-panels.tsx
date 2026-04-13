@@ -269,8 +269,9 @@ export function OptionsPanels(props: {
   const selectedCourseAuthorizationDraft = availableCourses.find((course) => course.id === courseAuthorizationDraftId);
 
   return (
-    <div className="surface__grid surface__grid--split">
-      <article className="surface__panel">
+    <div className="surface__stack">
+      <div className="surface__grid surface__grid--split">
+        <article className="surface__panel">
         <h2>{text.options.configurationTitle}</h2>
         <p>{text.options.configurationDescription}</p>
         <div className="surface__summary-grid surface__summary-grid--compact surface__summary-grid--slim">
@@ -287,24 +288,6 @@ export function OptionsPanels(props: {
             <span className="surface__summary-label">{text.options.blockedFamilies}</span>
           </div>
         </div>
-        <label className="surface__field">
-          <span>{text.options.interfaceLanguage}</span>
-          <select
-            value={optionsDraft.uiLanguage}
-            onChange={(event) =>
-              setOptionsDraft((current) =>
-                buildNextConfig({
-                  current,
-                  uiLanguage: event.target.value as ExtensionConfig['uiLanguage'],
-                }),
-              )
-            }
-          >
-            <option value="auto">{text.options.followBrowser}</option>
-            <option value="en">{text.options.english}</option>
-            <option value="zh-CN">{text.options.chinese}</option>
-          </select>
-        </label>
         <div className="surface__stack">
           <p className="surface__meta">
             {text.options.defaultProvider}: {optionsDraft.ai.defaultProvider}
@@ -329,7 +312,63 @@ export function OptionsPanels(props: {
           </button>
         </div>
         {optionsFeedback ? <p className="surface__feedback">{optionsFeedback}</p> : null}
-      </article>
+        </article>
+
+        <article className="surface__panel">
+          <h2>{uiLanguage === 'zh-CN' ? 'Language + AI/BFF status summary' : 'Language + AI/BFF status summary'}</h2>
+          <p>
+            {uiLanguage === 'zh-CN'
+              ? '先确认语言、当前 BFF 可达性和 provider readiness；只有真的需要 override 时才进入 advanced。'
+              : 'Confirm language, current BFF reachability, and provider readiness first. Only drop into advanced when you truly need an override.'}
+          </p>
+          <label className="surface__field">
+            <span>{text.options.interfaceLanguage}</span>
+            <select
+              value={optionsDraft.uiLanguage}
+              onChange={(event) =>
+                setOptionsDraft((current) =>
+                  buildNextConfig({
+                    current,
+                    uiLanguage: event.target.value as ExtensionConfig['uiLanguage'],
+                  }),
+                )
+              }
+            >
+              <option value="auto">{text.options.followBrowser}</option>
+              <option value="en">{text.options.english}</option>
+              <option value="zh-CN">{text.options.chinese}</option>
+            </select>
+          </label>
+          <div className="surface__evidence-grid surface__evidence-grid--compact">
+            {PROVIDER_OPTIONS.map((option) => (
+              <article className="surface__evidence-card" key={option.value}>
+                <div className="surface__item-header">
+                  <strong>{option.label}</strong>
+                  <span
+                    className={`surface__badge surface__badge--${
+                      providerStatus.providers[option.value]?.ready ? 'success' : 'warning'
+                    }`}
+                  >
+                    {providerStatus.providers[option.value]?.ready ? text.meta.ready : text.meta.notReady}
+                  </span>
+                </div>
+                <p className="surface__meta">
+                  {formatProviderReason(providerStatus.providers[option.value]?.reason, uiLanguage)}
+                </p>
+              </article>
+            ))}
+          </div>
+          <div className="surface__stack">
+            <p className="surface__meta">
+              {text.options.bffBaseUrl}: {optionsDraft.ai.bffBaseUrl || text.options.manualFallbackOnly}
+            </p>
+            <p className="surface__meta">
+              {text.meta.lastChecked}: {formatRelativeTime(uiLanguage, providerStatus.checkedAt)}
+              {providerStatus.error ? ` · ${formatProviderStatusError(providerStatus.error, uiLanguage)}` : ''}
+            </p>
+          </div>
+        </article>
+      </div>
 
       <article className="surface__panel">
         <h2>{text.options.authorizationCenter}</h2>
@@ -643,6 +682,71 @@ export function OptionsPanels(props: {
         </ul>
       </article>
 
+      <article className="surface__panel">
+        <h2>{text.options.siteConfiguration}</h2>
+        <p>{text.options.siteConfigurationDescription}</p>
+        <label className="surface__field">
+          <span>{text.options.threadsPath}</span>
+          <input
+            value={optionsDraft.sites.edstem.threadsPath ?? ''}
+            onChange={(event) =>
+              setOptionsDraft((current) =>
+                buildNextConfig({
+                  current,
+                  sites: {
+                    edstem: {
+                      ...current.sites.edstem,
+                      threadsPath: event.target.value || undefined,
+                    },
+                  },
+                }),
+              )
+            }
+            placeholder={text.options.threadsPathPlaceholder}
+          />
+        </label>
+        <label className="surface__field">
+          <span>{text.options.unreadPath}</span>
+          <input
+            value={optionsDraft.sites.edstem.unreadPath ?? ''}
+            onChange={(event) =>
+              setOptionsDraft((current) =>
+                buildNextConfig({
+                  current,
+                  sites: {
+                    edstem: {
+                      ...current.sites.edstem,
+                      unreadPath: event.target.value || undefined,
+                    },
+                  },
+                }),
+              )
+            }
+            placeholder={text.options.unreadPathPlaceholder}
+          />
+        </label>
+        <label className="surface__field">
+          <span>{text.options.recentActivityPath}</span>
+          <input
+            value={optionsDraft.sites.edstem.recentActivityPath ?? ''}
+            onChange={(event) =>
+              setOptionsDraft((current) =>
+                buildNextConfig({
+                  current,
+                  sites: {
+                    edstem: {
+                      ...current.sites.edstem,
+                      recentActivityPath: event.target.value || undefined,
+                    },
+                  },
+                }),
+              )
+            }
+            placeholder={text.options.recentActivityPathPlaceholder}
+          />
+        </label>
+      </article>
+
       <details className="surface__advanced-settings" open={false}>
         <summary className="surface__advanced-settings-summary">
           <span>{text.options.advancedRuntimeSettings}</span>
@@ -809,94 +913,38 @@ export function OptionsPanels(props: {
                 <option value="byok">byok</option>
               </select>
             </label>
-            <label className="surface__field">
-              <span>{text.options.defaultExportFormat}</span>
-              <select
-                value={optionsDraft.defaultExportFormat}
-                onChange={(event) =>
-                  setOptionsDraft((current) =>
-                    buildNextConfig({
-                      current,
-                      defaultExportFormat: event.target.value as ExportFormat,
-                    }),
-                  )
-                }
-              >
-                {EXPORT_FORMAT_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </article>
-
-          <article className="surface__panel">
-            <h2>{text.options.siteConfiguration}</h2>
-            <p>{text.options.siteConfigurationDescription}</p>
-            <label className="surface__field">
-              <span>{text.options.threadsPath}</span>
-              <input
-                value={optionsDraft.sites.edstem.threadsPath ?? ''}
-                onChange={(event) =>
-                  setOptionsDraft((current) =>
-                    buildNextConfig({
-                      current,
-                      sites: {
-                        edstem: {
-                          ...current.sites.edstem,
-                          threadsPath: event.target.value || undefined,
-                        },
-                      },
-                    }),
-                  )
-                }
-                placeholder={text.options.threadsPathPlaceholder}
-              />
-            </label>
-            <label className="surface__field">
-              <span>{text.options.unreadPath}</span>
-              <input
-                value={optionsDraft.sites.edstem.unreadPath ?? ''}
-                onChange={(event) =>
-                  setOptionsDraft((current) =>
-                    buildNextConfig({
-                      current,
-                      sites: {
-                        edstem: {
-                          ...current.sites.edstem,
-                          unreadPath: event.target.value || undefined,
-                        },
-                      },
-                    }),
-                  )
-                }
-                placeholder={text.options.unreadPathPlaceholder}
-              />
-            </label>
-            <label className="surface__field">
-              <span>{text.options.recentActivityPath}</span>
-              <input
-                value={optionsDraft.sites.edstem.recentActivityPath ?? ''}
-                onChange={(event) =>
-                  setOptionsDraft((current) =>
-                    buildNextConfig({
-                      current,
-                      sites: {
-                        edstem: {
-                          ...current.sites.edstem,
-                          recentActivityPath: event.target.value || undefined,
-                        },
-                      },
-                    }),
-                  )
-                }
-                placeholder={text.options.recentActivityPathPlaceholder}
-              />
-            </label>
           </article>
         </div>
       </details>
+
+      <article className="surface__panel">
+        <h2>{uiLanguage === 'zh-CN' ? 'Export defaults' : 'Export defaults'}</h2>
+        <p>
+          {uiLanguage === 'zh-CN'
+            ? '默认导出格式放在最后一段，因为它是工作台偏好，不是第一屏的 trust blocker。'
+            : 'Default export format lives at the end because it is a workspace preference, not a first-screen trust blocker.'}
+        </p>
+        <label className="surface__field">
+          <span>{text.options.defaultExportFormat}</span>
+          <select
+            value={optionsDraft.defaultExportFormat}
+            onChange={(event) =>
+              setOptionsDraft((current) =>
+                buildNextConfig({
+                  current,
+                  defaultExportFormat: event.target.value as ExportFormat,
+                }),
+              )
+            }
+          >
+            {EXPORT_FORMAT_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      </article>
     </div>
   );
 }

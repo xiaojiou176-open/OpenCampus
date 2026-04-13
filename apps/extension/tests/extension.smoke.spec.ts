@@ -733,7 +733,8 @@ test('switches to Chinese UI and shows partial-success plus site-filter behavior
   ).toBeVisible();
   await expect(page.getByRole('heading', { name: '变化账本' })).toBeVisible();
   const chineseRuntimeSummary = chineseAskAiPanel.locator('aside.surface__status-intro');
-  await expect(chineseRuntimeSummary.getByText(/OpenAI · 未就绪 · 缺少 API key · 最近检查:/)).toBeVisible();
+  await expect(chineseRuntimeSummary.getByText('Companion trust snapshot')).toBeVisible();
+  await expect(chineseRuntimeSummary.getByText(/未就绪 · 缺少 API key/)).toBeVisible();
   await expect(page.getByText('新鲜站点')).toBeVisible();
   await expect(page.getByText('陈旧站点')).toBeVisible();
   await expect(page.getByText('未同步站点')).toBeVisible();

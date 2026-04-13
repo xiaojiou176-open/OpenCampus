@@ -142,6 +142,14 @@ export function WebWorkbenchPanels(props: {
     return `${getSiteLabel(scope.site)} · ${scope.scopeType ?? 'unknown scope'} · ${scope.resourceFamily ?? 'unknown family'}${courseLabel}`;
   }
 
+  function formatProvenance() {
+    const labels = importedPackaging?.provenance ?? currentPackaging?.provenance;
+    if (!labels?.length) {
+      return 'No provenance chain is visible yet.';
+    }
+    return labels.map((entry) => entry.label).join(' · ');
+  }
+
   return (
     <>
       {!props.workbenchReady ? (
@@ -203,22 +211,22 @@ export function WebWorkbenchPanels(props: {
       </section>
 
       <section className="panel">
-        <p className="eyebrow">Trust rail</p>
+        <p className="eyebrow">Trust center</p>
         <h2>Auth &amp; Export Management</h2>
         <p>
-          Review the current scope, imported envelope, and site policy before exporting or asking AI. This
-          lane stays read-only and explains what the web surface is allowed to carry forward.
+          Review the current scope, policy envelope, provenance, and site overlay before exporting or asking AI.
+          This lane stays read-only and works like a review desk, not a preset wall.
         </p>
         <div className="ai-explanation-strip" aria-label="Auth and export management">
           <article className="guidance-card">
-            <p className="meta-title">Current imported / current scope truth</p>
+            <p className="meta-title">Review scope</p>
             <strong>{formatScopeLine(currentScope)}</strong>
             <p>
               {props.importedEnvelope
                 ? `Imported snapshot: ${props.importedEnvelope.title ?? 'Untitled artifact'} · ${formatScopeLine(importedScope)} · generated ${formatDateTime(
                     props.importedEnvelope.generatedAt,
                   )}.`
-                : 'No imported envelope is overriding the current local read-model view.'}
+                : 'No imported envelope is overriding the current local read-model view, so this review lane is reading the live web workbench slice.'}
             </p>
           </article>
           <article className={`guidance-card ${currentPackaging?.aiAllowed ? '' : 'guidance-card--warning'}`}>
@@ -230,43 +238,50 @@ export function WebWorkbenchPanels(props: {
             </strong>
             <p>
               {currentPackaging
-                ? `Risk ${currentPackaging.riskLabel} · match ${currentPackaging.matchConfidence} · provenance ${currentPackaging.provenance.length}.`
+                ? `Risk ${currentPackaging.riskLabel} · match ${currentPackaging.matchConfidence} · provenance ${currentPackaging.provenance.length}. ${
+                    currentPackaging.aiAllowed
+                      ? 'Layer 2 is currently visible for this slice.'
+                      : 'Layer 2 is still blocked, so AI must stay behind the trust desk.'
+                  }`
                 : 'Load a shared workbench slice before treating this web surface as export-ready.'}
             </p>
           </article>
           <article className="guidance-card">
-            <p className="meta-title">Site policy overlay</p>
-            <strong>{currentOverlay ? currentOverlay.siteLabel : 'Multi-site or unloaded view'}</strong>
+            <p className="meta-title">Provenance and imported receipt</p>
+            <strong>{importedPackaging ? 'Imported envelope retained' : 'Using current workbench packaging'}</strong>
+            <p>
+              {formatProvenance()}
+            </p>
+          </article>
+          <article className="guidance-card">
+            <p className="meta-title">Site policy overlay and review honesty</p>
+            <strong>
+              {currentOverlay ? currentOverlay.siteLabel : 'Multi-site or unloaded view'}
+            </strong>
             <p>
               {currentOverlay
                 ? `Allowed: ${currentOverlay.allowedFamilies.join(', ')}. Export-first: ${
                     currentOverlay.exportOnlyFamilies.join(', ') || 'none'
-                  }.`
-                : 'Choose a site-scoped slice to review the active site overlay and carrier honesty notes.'}
-            </p>
-          </article>
-          <article className="guidance-card">
-            <p className="meta-title">High-sensitivity and export-first</p>
-            <strong>
-              {exportFirstFamilies.length} export-first family(ies) · {summaryFamilies.length} summary-first admin lane(s)
-            </strong>
-            <p>
-              {exportFirstFamilies.length > 0
-                ? `Export-first families: ${exportFirstFamilies.join(', ')}. `
-                : 'No site-scoped export-first families are visible in this slice yet. '}
+                  }. Forbidden AI objects: ${currentOverlay.forbiddenAiObjects.join(', ') || 'none'}. `
+                : 'Choose a site-scoped slice to review the active site overlay and carrier honesty notes. '}
               {summaryFamilies.length > 0
-                ? `Administrative summaries visible here: ${summaryFamilies.join(', ')}. `
+                ? `Summary-first admin lanes: ${summaryFamilies.join(', ')}. `
                 : 'No administrative summary families are visible in this slice. '}
-              {props.planningSubstrates.length > 0
-                ? `Planning substrate(s): ${props.planningSubstrates.length} read-only lane(s).`
-                : 'No planning substrate is visible in this slice.'}
+              {summaryFamilies.length > 0
+                ? ''
+                : ''}
+              {exportFirstFamilies.length > 0
+                ? `Export-first families in this view: ${exportFirstFamilies.join(', ')}. `
+                : 'No site-scoped export-first families are visible in this slice yet. '}
+              {props.planningSubstrates.length > 0 ? `Planning substrate(s): ${props.planningSubstrates.length} read-only lane(s).` : 'No planning substrate is visible in this slice.'}
             </p>
           </article>
         </div>
         {importedPackaging ? (
           <p className="meta">
             Imported envelope keeps its own posture: read/export {importedPackaging.authorizationLevel} · AI{' '}
-            {importedPackaging.aiAllowed ? 'allowed' : 'blocked'} · risk {importedPackaging.riskLabel}.
+            {importedPackaging.aiAllowed ? 'allowed' : 'blocked'} · risk {importedPackaging.riskLabel} · match{' '}
+            {importedPackaging.matchConfidence}.
           </p>
         ) : null}
       </section>

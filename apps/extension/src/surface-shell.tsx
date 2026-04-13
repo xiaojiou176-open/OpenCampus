@@ -1115,8 +1115,20 @@ export function SurfaceShell({ surface }: { surface: SurfaceKind }) {
           ? '当前 carrier 还没到可导出产品面，这里只允许诚实地显示为 blocked。'
           : 'The carrier is not productized for export yet, so this stays honestly blocked.'
         : uiLanguage === 'zh-CN'
-          ? '这条资源族当前已经处在可导出的 landed 路径上。'
-          : 'This family is currently on the landed export path.';
+        ? '这条资源族当前已经处在可导出的 landed 路径上。'
+        : 'This family is currently on the landed export path.';
+  const exportPacketHonesty =
+    exportFamily === 'administrative_snapshot'
+      ? uiLanguage === 'zh-CN'
+        ? '高敏摘要保持 summary-first；导出允许不等于 AI 自动继承读取。'
+        : 'High-sensitivity summaries stay summary-first; export allowed does not mean AI automatically inherits read access.'
+      : selectedExportFamilyCard?.status === 'blocked'
+        ? uiLanguage === 'zh-CN'
+          ? '当前只允许诚实地停在 review blocked，不把未产品化 carrier 包装成可导出。'
+          : 'This stays honestly review-blocked instead of pretending an unproductized carrier is export-ready.'
+        : uiLanguage === 'zh-CN'
+          ? '先审 scope、授权和深度，再决定是否导出这个 packet。'
+          : 'Review scope, authorization, and depth before deciding to export this packet.';
 
   function enterExportMode(nextSite: ExportScopeSite = preferredExportSite) {
     setExportScopeSite(nextSite);
@@ -1630,7 +1642,9 @@ export function SurfaceShell({ surface }: { surface: SurfaceKind }) {
                   <div className="surface__item-header">
                     <div>
                       <strong>{exportReviewTitle}</strong>
-                      <p className="surface__meta">{exportReviewDescription}</p>
+                      <p className="surface__meta">
+                        {exportReviewDescription} {uiLanguage === 'zh-CN' ? '先看 trust review，再点导出。' : 'Trust review comes before the export action.'}
+                      </p>
                     </div>
                     <span
                       className={`surface__badge surface__badge--${
@@ -1645,6 +1659,21 @@ export function SurfaceShell({ surface }: { surface: SurfaceKind }) {
                     </span>
                   </div>
                   <div className="surface__evidence-grid surface__evidence-grid--compact">
+                    <article className="surface__evidence-card">
+                      <p className="surface__meta-label">{uiLanguage === 'zh-CN' ? '授权摘要' : 'Authorization summary'}</p>
+                      <p className="surface__item-lead">{exportAuthorizationLead}</p>
+                      <p className="surface__meta">{exportAuthorizationDetail}</p>
+                    </article>
+                    <article className="surface__evidence-card">
+                      <p className="surface__meta-label">{uiLanguage === 'zh-CN' ? '深度状态' : 'Depth status'}</p>
+                      <p className="surface__item-lead">{exportReviewStatus}</p>
+                      <p className="surface__meta">{exportDepthDetail}</p>
+                    </article>
+                    <article className="surface__evidence-card">
+                      <p className="surface__meta-label">{uiLanguage === 'zh-CN' ? 'Packet honesty' : 'Packet honesty'}</p>
+                      <p className="surface__item-lead">{selectedExportFamilyCard?.status === 'blocked' ? exportReviewStatus : exportReviewTitle}</p>
+                      <p className="surface__meta">{exportPacketHonesty}</p>
+                    </article>
                     <article className="surface__evidence-card">
                       <p className="surface__meta-label">{modeCopy.export.siteLabel}</p>
                       <p className="surface__item-lead">{exportScopeLabel}</p>
@@ -1663,16 +1692,6 @@ export function SurfaceShell({ surface }: { surface: SurfaceKind }) {
                       <p className="surface__meta-label">{modeCopy.export.formatLabel}</p>
                       <p className="surface__item-lead">{selectedFormatLabel}</p>
                       <p className="surface__meta">{modeCopy.assistant.readOnly}</p>
-                    </article>
-                    <article className="surface__evidence-card">
-                      <p className="surface__meta-label">{uiLanguage === 'zh-CN' ? '授权摘要' : 'Authorization summary'}</p>
-                      <p className="surface__item-lead">{exportAuthorizationLead}</p>
-                      <p className="surface__meta">{exportAuthorizationDetail}</p>
-                    </article>
-                    <article className="surface__evidence-card">
-                      <p className="surface__meta-label">{uiLanguage === 'zh-CN' ? '深度状态' : 'Depth status'}</p>
-                      <p className="surface__item-lead">{exportReviewStatus}</p>
-                      <p className="surface__meta">{exportDepthDetail}</p>
                     </article>
                   </div>
                   <p className="surface__item-lead">
