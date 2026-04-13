@@ -391,13 +391,69 @@ function inferResourceFamily(preset: ExportPreset): string {
   }
 }
 
+function normalizeAdministrativeSummaryRuleFamily(family: string) {
+  switch (family) {
+    case 'dars':
+      return 'degree_audit_summary';
+    case 'transcript':
+      return 'transcript_summary';
+    case 'finaid':
+      return 'financial_aid_summary';
+    case 'accounts':
+    case 'tuition':
+    case 'tuition_detail':
+      return 'tuition_account_summary';
+    default:
+      return undefined;
+  }
+}
+
+function getRelatedResourceFamilies(input: {
+  scope: ExportScopeMetadata;
+  normalized: NormalizedExportInput;
+}) {
+  const families = new Set<string>();
+  families.add(input.scope.resourceFamily);
+
+  if (
+    input.scope.resourceFamily === 'workspace_snapshot' ||
+    input.scope.resourceFamily === 'administrative_snapshot'
+  ) {
+    for (const summary of input.normalized.administrativeSummaries) {
+      const mappedFamily = normalizeAdministrativeSummaryRuleFamily(summary.family);
+      if (mappedFamily) {
+        families.add(mappedFamily);
+      }
+    }
+  }
+
+  return families;
+}
+
+function getAuthorizationStatusSeverity(status: AuthorizationStatus) {
+  switch (status) {
+    case 'blocked':
+      return 4;
+    case 'confirm_required':
+      return 3;
+    case 'partial':
+      return 2;
+    case 'allowed':
+    default:
+      return 1;
+  }
+}
+
 function resolveAuthorizationStatus(input: {
+  normalized: NormalizedExportInput;
   authorization?: AuthorizationState;
   layer: AuthorizationLayer;
   scope: ExportScopeMetadata;
 }): AuthorizationStatus {
   const rules = input.authorization?.rules ?? [];
+  const relatedFamilies = getRelatedResourceFamilies(input);
   let match: AuthorizationRule | undefined;
+  let bestSeverity = -1;
   let bestScore = -1;
 
   for (const rule of rules) {
@@ -410,7 +466,7 @@ function resolveAuthorizationStatus(input: {
     if (rule.courseIdOrKey && rule.courseIdOrKey !== input.scope.courseIdOrKey) {
       continue;
     }
-    if (rule.resourceFamily && rule.resourceFamily !== input.scope.resourceFamily) {
+    if (rule.resourceFamily && !relatedFamilies.has(rule.resourceFamily)) {
       continue;
     }
     if (rule.scopeType && rule.scopeType !== input.scope.scopeType) {
@@ -422,8 +478,10 @@ function resolveAuthorizationStatus(input: {
       (rule.site ? 8 : 0) +
       (rule.resourceFamily ? 4 : 0) +
       (rule.scopeType ? 2 : 0);
+    const severity = getAuthorizationStatusSeverity(rule.status);
 
-    if (score > bestScore) {
+    if (severity > bestSeverity || (severity === bestSeverity && score > bestScore)) {
+      bestSeverity = severity;
       bestScore = score;
       match = rule;
     }
@@ -621,11 +679,13 @@ function resolvePackagingMetadata(input: {
   const layer1Status =
     requested?.authorizationLevel ??
     resolveAuthorizationStatus({
+      normalized: input.normalized,
       authorization: input.normalized.authorization,
       layer: 'layer1_read_export',
       scope: input.scope,
     });
   const layer2Status = resolveAuthorizationStatus({
+    normalized: input.normalized,
     authorization: input.normalized.authorization,
     layer: 'layer2_ai_read_analysis',
     scope: input.scope,

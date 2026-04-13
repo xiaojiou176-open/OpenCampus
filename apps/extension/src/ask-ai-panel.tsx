@@ -184,7 +184,11 @@ export function AskAiPanel(props: {
             <div className="surface__section-head">
               <div>
                 <h3>{text.askAi.questionBox}</h3>
-                <p className="surface__meta">{text.askAi.structuredInputsDescription}</p>
+                <p className="surface__meta">
+                  {uiLanguage === 'zh-CN'
+                    ? '先从眼前这张工作台发问。支持证据和运行时控件都退到这个提问框之后，不再抢整块面板的主叙事。'
+                    : 'Ask from the visible workspace first. Supporting evidence and runtime controls stay behind this composer instead of taking over the whole panel.'}
+                </p>
               </div>
               <span className="surface__badge surface__badge--neutral">{selectedProviderLabel}</span>
             </div>
@@ -229,12 +233,14 @@ export function AskAiPanel(props: {
             </details>
           </div>
 
-          <div className="surface__ask-ai-sidebar">
+          <div className="surface__ask-ai-sidebar surface__ask-ai-sidebar--supporting">
             <aside aria-live="polite" className="surface__status-intro surface__status-intro--compact surface__status-intro--supporting">
               <div className="surface__item-header">
                 <div className="surface__status-intro-copy">
                   <p className="surface__meta-label">{text.askAi.runtimeSummary}</p>
-                  <p className="surface__item-lead">{selectedProviderLabel}</p>
+                  <p className="surface__item-lead">
+                    {uiLanguage === 'zh-CN' ? '伴随可信快照' : 'Companion trust snapshot'}
+                  </p>
                   <p className="surface__meta">
                     {selectedProviderReady ? text.meta.ready : text.meta.notReady} ·{' '}
                     {formatProviderReason(selectedProviderStatus?.reason, uiLanguage)}
@@ -248,7 +254,7 @@ export function AskAiPanel(props: {
               </div>
             </aside>
 
-            <details className="surface__advanced-settings">
+            <details className="surface__advanced-settings surface__advanced-settings--supporting">
               <summary className="surface__advanced-settings-summary">
                 <span>{policyReviewLabel}</span>
                 <span className="surface__badge surface__badge--neutral">{structuredInputs.length} items</span>
@@ -307,25 +313,76 @@ export function AskAiPanel(props: {
                     </p>
                   </article>
                 ) : null}
-
-                <aside aria-live="polite" className="surface__status-intro surface__status-intro--compact surface__status-intro--supporting">
-                  <div className="surface__item-header">
-                    <div className="surface__status-intro-copy">
-                      <p className="surface__meta-label">{text.askAi.runtimeSummary}</p>
-                      <p className="surface__meta">
-                        {selectedProviderLabel} · {selectedProviderReady ? text.meta.ready : text.meta.notReady} ·{' '}
-                        {formatProviderReason(selectedProviderStatus?.reason, uiLanguage)} · {text.meta.lastChecked}:{' '}
-                        {formatRelativeTime(uiLanguage, providerStatus.checkedAt)}
-                        {providerStatus.error ? ` · ${formatProviderStatusError(providerStatus.error, uiLanguage)}` : ''}
-                      </p>
-                    </div>
-                    <span className="surface__badge surface__badge--neutral">{selectedProviderLabel}</span>
-                  </div>
-                </aside>
               </div>
             </details>
           </div>
         </div>
+
+        {parsedStructuredAnswer.success ? (
+          <div aria-live="polite" className="surface__answer">
+            {parsedStructuredAnswer.data.citations.length ? (
+              <div className="surface__group">
+                <div className="surface__item-header">
+                  <h3>{text.askAi.answerWithCitations}</h3>
+                  <span className="surface__badge surface__badge--success">{text.askAi.citations}</span>
+                </div>
+                <ul className="surface__list">
+                  {parsedStructuredAnswer.data.citations.map((citation) => (
+                    <li key={`${citation.entityId}:${citation.title}`}>
+                      {citation.url ? (
+                        <a href={citation.url} target="_blank" rel="noreferrer">
+                          {citation.title}
+                        </a>
+                      ) : (
+                        citation.title
+                      )}{' '}
+                      · {citation.site} · {citation.kind}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+            <p>{parsedStructuredAnswer.data.summary}</p>
+            {parsedStructuredAnswer.data.bullets.length ? (
+              <div className="surface__group">
+                <h3>{text.askAi.keyPoints}</h3>
+                <ul className="surface__list">
+                  {parsedStructuredAnswer.data.bullets.map((bullet) => (
+                    <li key={bullet}>{bullet}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+            {parsedStructuredAnswer.data.nextActions.length ? (
+              <div className="surface__group">
+                <h3>{text.askAi.nextActions}</h3>
+                <ul className="surface__list">
+                  {parsedStructuredAnswer.data.nextActions.map((action) => (
+                    <li key={action}>{action}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+            {parsedStructuredAnswer.data.trustGaps.length ? (
+              <div className="surface__group">
+                <h3>{text.askAi.trustGaps}</h3>
+                <ul className="surface__list">
+                  {parsedStructuredAnswer.data.trustGaps.map((gap) => (
+                    <li key={gap}>{gap}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </div>
+        ) : aiAnswer ? (
+          <div aria-live="polite" className="surface__answer">
+            <div className="surface__item-header">
+              <h3>{text.askAi.answerWithCitations}</h3>
+              <span className="surface__badge surface__badge--warning">{text.askAi.uncitedAnswerWarning}</span>
+            </div>
+            <p>{aiAnswer}</p>
+          </div>
+        ) : null}
 
         <details className="surface__advanced-settings">
           <summary className="surface__advanced-settings-summary">
@@ -512,71 +569,6 @@ export function AskAiPanel(props: {
       {!activeBffBaseUrl ? <p aria-live="polite" className="surface__feedback">{text.askAi.missingBffFeedback}</p> : null}
       {aiNotice ? <p aria-live="polite" className="surface__feedback">{aiNotice}</p> : null}
       {aiError ? <p aria-live="polite" className="surface__feedback surface__feedback--error">{aiError}</p> : null}
-      {parsedStructuredAnswer.success ? (
-        <div aria-live="polite" className="surface__answer">
-          {parsedStructuredAnswer.data.citations.length ? (
-            <div className="surface__group">
-              <div className="surface__item-header">
-                <h3>{text.askAi.answerWithCitations}</h3>
-                <span className="surface__badge surface__badge--success">{text.askAi.citations}</span>
-              </div>
-              <ul className="surface__list">
-                {parsedStructuredAnswer.data.citations.map((citation) => (
-                  <li key={`${citation.entityId}:${citation.title}`}>
-                    {citation.url ? (
-                      <a href={citation.url} target="_blank" rel="noreferrer">
-                        {citation.title}
-                      </a>
-                    ) : (
-                      citation.title
-                    )}{' '}
-                    · {citation.site} · {citation.kind}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-          <p>{parsedStructuredAnswer.data.summary}</p>
-          {parsedStructuredAnswer.data.bullets.length ? (
-            <div className="surface__group">
-              <h3>{text.askAi.keyPoints}</h3>
-              <ul className="surface__list">
-                {parsedStructuredAnswer.data.bullets.map((bullet) => (
-                  <li key={bullet}>{bullet}</li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-          {parsedStructuredAnswer.data.nextActions.length ? (
-            <div className="surface__group">
-              <h3>{text.askAi.nextActions}</h3>
-              <ul className="surface__list">
-                {parsedStructuredAnswer.data.nextActions.map((action) => (
-                  <li key={action}>{action}</li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-          {parsedStructuredAnswer.data.trustGaps.length ? (
-            <div className="surface__group">
-              <h3>{text.askAi.trustGaps}</h3>
-              <ul className="surface__list">
-                {parsedStructuredAnswer.data.trustGaps.map((gap) => (
-                  <li key={gap}>{gap}</li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-        </div>
-      ) : aiAnswer ? (
-        <div aria-live="polite" className="surface__answer">
-          <div className="surface__item-header">
-            <h3>{text.askAi.answerWithCitations}</h3>
-            <span className="surface__badge surface__badge--warning">{text.askAi.uncitedAnswerWarning}</span>
-          </div>
-          <p>{aiAnswer}</p>
-        </div>
-      ) : null}
     </article>
   );
 }

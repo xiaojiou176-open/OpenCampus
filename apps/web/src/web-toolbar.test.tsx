@@ -66,7 +66,7 @@ describe('web toolbar and support rail', () => {
     expect(html).toContain('Tracked entities');
     expect(html).toContain('Unseen updates');
     expect(html).toContain('Latest stored sync receipt: Canvas');
-    expect(html).toContain('Local-first evidence comes first. AI only explains the visible workspace after the receipts are already on screen.');
+    expect(html).toContain('Local-first evidence comes first. This preview tees up the same trust center you review again in Auth &amp; Export Management before exporting or asking AI.');
     expect(html).toContain('Registration-related and red-zone routes stay outside this product surface.');
   });
 });

@@ -371,4 +371,62 @@ describe('exporter package', () => {
     expect(artifact.packaging.aiAllowed).toBe(false);
     expect(artifact.packaging.provenance).toHaveLength(2);
   });
+
+  it('tightens workspace snapshot packaging when high-sensitivity administrative summaries are present', () => {
+    const artifact = createExportArtifact({
+      preset: 'current_view',
+      format: 'json',
+      input: {
+        generatedAt,
+        authorization: {
+          policyVersion: 'wave2-deepwater-productization',
+          rules: [
+            {
+              id: 'workspace-layer1',
+              layer: 'layer1_read_export',
+              status: 'allowed',
+              resourceFamily: 'workspace_snapshot',
+            },
+            {
+              id: 'workspace-layer2',
+              layer: 'layer2_ai_read_analysis',
+              status: 'allowed',
+              resourceFamily: 'workspace_snapshot',
+            },
+            {
+              id: 'transcript-layer1',
+              layer: 'layer1_read_export',
+              status: 'confirm_required',
+              resourceFamily: 'transcript_summary',
+            },
+            {
+              id: 'transcript-layer2',
+              layer: 'layer2_ai_read_analysis',
+              status: 'blocked',
+              resourceFamily: 'transcript_summary',
+            },
+          ],
+        },
+        administrativeSummaries: [
+          {
+            id: 'admin:transcript:1',
+            family: 'transcript',
+            title: 'Transcript summary',
+            summary: 'Latest transcript lane is still summary-first and export-first.',
+            importance: 'high',
+            aiDefault: 'blocked',
+            authoritySource: 'myuw summary lane',
+          },
+        ],
+      },
+    });
+
+    expect(artifact.scope.resourceFamily).toBe('workspace_snapshot');
+    expect(artifact.packaging.authorizationLevel).toBe('confirm_required');
+    expect(artifact.packaging.aiAllowed).toBe(false);
+    expect(artifact.packaging.riskLabel).toBe('high');
+    expect(artifact.packaging.provenance.some((entry) => entry.label === 'Administrative summary-first substrate')).toBe(true);
+    expect(artifact.content).toContain('"administrativeSummaries": 1');
+    expect(artifact.content).toContain('"authorization_level": "confirm_required"');
+  });
 });
