@@ -1472,6 +1472,10 @@ function renderMarkdownSection(title: string, lines: string[]) {
   return `## ${title}\n${lines.join('\n')}\n`;
 }
 
+function formatAuthoritySource(value: string) {
+  return value.replace(/_/g, ' ').replace(/:/g, ' · ');
+}
+
 function renderMarkdown(dataset: ExportDataset) {
   const sections: string[] = [];
 
@@ -1652,7 +1656,7 @@ function renderMarkdown(dataset: ExportDataset) {
       'Course Clusters',
       dataset.courseClusters.map((cluster) => {
         const flag = cluster.needsReview ? 'possible match' : 'merged';
-        return `- ${cluster.title} (${flag}; ${cluster.matchConfidence}) - ${cluster.summary}`;
+        return `- ${cluster.title} (${flag}; ${cluster.matchConfidence}; authority ${formatAuthoritySource(cluster.authoritySource)}) - ${cluster.summary}`;
       }),
     ),
   );
@@ -1663,7 +1667,7 @@ function renderMarkdown(dataset: ExportDataset) {
       dataset.workItemClusters.map((cluster) => {
         const due = cluster.dueAt ? ` - due ${cluster.dueAt}` : '';
         const flag = cluster.needsReview ? 'possible match' : 'merged';
-        return `- ${cluster.title} (${cluster.workType}; ${flag}; ${cluster.matchConfidence})${due} - ${cluster.summary}`;
+        return `- ${cluster.title} (${cluster.workType}; ${flag}; ${cluster.matchConfidence}; authority ${formatAuthoritySource(cluster.authoritySource)})${due} - ${cluster.summary}`;
       }),
     ),
   );

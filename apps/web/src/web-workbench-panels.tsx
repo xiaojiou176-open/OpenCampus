@@ -94,6 +94,22 @@ function getResourceContextSummary(resource: {
   return parts.length > 0 ? parts.join(' · ') : undefined;
 }
 
+function formatAuthorityType(value: string) {
+  return value.replace(/_/g, ' ');
+}
+
+function formatClusterAuthoritySummary(input: {
+  authoritySurface: string;
+  authorityResourceType: string;
+  relatedSites?: string[];
+}) {
+  const authority = `${input.authoritySurface} · ${formatAuthorityType(input.authorityResourceType)}`;
+  if (!input.relatedSites || input.relatedSites.length === 0) {
+    return `authority ${authority}`;
+  }
+  return `${input.relatedSites.join(' · ')} · authority ${authority}`;
+}
+
 function getAssignmentReviewSummary(assignment: {
   reviewSummary?: {
     questions: Array<{
@@ -615,7 +631,11 @@ export function WebWorkbenchPanels(props: {
                   </div>
                   <p>{cluster.summary}</p>
                   <p className="meta">
-                    {cluster.relatedSites.join(' · ')} · authority {cluster.authoritySurface}
+                    {formatClusterAuthoritySummary({
+                      authoritySurface: cluster.authoritySurface,
+                      authorityResourceType: cluster.authorityResourceType,
+                      relatedSites: cluster.relatedSites,
+                    })}
                   </p>
                 </article>
               ))}
@@ -643,7 +663,10 @@ export function WebWorkbenchPanels(props: {
                   </div>
                   <p>{cluster.summary}</p>
                   <p className="meta">
-                    authority {cluster.authoritySurface}
+                    {formatClusterAuthoritySummary({
+                      authoritySurface: cluster.authoritySurface,
+                      authorityResourceType: cluster.authorityResourceType,
+                    })}
                     {cluster.dueAt ? ` · due ${formatDateTime(cluster.dueAt)}` : ''}
                   </p>
                 </article>

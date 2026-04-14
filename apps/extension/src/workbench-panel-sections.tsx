@@ -188,6 +188,26 @@ function getClusterReviewButtonText(
   return uiLanguage === 'en' ? 'Dismiss' : '忽略';
 }
 
+function formatAuthorityType(value: string) {
+  return value.replace(/_/g, ' ');
+}
+
+function formatClusterAuthorityLine(input: {
+  authoritySurface: string;
+  authorityResourceType: string;
+  relatedSites?: string[];
+  uiLanguage: WorkbenchPanelsProps['uiLanguage'];
+  sitesLabel?: string;
+}) {
+  const authority = `${input.authoritySurface} · ${formatAuthorityType(input.authorityResourceType)}`;
+  if (!input.relatedSites || input.relatedSites.length === 0 || !input.sitesLabel) {
+    return input.uiLanguage === 'zh-CN' ? `权威来源: ${authority}` : `Authority: ${authority}`;
+  }
+  return input.uiLanguage === 'zh-CN'
+    ? `权威来源: ${authority} · ${input.sitesLabel}: ${input.relatedSites.join(' / ')}`
+    : `Authority: ${authority} · ${input.sitesLabel}: ${input.relatedSites.join(' / ')}`;
+}
+
 function renderClusterReviewControls(input: {
   targetKind: ClusterReviewTargetKind;
   cluster: {
@@ -1559,8 +1579,13 @@ export function WorkbenchOperationsSections({
                   </div>
                   <p>{cluster.summary}</p>
                   <p className="surface__meta">
-                    {groupedOperationsCopy.authorityLabel}: {cluster.authoritySurface} · {groupedOperationsCopy.sitesLabel}:{' '}
-                    {cluster.relatedSites.join(' / ')}
+                    {formatClusterAuthorityLine({
+                      authoritySurface: cluster.authoritySurface,
+                      authorityResourceType: cluster.authorityResourceType,
+                      relatedSites: cluster.relatedSites,
+                      uiLanguage,
+                      sitesLabel: groupedOperationsCopy.sitesLabel,
+                    })}
                   </p>
                   {renderClusterReviewControls({
                     targetKind: 'course_cluster',
@@ -1599,7 +1624,11 @@ export function WorkbenchOperationsSections({
                   </div>
                   <p>{cluster.summary}</p>
                   <p className="surface__meta">
-                    {groupedOperationsCopy.authorityLabel}: {cluster.authoritySurface}
+                    {formatClusterAuthorityLine({
+                      authoritySurface: cluster.authoritySurface,
+                      authorityResourceType: cluster.authorityResourceType,
+                      uiLanguage,
+                    })}
                     {cluster.dueAt ? ` · ${text.currentTasks.dueAt(formatDateTime(uiLanguage, cluster.dueAt))}` : ''}
                   </p>
                   {renderClusterReviewControls({
