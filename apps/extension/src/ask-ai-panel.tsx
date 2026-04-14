@@ -6,7 +6,7 @@ import {
 import { getAcademicAiCallerGuardrails } from './academic-safety-guards';
 import { AiStructuredAnswerSchema } from './ai-answer-resolution';
 import { getAiSitePolicyOverlay } from './ai-site-policy';
-import { formatProviderReason, formatProviderStatusError, type ProviderStatusLike } from './provider-status-format';
+import { formatProviderReason, type ProviderStatusLike } from './provider-status-format';
 import { summarizeAuthorizationState } from './export-input';
 import { formatRelativeTime, type ResolvedUiLanguage } from './i18n';
 import { PROVIDER_OPTIONS } from './surface-shell-model';

@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
+import { Suspense, lazy, useEffect, useState } from 'react';
 import { browser } from 'wxt/browser';
 import type { ExportFormat, ExportPreset } from '@campus-copilot/exporter';
 import {

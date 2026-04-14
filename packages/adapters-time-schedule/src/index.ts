@@ -391,6 +391,22 @@ function getFirstTextBlock(html: string, tagName: string, predicate?: (text: str
   return '';
 }
 
+function findFirstElementBlock(html: string, tagName: string, predicate?: (block: HtmlBlock) => boolean) {
+  for (const block of collectElementBlocks(html, tagName)) {
+    if (!predicate || predicate(block)) {
+      return block;
+    }
+  }
+  return undefined;
+}
+
+function tableHasHeading(tableHtml: string, headingText: string) {
+  const normalizedHeading = headingText.toLowerCase();
+  return collectElementBlocks(tableHtml, 'th').some(
+    (cell) => normalizeWhitespace(cell.innerHtml).toLowerCase() === normalizedHeading,
+  );
+}
+
 function parseStatus(line: string) {
   if (/\bOpen\b/i.test(line)) {
     return 'open' as const;
@@ -665,9 +681,10 @@ function parseTimeScheduleIntegerCell(input: string | undefined) {
 }
 
 function extractDetailCell(rowHtml: string, index: number) {
-  const cells = Array.from(rowHtml.matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi)).map((match) =>
-    normalizeWhitespace(match[1] ?? ''),
-  );
+  const cells = [
+    ...collectElementBlocks(rowHtml, 'td'),
+    ...collectElementBlocks(rowHtml, 'th'),
+  ].map((cell) => normalizeWhitespace(cell.innerHtml));
   return cells[index];
 }
 
@@ -676,16 +693,30 @@ function extractFirstDataRow(tableHtml: string | undefined) {
     return '';
   }
 
-  return Array.from(tableHtml.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi))
-    .map((match) => match[0])
-    .find((rowHtml) => /<td\b/i.test(rowHtml)) ?? '';
+  return (
+    collectElementBlocks(tableHtml, 'tr')
+      .map((row) => row.html)
+      .find((rowHtml) => collectElementBlocks(rowHtml, 'td').length > 0) ?? ''
+  );
 }
 
 function parseTimeScheduleDetailNotes(html: string) {
+  const notesHeading = findFirstElementBlock(
+    html,
+    'h3',
+    (block) => normalizeWhitespace(block.innerHtml).toLowerCase() === 'notes',
+  );
+  if (!notesHeading) {
+    return [];
+  }
+
+  const remainder = html.slice(notesHeading.endIndex);
+  const nextPre = findFirstElementBlock(remainder, 'pre');
+  const nextDiv = findFirstElementBlock(remainder, 'div');
   const notesBlock =
-    html.match(/<h3[^>]*>\s*Notes\s*<\/h3>[\s\S]*?<pre[^>]*>([\s\S]*?)<\/pre>/i)?.[1] ??
-    html.match(/<h3[^>]*>\s*Notes\s*<\/h3>[\s\S]*?<div[^>]*>([\s\S]*?)<\/div>/i)?.[1] ??
-    '';
+    nextPre && (!nextDiv || nextPre.startIndex <= nextDiv.startIndex)
+      ? nextPre.innerHtml
+      : nextDiv?.innerHtml ?? '';
 
   return htmlToPlainTextWithLineBreaks(notesBlock)
     .split('\n')
@@ -695,26 +726,24 @@ function parseTimeScheduleDetailNotes(html: string) {
 }
 
 export function extractTimeScheduleSectionDetailPage(html: string): TimeScheduleSectionDetailPage {
-  const quarterLabel =
-    normalizeWhitespace(html.match(/<h1[^>]*>\s*Current Section Status\s*-\s*([^<]+)<\/h1>/i)?.[1] ?? '') ||
-    'Current quarter';
+  const headingText = getFirstTextBlock(html, 'h1', (text) => text.toLowerCase().startsWith('current section status'));
+  const quarterLabel = headingText.replace(/^Current Section Status\s*-\s*/i, '').trim() || 'Current quarter';
   const statusTable =
-    html.match(/<table[^>]*id=["']sectionStatus["'][\s\S]*?<\/table>/i)?.[0] ??
-    html.match(/<th[^>]*>\s*SLN\s*<\/th>[\s\S]*?<\/table>/i)?.[0] ??
+    findFirstElementBlock(html, 'table', (block) => readHtmlAttribute(block.openTag, 'id') === 'sectionStatus')?.html ??
+    findFirstElementBlock(html, 'table', (block) => tableHasHeading(block.html, 'SLN'))?.html ??
     '';
   const enrollmentTable =
-    html.match(/<table[^>]*id=["']enrollmentStatus["'][\s\S]*?<\/table>/i)?.[0] ??
-    html.match(/<th[^>]*>\s*Current Enrollment\s*<\/th>[\s\S]*?<\/table>/i)?.[0] ??
+    findFirstElementBlock(html, 'table', (block) => readHtmlAttribute(block.openTag, 'id') === 'enrollmentStatus')?.html ??
+    findFirstElementBlock(html, 'table', (block) => tableHasHeading(block.html, 'Current Enrollment'))?.html ??
     '';
   const statusRow = extractFirstDataRow(statusTable);
   const enrollmentRow = extractFirstDataRow(enrollmentTable);
-  const meetingRows = Array.from(
-    extractFirstDataRow(html.match(/<table[^>]*id=["']meetings["'][\s\S]*?<\/table>/i)?.[0]).matchAll(
-      /<tr[^>]*>([\s\S]*?)<\/tr>/gi,
-    ),
-  ).map((match) => match[0]);
-
-  const normalizedMeetingRows = meetingRows.length > 0 ? meetingRows : [extractFirstDataRow(html.match(/<table[^>]*id=["']meetings["'][\s\S]*?<\/table>/i)?.[0])].filter(Boolean);
+  const meetingsTable =
+    findFirstElementBlock(html, 'table', (block) => readHtmlAttribute(block.openTag, 'id') === 'meetings')?.html ?? '';
+  const meetingRows = collectElementBlocks(meetingsTable, 'tr')
+    .map((row) => row.html)
+    .filter((rowHtml) => collectElementBlocks(rowHtml, 'td').length > 0);
+  const normalizedMeetingRows = meetingRows.length > 0 ? meetingRows : [extractFirstDataRow(meetingsTable)].filter(Boolean);
 
   const sln = extractDetailCell(statusRow, 0) ?? '';
   const courseKey = extractDetailCell(statusRow, 1) ?? '';
