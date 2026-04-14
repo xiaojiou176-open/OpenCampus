@@ -403,4 +403,92 @@ describe('web workbench planning pulse', () => {
     expect(html).toContain('Question breakdown: Q2.1 redacted-question-title 3 / 9 (Needs work) [3 annotations]');
     expect(html).toContain('Available actions: Download graded copy · Submission history · Request regrade (Please select a question.)');
   });
+
+  it('shows authority details for merged course and work-item clusters', () => {
+    const html = renderToStaticMarkup(
+      createElement(WebWorkbenchPanels, {
+        workbenchReady: true,
+        todaySnapshot: {
+          totalAssignments: 0,
+          dueSoonAssignments: 0,
+          recentUpdates: 0,
+          newGrades: 0,
+          riskAlerts: 0,
+          syncedSites: 1,
+        },
+        recentUpdates: { unseenCount: 0, items: [] },
+        currentViewExport: undefined,
+        importedEnvelope: undefined,
+        focusQueue: [],
+        planningSubstrates: [],
+        weeklyLoad: [],
+        courseClusters: [
+          {
+            id: 'cluster:course:cse312',
+            canonicalCourseKey: 'sp26:cse-312',
+            displayTitle: 'CSE 312',
+            authoritySurface: 'course-sites',
+            authorityEntityKey: 'course-sites:course:cse312:26sp',
+            authorityResourceType: 'course_page',
+            confidenceBand: 'high',
+            confidenceScore: 0.92,
+            needsReview: false,
+            relatedSites: ['canvas', 'gradescope', 'course-sites'],
+            memberEntityKeys: ['canvas:course:cse312', 'gradescope:course:cse312', 'course-sites:course:cse312:26sp'],
+            members: [],
+            evidenceBundle: [],
+            summary: 'Course website now leads the course identity merge.',
+            createdAt: '2026-04-14T15:00:00.000Z',
+            updatedAt: '2026-04-14T15:00:00.000Z',
+          },
+        ],
+        workItemClusters: [
+          {
+            id: 'cluster:work:cse312:hw5',
+            workType: 'assignment',
+            title: 'Homework 5',
+            authoritySurface: 'course-sites',
+            authorityEntityKey: 'course-sites:assignment:hw5',
+            authorityResourceType: 'assignment_row',
+            confidenceBand: 'medium',
+            confidenceScore: 0.7,
+            needsReview: true,
+            relatedSites: ['canvas', 'course-sites'],
+            memberEntityKeys: ['canvas:assignment:hw5', 'course-sites:assignment:hw5'],
+            members: [],
+            evidenceBundle: [],
+            summary: 'Assignment merge still needs a human decision.',
+            createdAt: '2026-04-14T15:00:00.000Z',
+            updatedAt: '2026-04-14T15:00:00.000Z',
+          },
+        ],
+        administrativeSummaries: [],
+        mergeHealth: {
+          mergedCount: 1,
+          possibleMatchCount: 1,
+          unresolvedCount: 1,
+          authorityConflictCount: 0,
+        },
+        currentAssignments: [],
+        currentMessages: [],
+        currentResources: [],
+        currentAnnouncements: [],
+        currentEvents: [],
+        recentChangeEvents: [],
+        countsBySite: [],
+        topSyncRun: undefined,
+        siteLabels: {
+          canvas: 'Canvas',
+          gradescope: 'Gradescope',
+          edstem: 'EdStem',
+          myuw: 'MyUW',
+          'time-schedule': 'Time Schedule',
+          'course-sites': 'Course Websites',
+        },
+      }),
+    );
+
+    expect(html).toContain('canvas · gradescope · course-sites · authority course-sites · course page');
+    expect(html).toContain('authority course-sites · assignment row');
+  });
 });

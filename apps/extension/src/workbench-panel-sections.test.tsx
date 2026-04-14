@@ -633,6 +633,8 @@ describe('workbench operations sections', () => {
     expect(markup).toContain('Review later');
     expect(markup).toContain('Accept');
     expect(markup).toContain('Dismiss');
+    expect(markup).toContain('Authority: canvas · course · Sites: canvas / edstem');
+    expect(markup).toContain('Authority: canvas · assignment');
   });
 
   it('announces sync and export feedback through live regions on landed quick-action surfaces', () => {

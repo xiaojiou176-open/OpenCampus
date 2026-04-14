@@ -260,6 +260,31 @@ const baseInput = {
       nextValue: '2026-03-26T23:59:00-07:00',
     },
   ],
+  courseClusters: [
+    {
+      id: 'cluster:course:cse312',
+      title: 'CSE 312',
+      summary: 'Course website now leads the course identity merge.',
+      authoritySource: 'course-sites:course_page',
+      matchConfidence: 'high' as const,
+      relatedSites: ['canvas', 'gradescope', 'course-sites'],
+      needsReview: false,
+    },
+  ],
+  workItemClusters: [
+    {
+      id: 'cluster:work:cse312:hw5',
+      title: 'Homework 5',
+      summary: 'Assignment merge still needs human confirmation.',
+      authoritySource: 'course-sites:assignment_row',
+      matchConfidence: 'medium' as const,
+      relatedSites: ['canvas', 'course-sites'],
+      workType: 'assignment',
+      dueAt: '2026-03-26T23:59:00-07:00',
+      status: 'todo',
+      needsReview: true,
+    },
+  ],
 };
 
 describe('exporter package', () => {
@@ -333,7 +358,7 @@ describe('exporter package', () => {
     expect(artifact.content).toContain('"packaging"');
     expect(artifact.content).toContain('"authorization_level": "allowed"');
     expect(artifact.content).toContain('"ai_allowed": false');
-    expect(artifact.content).toContain('"match_confidence": "high"');
+    expect(artifact.content).toContain('"match_confidence": "medium"');
     expect(artifact.content).toContain('"assignments": 1');
     expect(artifact.content).toContain('"reviewSummary"');
     expect(artifact.content).toContain('"actionHints"');
@@ -385,6 +410,8 @@ describe('exporter package', () => {
     expect(artifact.content).toContain('review Q1 1 / 1 (Correct)');
     expect(artifact.content).toContain('resource set Homework (2 items)');
     expect(artifact.content).toContain('module Week 1 (assignment)');
+    expect(artifact.content).toContain('authority course-sites · course page');
+    expect(artifact.content).toContain('authority course-sites · assignment row');
   });
 
   it('builds weekly load as csv rows', () => {
