@@ -94,21 +94,19 @@ The honest split is:
 
 ## Repo-Local Proof Path
 
-Use this route when you want to verify the repo is real without treating maintainer internals as the product front door:
+Use this route when you want proof, not maintainer archaeology:
 
-1. [`docs/storefront-assets.md`](docs/storefront-assets.md)
-2. [`docs/assets/weekly-assignments-example.md`](docs/assets/weekly-assignments-example.md)
-3. [`examples/current-view-triage-example.md`](examples/current-view-triage-example.md)
-4. [`examples/site-overview-audit-example.md`](examples/site-overview-audit-example.md)
-5. [`docs/verification-matrix.md`](docs/verification-matrix.md)
-6. `pnpm proof:public`
-7. [`DISTRIBUTION.md`](DISTRIBUTION.md)
+1. Start with [`docs/storefront-assets.md`](docs/storefront-assets.md).
+2. Continue with [`docs/verification-matrix.md`](docs/verification-matrix.md) and [`DISTRIBUTION.md`](DISTRIBUTION.md).
+3. Open [`examples/README.md`](examples/README.md) and [`examples/toolbox-chooser.md`](examples/toolbox-chooser.md) only if you want the example or builder lane afterward.
 
-If you specifically care about local Docker or builder/public tooling read-back, continue with:
+Secondary proof receipts still live here when you need them:
 
+- [`docs/assets/weekly-assignments-example.md`](docs/assets/weekly-assignments-example.md)
+- [`examples/current-view-triage-example.md`](examples/current-view-triage-example.md)
+- [`examples/site-overview-audit-example.md`](examples/site-overview-audit-example.md)
+- `pnpm proof:public`
 - [`INTEGRATIONS.md`](INTEGRATIONS.md)
-- [`examples/README.md`](examples/README.md)
-- [`examples/toolbox-chooser.md`](examples/toolbox-chooser.md)
 - [`examples/integrations/plugin-bundles.md`](examples/integrations/plugin-bundles.md)
 - run a local Docker path with health checks through [`DISTRIBUTION.md`](DISTRIBUTION.md)
 
@@ -164,22 +162,11 @@ Only if autodiscovery fails do you need to open Settings and enter a manual `BFF
 
 Use this section only after the student-facing workspace story already makes sense.
 
-- Generic builder routes:
-  - [`examples/README.md`](examples/README.md)
-  - [`examples/toolbox-chooser.md`](examples/toolbox-chooser.md)
-  - [`examples/integrations/README.md`](examples/integrations/README.md)
-  - [`examples/integrations/plugin-bundles.md`](examples/integrations/plugin-bundles.md)
-- MCP / consumer setup:
-  - [`examples/mcp/README.md`](examples/mcp/README.md)
-  - [`examples/integrations/codex-mcp-shell.example.json`](examples/integrations/codex-mcp-shell.example.json)
-  - [`examples/integrations/claude-code-mcp-shell.example.json`](examples/integrations/claude-code-mcp-shell.example.json)
-  - [`examples/openclaw-readonly.md`](examples/openclaw-readonly.md)
-  - [`skills/openclaw-readonly-consumer/SKILL.md`](skills/openclaw-readonly-consumer/SKILL.md)
-- Package and contract entrypoints:
-  - [`docs/10-builder-api-and-ecosystem-fit.md`](docs/10-builder-api-and-ecosystem-fit.md)
-  - [`docs/api/openapi.yaml`](docs/api/openapi.yaml)
-  - [`packages/mcp-server/README.md`](packages/mcp-server/README.md)
-  - [`skills/README.md`](skills/README.md)
+- Start with [`docs/10-builder-api-and-ecosystem-fit.md`](docs/10-builder-api-and-ecosystem-fit.md) for the truthful integration split.
+- Use [`examples/README.md`](examples/README.md), [`examples/toolbox-chooser.md`](examples/toolbox-chooser.md), and [`examples/integrations/README.md`](examples/integrations/README.md) for consumer routing.
+- Use [`examples/mcp/README.md`](examples/mcp/README.md), [`examples/integrations/codex-mcp-shell.example.json`](examples/integrations/codex-mcp-shell.example.json), and [`examples/integrations/claude-code-mcp-shell.example.json`](examples/integrations/claude-code-mcp-shell.example.json) for MCP wiring.
+- Use [`examples/integrations/plugin-bundles.md`](examples/integrations/plugin-bundles.md), [`examples/openclaw-readonly.md`](examples/openclaw-readonly.md), and [`skills/openclaw-readonly-consumer/SKILL.md`](skills/openclaw-readonly-consumer/SKILL.md) only for repo-bundle and local runtime consumers.
+- Use [`docs/api/openapi.yaml`](docs/api/openapi.yaml), [`packages/mcp-server/README.md`](packages/mcp-server/README.md), and [`skills/README.md`](skills/README.md) only when you need contract entrypoints.
 
 ## Boundaries
 

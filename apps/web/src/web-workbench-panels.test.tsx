@@ -453,7 +453,7 @@ describe('web workbench planning pulse', () => {
             authorityEntityKey: 'course-sites:course:cse312:26sp',
             authorityResourceType: 'course_page',
             authorityNarrative:
-              'Course identity stays on the course website while Canvas keeps the execution lane and Gradescope keeps the assessment lane.',
+              'Course identity stays on the course website while Canvas keeps the execution lane, EdStem keeps the discussion lane, and Gradescope keeps the assessment lane.',
             authorityBreakdown: [
               {
                 role: 'course_identity',
@@ -472,6 +472,14 @@ describe('web workbench planning pulse', () => {
                 reason: 'Canvas still owns module and assignment delivery.',
               },
               {
+                role: 'discussion_runtime',
+                surface: 'edstem',
+                entityKey: 'edstem:course:cse312',
+                resourceType: 'thread',
+                label: 'CSE 312',
+                reason: 'EdStem still owns the discussion runtime.',
+              },
+              {
                 role: 'assessment_runtime',
                 surface: 'gradescope',
                 entityKey: 'gradescope:course:cse312',
@@ -483,8 +491,8 @@ describe('web workbench planning pulse', () => {
             confidenceBand: 'high',
             confidenceScore: 0.92,
             needsReview: false,
-            relatedSites: ['canvas', 'gradescope', 'course-sites'],
-            memberEntityKeys: ['canvas:course:cse312', 'gradescope:course:cse312', 'course-sites:course:cse312:26sp'],
+            relatedSites: ['canvas', 'edstem', 'gradescope', 'course-sites'],
+            memberEntityKeys: ['canvas:course:cse312', 'edstem:course:cse312', 'gradescope:course:cse312', 'course-sites:course:cse312:26sp'],
             members: [],
             evidenceBundle: [],
             summary: 'Course website now leads the course identity merge.',
@@ -518,12 +526,20 @@ describe('web workbench planning pulse', () => {
                 label: 'Homework 5',
                 reason: 'Canvas still owns the submission state.',
               },
+              {
+                role: 'feedback_detail',
+                surface: 'gradescope',
+                entityKey: 'gradescope:grade:hw5',
+                resourceType: 'grade',
+                label: 'Homework 5',
+                reason: 'Gradescope still owns the richer feedback lane.',
+              },
             ],
             confidenceBand: 'medium',
             confidenceScore: 0.7,
             needsReview: true,
-            relatedSites: ['canvas', 'course-sites'],
-            memberEntityKeys: ['canvas:assignment:hw5', 'course-sites:assignment:hw5'],
+            relatedSites: ['canvas', 'course-sites', 'gradescope'],
+            memberEntityKeys: ['canvas:assignment:hw5', 'course-sites:assignment:hw5', 'gradescope:grade:hw5'],
             members: [],
             evidenceBundle: [],
             summary: 'Assignment merge still needs a human decision.',
@@ -557,11 +573,17 @@ describe('web workbench planning pulse', () => {
       }),
     );
 
-    expect(html).toContain('canvas · gradescope · course-sites · authority course-sites · course page');
+    expect(html).toContain('canvas · edstem · gradescope · course-sites · authority course-sites · course page');
     expect(html).toContain('authority course-sites · assignment row');
-    expect(html).toContain('Course identity stays on the course website while Canvas keeps the execution lane and Gradescope keeps the assessment lane.');
+    expect(html).toContain(
+      'Course identity stays on the course website while Canvas keeps the execution lane, EdStem keeps the discussion lane, and Gradescope keeps the assessment lane.',
+    );
+    expect(html).toContain('Boundary map: identity=course-sites · delivery=canvas · discussion=edstem · assessment=gradescope');
+    expect(html).toContain('Boundary map: spec=course-sites · submission=canvas · feedback=gradescope');
     expect(html).toContain('course identity:</strong> course-sites · course page - Course website is the canonical course identity surface.');
+    expect(html).toContain('discussion runtime:</strong> edstem · thread - EdStem still owns the discussion runtime.');
     expect(html).toContain('assessment runtime:</strong> gradescope · assignment row - Gradescope still owns grading and rubric truth.');
+    expect(html).toContain('feedback detail:</strong> gradescope · grade - Gradescope still owns the richer feedback lane.');
     expect(html).toContain('Accept');
     expect(html).toContain('Review later');
     expect(html).toContain('Dismiss');

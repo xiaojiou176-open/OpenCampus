@@ -66,16 +66,14 @@ In plain language:
 
 ## Current Phase Boundary
 
-The Wave 1 contract split needs four buckets, not one blurred promise:
+Use four buckets, not one blurry promise:
 
-- **current formal scope**: the existing four-site decision workspace, cited AI over structured results, the thin BFF for `OpenAI` / `Gemini`, and the optional local `Switchyard` bridge on the same consumer seam
-- **next-phase engineering**: product-serving depth that strengthens the same workspace, such as richer `Gradescope` page / image rendering beyond the current graded-submission question/rubric/evaluation-comment/annotation detail path, selective `registration / tuition / textbook` promotion on the same contract, and read-only academic planning/search expansion for `MyPlan`, `DARS`, `Time Schedule`, `DawgPath`, and class-search-only `ctcLink`
-- **current repo-side expansion progress**: `Time Schedule` has now crossed from isolated prototype into the shared runtime path on the public course-offerings carrier, and `MyPlan` now has a shared planning substrate plus read-only planning-summary surfaces in the extension and the web workbench; both still need narrow, truthful wording and must not be described as registration automation or as full upstream-site parity
-- **current preview scope**: repo-public, read-only integration surfaces such as `MCP / SDK / CLI / Skills / site API preview packages` and plugin-grade repo bundles that remain repo-local, bundle-grade, and non-hosted
-- **later ambition**: official listing, hosted distribution, broader launch-facing `SEO / video`, and any packaging or release-channel step that outruns the current repo-local proof surface
+- **current formal scope**: the four-site decision workspace, cited AI over structured results, and the thin local BFF for `OpenAI` / `Gemini`
+- **current repo-side extension lane**: read-only planning/search expansion such as `MyPlan`, `DARS`, `Time Schedule`, `DawgPath`, and class-search-only `ctcLink`, but only with narrow, truthful wording and never as registration automation or full upstream-site parity
+- **current preview scope**: repo-public read-only builder surfaces such as `MCP / SDK / CLI / Skills / site API preview packages`; these are real but still secondary to the student workbench
+- **later ambition**: official listing, broader launch packaging, hosted distribution, or anything that outruns repo-local proof
 
-Selective new academic domains such as textbook/material or tuition-like signals only graduate into the contract through the same next-phase engineering lane; they are not implied current scope.
-Current preview scope is also not the same thing as current formal student-facing scope: it is real repo-local builder packaging, but it is still read-only, non-hosted, and secondary to the student workbench.
+Selective new academic domains such as textbook/material or tuition-like signals only graduate through the same read-only expansion lane. They are not implied current scope just because the repo can discuss them.
 
 The academic expansion lane has an extra safety rule:
 
@@ -99,7 +97,6 @@ The academic expansion lane has an extra safety rule:
 
 ## Canonical Cross-References
 
-- Extension order and repo-writing split: [`08-phase-plan-and-repo-writing-brief.md`](08-phase-plan-and-repo-writing-brief.md)
 - Current capability snapshot: [`site-capability-matrix.md`](site-capability-matrix.md)
 - Validation boundaries: [`verification-matrix.md`](verification-matrix.md)
 - Integration risk classes: [`integration-boundaries.md`](integration-boundaries.md)

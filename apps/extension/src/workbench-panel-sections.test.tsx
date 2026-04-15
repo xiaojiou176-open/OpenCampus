@@ -602,7 +602,7 @@ describe('workbench operations sections', () => {
             authorityEntityKey: 'course-sites:course:cse312:26sp',
             authorityResourceType: 'course_page',
             authorityNarrative:
-              'Course identity stays on the course website while Canvas keeps the execution lane and Gradescope keeps the assessment lane.',
+              'Course identity stays on the course website while Canvas keeps the execution lane, EdStem keeps the discussion lane, and Gradescope keeps the assessment lane.',
             authorityBreakdown: [
               {
                 role: 'course_identity',
@@ -621,6 +621,14 @@ describe('workbench operations sections', () => {
                 reason: 'Canvas still owns module and assignment delivery.',
               },
               {
+                role: 'discussion_runtime',
+                surface: 'edstem',
+                entityKey: 'edstem:course:cse312',
+                resourceType: 'thread',
+                label: 'CSE 312',
+                reason: 'EdStem still owns the discussion runtime.',
+              },
+              {
                 role: 'assessment_runtime',
                 surface: 'gradescope',
                 entityKey: 'gradescope:course:cse312',
@@ -632,8 +640,8 @@ describe('workbench operations sections', () => {
             confidenceBand: 'high',
             confidenceScore: 0.92,
             needsReview: false,
-            relatedSites: ['canvas', 'gradescope', 'course-sites'],
-            memberEntityKeys: ['canvas:course:cse312', 'gradescope:course:cse312', 'course-sites:course:cse312:26sp'],
+            relatedSites: ['canvas', 'edstem', 'gradescope', 'course-sites'],
+            memberEntityKeys: ['canvas:course:cse312', 'edstem:course:cse312', 'gradescope:course:cse312', 'course-sites:course:cse312:26sp'],
             members: [],
             evidenceBundle: [],
             summary: 'Course website now leads the course identity merge.',
@@ -657,9 +665,13 @@ describe('workbench operations sections', () => {
       />,
     );
 
-    expect(markup).toContain('Course identity stays on the course website while Canvas keeps the execution lane and Gradescope keeps the assessment lane.');
+    expect(markup).toContain(
+      'Course identity stays on the course website while Canvas keeps the execution lane, EdStem keeps the discussion lane, and Gradescope keeps the assessment lane.',
+    );
+    expect(markup).toContain('Boundary map: identity=course-sites · delivery=canvas · discussion=edstem · assessment=gradescope');
     expect(markup).toContain('course identity:</strong> Authority: course-sites · course page - Course website is the canonical course identity surface.');
     expect(markup).toContain('course delivery:</strong> Authority: canvas · course - Canvas still owns module and assignment delivery.');
+    expect(markup).toContain('discussion runtime:</strong> Authority: edstem · thread - EdStem still owns the discussion runtime.');
     expect(markup).toContain('assessment runtime:</strong> Authority: gradescope · assignment row - Gradescope still owns grading and rubric truth.');
   });
 

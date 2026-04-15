@@ -63,68 +63,10 @@ The read-only expansion registry below tracks partial repo-side adoption separat
 | add/drop submission | `no-go` | the current contract never submits registration-state changes |
 | hold-seat / seat-swap helpers | `no-go` | those are operator actions and stay outside the product path |
 
-## Exhaustive Disposition Snapshot
-
-This section answers the question the shorter matrix intentionally does not: which deep gaps are still direct enhancement candidates, and which ones must stay selective, internal, later, or owner-only.
-
-| Site | Deep gap or adjacent path | Current disposition | Why |
-| :-- | :-- | :-- | :-- |
-| Canvas | richer inbox reply-body / full thread parity beyond the current latest-message body / attachment hint | selective gap | Useful only if it keeps strengthening the current `Message` contract without overclaiming inbox internals as a stable public API. |
-| Canvas | separate gradebook-only surfaces | later / no-go for current contract | The current decision workspace already carries assignment submission summary, score, and max score without reopening a new gradebook domain. |
-| Gradescope | richer page/image rendering semantics beyond the current annotation summary/detail contract | internal substrate | The repo now ships state-backed annotation detail plus graded-copy/history/regrade action hints on the current `Assignment` contract, but it still does not claim a full annotated document viewer or a full regrade workflow. |
-| Gradescope | dashboard/course discovery hardening | internal substrate | This is collector hardening, not a new student-facing product claim by itself. |
-| EdStem | grouped resource bundles or richer download UX beyond the current `Resource` contract | selective gap | The current API-backed `Resource` path is shipped, landed-on-main lesson links from `/lessons` feed the same summary-first contract, and current local lesson-detail proof now promotes lesson slides into grouped `Resource` items through `api/lessons/:lesson_id?view=1`; but broader grouped-material semantics beyond those lesson slides or richer download affordances are still not formal current scope. |
-| EdStem | tenant/account recovery | owner-only / external | The repo can diagnose the boundary, but cannot manufacture a valid tenant account. |
-| MyUW | homepage card expansion | selective gap | Candidate only if it normalizes into the existing `Announcement` / `Event` decision layer. |
-| MyUW | registration / tuition-like reminders | selective gap | Existing reminder-like text now promotes through the current `Announcement` / `Event` carriers, but the repo still does not ship a standalone billing/enrollment domain. |
-| All sites | browser evidence capture | internal substrate | Useful for diagnostics and fixture prep, but still not a student-facing feature claim. |
-
-## Wave 1B Request Buckets
-
-This section maps frequently requested deeper capabilities into contract buckets.
-
-| Requested capability | Current state | Contract bucket | Why it belongs there |
-| :-- | :-- | :-- | :-- |
-| Canvas file resources and syllabus summary resources | current shipped matrix | current formal scope | official course files now land on the shared `Resource` contract, and course-level `syllabus_body` now contributes a truthful summary resource without overclaiming full module/page parity |
-| Canvas richer assignment submission context | current shipped matrix | current formal scope | current assignment entities already surface summary / submittedAt / score context |
-| Canvas messages | current shipped matrix | current formal scope | current message entities already carry normalized inbox title/summary context |
-| Gradescope deeper submission / score context | current shipped matrix | current formal scope | current assignment rows already carry summary / score context |
-| Gradescope question/rubric/evaluation-comment detail context | current shipped matrix | current formal scope | current assignment rows can now carry graded submission question/rubric/evaluation-comment detail on `summary` + `detail` without inventing a new entity family |
-| Gradescope deeper inline / drawn annotation context | current shipped matrix | current formal scope | current assignment rows now carry state-backed annotation count and preview detail from the submission viewer carrier without inventing a new entity family |
-| Gradescope graded-copy / history / regrade action signals | current shipped matrix | current formal scope | current graded submission detail can now surface action-level availability for `Download graded copy`, `Submission history`, and `Request regrade` without inventing a fake standalone workflow domain |
-| EdStem thread summary / category context | current shipped matrix | current formal scope | current message rows already carry summary/category detail |
-| EdStem reply-body | current shipped matrix | current formal scope | direct thread-detail DOM parsing now normalizes thread body and reply bodies into the shared `Message` contract |
-| EdStem resources | current shipped matrix | current formal scope | authenticated `api/courses/:course_id/resources` responses now normalize into canonical `Resource` entities with file metadata and optional session-backed download URLs, and landed-on-main lesson links from `/lessons` now feed the same summary-first contract |
-| MyUW richer class / exam context | current shipped matrix | current formal scope | current event rows already carry class/exam summary, location, and detail |
-| MyUW registration / tuition-like signals | not in the current shipped matrix | next-phase engineering, selective promotion only | only if the signals can be normalized into the same decision layer |
-| Textbook / course-material signals | not in the current shipped matrix | next-phase engineering, selective promotion only | only if a stable source can be normalized into the same contract |
-| Standalone WebUI | current read-only second surface | current formal scope | same product contract via imported workspace snapshots, not a second sync engine |
-| Internal private clients | not a site-capability claim | later internal substrate | useful internal extraction, not a current product claim |
-| Repo-public read-only site API preview libs | not a site-capability claim | current preview scope | wrapper exports now exist for `Gradescope / EdStem / MyUW`, but they remain preview packaging |
-| Repo-public read-only MCP preview | not a site-capability claim | current preview scope | snapshot-backed tooling now exists, but it is not live-site proof or hosted infrastructure |
-| Launch surface / SEO / video | not a site-capability claim | later launch direction | must not be described as current shipped capability |
-
-## Current Round Disposition
-
-This table freezes the current “what do we do with the deeper asks?” answer.
-
-| Site | Deeper ask | Current disposition | Why |
-| :-- | :-- | :-- | :-- |
-| Course websites | shared course-site runtime on `Home / Syllabus / Schedule / Assignments / Tasks` | `partial shared landing` | the repo now has a truthful `course-sites` runtime lane on the shared schema/storage contract, but canonical authority merge still belongs to the cluster substrate and broader live/browser corroboration remains manual |
-| Canvas | module-driven resource routing / groups / recordings | `selective gap` | landed-on-main partial module/group/media carriers already exist on the current `Resource` contract, including module references for `Page / ExternalUrl / File / Assignment / Discussion / Quiz / SubHeader`, but full module trees, deeper group-scoped carriers, and durable recording parity still need a stronger truthful contract |
-| Canvas | richer message reply-body / attachment context | `selective gap` | valuable only if it directly strengthens the current decision workspace |
-| Canvas | gradebook-only or broader grading surfaces | `later / internal substrate` | outside the current shared read-only workbench contract |
-| Gradescope | richer page/image rendering beyond current annotation summaries | `internal substrate` | current assignment rows now ship annotation detail plus graded-copy/history/regrade action hints, but the repo still does not claim a full annotated document viewer or a full regrade workflow |
-| EdStem | grouped resource bundles / richer download UX beyond the current `Resource` contract | `selective gap` | current API-backed resources are shipped, landed-on-main lesson links from `/lessons` now also feed the same summary-first contract, and current local lesson-detail proof now promotes lesson slides into grouped `Resource` items through `api/lessons/:lesson_id?view=1`; but broader grouped-material semantics beyond those lesson slides are still not formal current truth |
-| MyUW | registration / tuition-like signals | `selective gap` | may travel through existing announcement/event carriers, but not yet as a new canonical domain |
-| Transcript / finaid / tuition/accounts detail | `landed summary lane + deeper detail blocker` | current repo truth now has landed summary lanes on the admin high-sensitivity substrate plus AI-deny rules, but there is still no truthful standalone detail/runtime carrier for the full records domain |
-| Any site | new standalone tuition / registration / textbook domain | `later / platform ambition` | changes the schema contract instead of deepening the current one |
-| Any site | write-capable automation | `no-go` | violates the current read-only boundary |
-
 ## Rules
 
 - Do not describe `internal`, `session-backed`, `state-fallback`, or `dom-fallback` rows as official public APIs.
 - If code changes materially alter a row above, update this file in the same change.
 - If a claim depends on a real logged-in browser session, keep that claim in the manual live lane and not in required CI wording.
 - Treat the `Next deep gap` column as **next-phase engineering only**, not as evidence that the deeper capability is already in current shipped scope.
-- Keep the detailed per-site depth ledger in local maintainer materials when a short row here is not enough.
+- Keep detailed per-site depth ledgers, corroboration notes, and wave-by-wave maintainer triage in local maintainer materials instead of this public matrix.
