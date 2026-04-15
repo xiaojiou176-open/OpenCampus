@@ -25,9 +25,43 @@ vi.mock('wxt/browser', () => ({
 
 import { SITE_SYNC_HANDLERS } from '../entrypoints/background';
 import { getDefaultExtensionConfig } from './config';
-import { campusCopilotDb, getPlanningSubstratesBySource } from '@campus-copilot/storage';
+import { campusCopilotDb, getAdminCarriers, getPlanningSubstratesBySource } from '@campus-copilot/storage';
 
 type ExecuteScriptMockResult = Array<{ result: unknown }>;
+
+const unsupportedMyUwApiResult: ExecuteScriptMockResult = [
+  {
+    result: {
+      ok: false,
+      code: 'unsupported_context',
+      message: 'unsupported',
+      status: 404,
+    },
+  },
+];
+
+function mockMyUwAdminOnlyPage(
+  executeScriptMock: {
+    mockImplementation: (
+      implementation: (...args: unknown[]) => Promise<ExecuteScriptMockResult>,
+    ) => unknown;
+  },
+  pageHtml: string,
+) {
+  executeScriptMock.mockImplementation(async (...args: unknown[]) => {
+    const [input] = args as [{ func?: { name?: string } }?];
+    switch (input?.func?.name) {
+      case 'extractMyUWPageContextInPage':
+        return [{ result: undefined }];
+      case 'extractPageHtmlInPage':
+        return [{ result: pageHtml }];
+      case 'executeSiteRequestInPage':
+        return unsupportedMyUwApiResult;
+      default:
+        throw new Error(`Unexpected executeScript call: ${input?.func?.name ?? 'anonymous'}`);
+    }
+  });
+}
 
 describe('background site dispatch', () => {
   beforeEach(() => {
@@ -1175,6 +1209,7 @@ describe('background site dispatch', () => {
   });
 
   it('returns partial_success when a MyUW admin tuition page yields only admin high-sensitivity summaries', async () => {
+    await campusCopilotDb.admin_carriers.clear();
     const executeScriptMock = vi.spyOn(
       browser.scripting as {
         executeScript: (...args: unknown[]) => Promise<ExecuteScriptMockResult>;
@@ -1239,6 +1274,222 @@ describe('background site dispatch', () => {
       expect(result.snapshot).toEqual({});
       expect(result.health.reason).toBe('admin_high_sensitivity_summary_captured');
     }
+  });
+
+  it('returns partial_success and stores a transcript admin carrier when the MyUW transcript page only yields admin summaries', async () => {
+    await campusCopilotDb.admin_carriers.clear();
+    const executeScriptMock = vi.spyOn(
+      browser.scripting as {
+        executeScript: (...args: unknown[]) => Promise<ExecuteScriptMockResult>;
+      },
+      'executeScript',
+    );
+    mockMyUwAdminOnlyPage(
+      executeScriptMock,
+      `
+        <html><body>
+          <th>Class</th><td>Level 4</td>
+          <th>Major</th><td>redacted-major</td>
+          TOTAL CREDITS EARNED: 101.0
+          CUM GPA: 3.84
+          ACADEMIC STANDING: GOOD STANDING
+          WORK IN PROGRESS QTR REGISTERED: 14.0
+        </body></html>
+      `,
+    );
+
+    const result = await SITE_SYNC_HANDLERS.myuw({
+      activeTab: {
+        tabId: 1,
+        url: 'https://sdb.admin.uw.edu/sisStudents/uwnetid/untranscript.aspx',
+      },
+      now: '2026-04-15T09:00:00Z',
+      config: getDefaultExtensionConfig(),
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.outcome).toBe('partial_success');
+      expect(result.snapshot).toEqual({});
+      expect(result.health.reason).toBe('admin_high_sensitivity_summary_captured');
+    }
+
+    const stored = await getAdminCarriers(campusCopilotDb);
+    expect(stored).toHaveLength(1);
+    expect(stored[0]).toEqual(
+      expect.objectContaining({
+        id: 'admin-carrier:transcript',
+        family: 'transcript',
+        sourceUrl: 'https://sdb.admin.uw.edu/sisStudents/uwnetid/untranscript.aspx',
+        laneStatus: 'standalone_detail_runtime_lane',
+        detailRuntimeStatus: 'review_ready',
+      }),
+    );
+    expect(stored[0]?.summary).toContain('101.0');
+    expect(stored[0]?.summary).toContain('3.84');
+  });
+
+  it('returns partial_success and stores a financial-aid admin carrier when the MyUW finaid page only yields admin summaries', async () => {
+    await campusCopilotDb.admin_carriers.clear();
+    const executeScriptMock = vi.spyOn(
+      browser.scripting as {
+        executeScript: (...args: unknown[]) => Promise<ExecuteScriptMockResult>;
+      },
+      'executeScript',
+    );
+    mockMyUwAdminOnlyPage(
+      executeScriptMock,
+      `
+        <html><body>
+          <span>Messages (5)</span>
+          <b>Aid status summary: redacted-status-message while we continue processing support.</b>
+          <span>Total borrowing</span><span>$15,000</span>
+          <span>Estimated monthly payment</span><span>$167</span>
+        </body></html>
+      `,
+    );
+
+    const result = await SITE_SYNC_HANDLERS.myuw({
+      activeTab: {
+        tabId: 1,
+        url: 'https://sdb.admin.uw.edu/sisStudents/uwnetid/finaidstatus.aspx',
+      },
+      now: '2026-04-15T09:10:00Z',
+      config: getDefaultExtensionConfig(),
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.outcome).toBe('partial_success');
+      expect(result.snapshot).toEqual({});
+      expect(result.health.reason).toBe('admin_high_sensitivity_summary_captured');
+    }
+
+    const stored = await getAdminCarriers(campusCopilotDb);
+    expect(stored).toHaveLength(1);
+    expect(stored[0]).toEqual(
+      expect.objectContaining({
+        id: 'admin-carrier:finaid',
+        family: 'finaid',
+        sourceUrl: 'https://sdb.admin.uw.edu/sisStudents/uwnetid/finaidstatus.aspx',
+        laneStatus: 'standalone_detail_runtime_lane',
+        detailRuntimeStatus: 'review_ready',
+      }),
+    );
+    expect(stored[0]?.summary).toContain('5 message');
+    expect(stored[0]?.summary).toContain('redacted-status-message');
+  });
+
+  it('returns partial_success and stores accounts plus tuition handoff carriers when the MyUW accounts page only yields admin summaries', async () => {
+    await campusCopilotDb.admin_carriers.clear();
+    const executeScriptMock = vi.spyOn(
+      browser.scripting as {
+        executeScript: (...args: unknown[]) => Promise<ExecuteScriptMockResult>;
+      },
+      'executeScript',
+    );
+    mockMyUwAdminOnlyPage(
+      executeScriptMock,
+      `
+        <html><body>
+          <h2>Tuition &amp; Fees</h2>
+          <h3>Billing overview</h3><span>$ 0</span><div>Amount Due</div><a href="https://example.invalid/redacted-tuition-statement">Tuition Statement</a>
+          <h2>Eligibility</h2><h3>Status</h3><li>eligible</li>
+          <h2>Account summary</h2><h3>Account Balance</h3><span>$0.00</span>
+          <h2>Library</h2>
+        </body></html>
+      `,
+    );
+
+    const result = await SITE_SYNC_HANDLERS.myuw({
+      activeTab: {
+        tabId: 1,
+        url: 'https://my.uw.edu/accounts/',
+      },
+      now: '2026-04-15T09:20:00Z',
+      config: getDefaultExtensionConfig(),
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.outcome).toBe('partial_success');
+      expect(result.snapshot).toEqual({});
+      expect(result.health.reason).toBe('admin_high_sensitivity_summary_captured');
+    }
+
+    const stored = await getAdminCarriers(campusCopilotDb);
+    expect(stored.map((record) => record.family).sort()).toEqual(['accounts', 'tuition_detail']);
+    expect(stored).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'admin-carrier:accounts',
+          family: 'accounts',
+          sourceUrl: 'https://my.uw.edu/accounts/',
+          laneStatus: 'standalone_detail_runtime_lane',
+          detailRuntimeStatus: 'review_ready',
+        }),
+        expect.objectContaining({
+          id: 'admin-carrier:tuition-detail',
+          family: 'tuition_detail',
+          sourceUrl: 'https://my.uw.edu/accounts/',
+          laneStatus: 'landed_summary_lane',
+          detailRuntimeStatus: 'pending',
+        }),
+      ]),
+    );
+    expect(stored.find((record) => record.family === 'accounts')?.summary).toContain('eligible');
+    expect(stored.find((record) => record.family === 'tuition_detail')?.summary).toContain('amount due $0');
+  });
+
+  it('returns partial_success and stores a profile admin carrier when the MyUW profile page only yields admin summaries', async () => {
+    await campusCopilotDb.admin_carriers.clear();
+    const executeScriptMock = vi.spyOn(
+      browser.scripting as {
+        executeScript: (...args: unknown[]) => Promise<ExecuteScriptMockResult>;
+      },
+      'executeScript',
+    );
+    mockMyUwAdminOnlyPage(
+      executeScriptMock,
+      `
+        <html><body>
+          <h2>Name &amp; Pronouns</h2>
+          <h3>Preferred Name</h3><div>Placeholder Student</div>
+          <h3>Pronouns</h3><div>they/them</div>
+          <h3>Local Address</h3><div>Redacted address</div>
+          <h2>Email Addresses</h2><div>redacted@example.invalid</div>
+          <h3>Emergency Contact 1</h3><div>Emergency Contact A</div>
+          <h3>Emergency Contact 2</h3><div>Emergency Contact B</div>
+        </body></html>
+      `,
+    );
+
+    const result = await SITE_SYNC_HANDLERS.myuw({
+      activeTab: {
+        tabId: 1,
+        url: 'https://my.uw.edu/profile/',
+      },
+      now: '2026-04-15T09:30:00Z',
+      config: getDefaultExtensionConfig(),
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.outcome).toBe('partial_success');
+      expect(result.snapshot).toEqual({});
+      expect(result.health.reason).toBe('admin_high_sensitivity_summary_captured');
+    }
+
+    const stored = await getAdminCarriers(campusCopilotDb);
+    expect(stored).toHaveLength(1);
+    expect(stored[0]).toEqual(
+      expect.objectContaining({
+        id: 'admin-carrier:profile',
+        family: 'profile',
+        sourceUrl: 'https://my.uw.edu/profile/',
+        laneStatus: 'standalone_detail_runtime_lane',
+        detailRuntimeStatus: 'review_ready',
+      }),
+    );
+    expect(stored[0]?.summary).toContain('preferred-name support');
+    expect(stored[0]?.summary).toContain('2 emergency contact record');
+    expect(stored[0]?.summary).not.toContain('Placeholder Student');
   });
 
 });

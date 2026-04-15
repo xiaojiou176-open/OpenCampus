@@ -1022,46 +1022,157 @@ function extractCalendarGridEvents(html: string, course: CourseSiteCourse, pageU
   return events;
 }
 
+type CourseSiteTableCell = {
+  text: string;
+  header?: string;
+  links: Array<{ href: string; text: string }>;
+};
+
+function extractOrderedTableCells(html: string, pageUrl: string, headers: string[] = []): CourseSiteTableCell[] {
+  return [...collectTagMatches(html, 'td'), ...collectTagMatches(html, 'th')]
+    .sort((left, right) => left.startIndex - right.startIndex)
+    .map((cell, index) => ({
+      text: normalizeWhitespace(cell.innerHtml),
+      header: headers[index],
+      links: extractAnchors(cell.innerHtml, pageUrl),
+    }));
+}
+
+function extractTableHeaderLabels(tableHtml: string) {
+  const thead = collectTagMatches(tableHtml, 'thead')[0];
+  const headerRow = thead ? collectTagMatches(thead.innerHtml, 'tr')[0] : undefined;
+  if (!headerRow) {
+    return [];
+  }
+
+  return extractOrderedTableCells(headerRow.innerHtml, 'https://courses.cs.washington.edu')
+    .map((cell) => cell.text)
+    .filter(Boolean);
+}
+
+function normalizeAssignmentTableTitle(value: string) {
+  return value
+    .replace(/\s*\((?:pdf|html)\)\s*$/i, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function isReleaseColumn(header?: string) {
+  return (header?.toLowerCase() ?? '').includes('release');
+}
+
+function isDueColumn(header?: string) {
+  return (header?.toLowerCase() ?? '').includes('due');
+}
+
+function formatAssignmentSpecLabel(header: string | undefined, fallbackText: string) {
+  const normalizedHeader = normalizeWhitespace(header ?? '');
+  const normalizedFallback = normalizeWhitespace(fallbackText);
+  const lowerHeader = normalizedHeader.toLowerCase();
+  const lowerFallback = normalizedFallback.toLowerCase();
+
+  if (lowerHeader.includes('template') || lowerFallback.includes('template')) {
+    if (lowerHeader.includes('latex') || lowerFallback.includes('latex')) {
+      return 'LaTeX template';
+    }
+    return normalizedHeader || normalizedFallback;
+  }
+
+  if (lowerHeader.includes('pdf') || lowerFallback.includes('(pdf)')) {
+    return 'PDF spec';
+  }
+
+  if (lowerHeader.includes('html') || lowerFallback.includes('(html)')) {
+    return 'HTML spec';
+  }
+
+  return normalizedHeader || normalizedFallback;
+}
+
+function dedupeCaseInsensitive(values: string[]) {
+  const seen = new Set<string>();
+  const deduped: string[] = [];
+
+  for (const value of values) {
+    const normalized = value.trim();
+    if (!normalized) {
+      continue;
+    }
+    const key = normalized.toLowerCase();
+    if (seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    deduped.push(normalized);
+  }
+
+  return deduped;
+}
+
+function pickAssignmentTitleLink(cells: CourseSiteTableCell[]) {
+  const specLinks = cells.flatMap((cell) =>
+    cell.links.map((link) => ({
+      ...link,
+      header: cell.header,
+    })),
+  );
+
+  return (
+    specLinks.find((link) => /(pdf|html)/i.test(`${link.header ?? ''} ${link.text}`)) ??
+    specLinks.find((link) => /pset|problem set|assignment/i.test(`${link.header ?? ''} ${link.text}`)) ??
+    specLinks[0]
+  );
+}
+
 function extractAssignmentsTable(html: string, course: CourseSiteCourse, pageUrl: string, year: number) {
   const assignments: CourseSiteAssignment[] = [];
 
-  for (const row of collectTagMatches(html, 'tr')) {
-    const block = row.innerHtml;
-    const links = extractAnchors(block, pageUrl);
-    if (links.length === 0) {
-      continue;
-    }
+  for (const table of collectTagMatches(html, 'table')) {
+    const headers = extractTableHeaderLabels(table.innerHtml);
 
-    const titleLink =
-      links.find((link) => /(html|pdf)/i.test(link.text)) ??
-      links.find((link) => link.text.toLowerCase().includes('pset')) ??
-      links[0];
-    const title = titleLink?.text.replace(/\((?:pdf|html)\)$/i, '').trim();
-    if (!title) {
-      continue;
-    }
+    for (const row of collectTagMatches(table.innerHtml, 'tr')) {
+      const cells = extractOrderedTableCells(row.innerHtml, pageUrl, headers);
+      const specCells = cells.filter((cell) => cell.links.length > 0 && !isReleaseColumn(cell.header) && !isDueColumn(cell.header));
+      if (specCells.length === 0) {
+        continue;
+      }
 
-    const cells = [...collectTagMatches(block, 'td'), ...collectTagMatches(block, 'th')]
-      .sort((left, right) => left.startIndex - right.startIndex)
-      .map((cell) => normalizeWhitespace(cell.innerHtml));
-    const release = cells.at(-2);
-    const due = cells.at(-1);
-    assignments.push({
-      id: `course-sites:assignment:${courseSlugKey(course)}:${slugify(title)}`,
-      kind: 'assignment',
-      site: 'course-sites',
-      source: buildSource(pageUrl, 'assignment_row', `${course.id}:${slugify(title)}`),
-      url: titleLink.href,
-      courseId: course.id,
-      title,
-      summary: release ? `Released ${release}.` : undefined,
-      detail: links
-        .filter((link) => link.text !== titleLink.text)
-        .map((link) => link.text)
-        .join(' · ') || undefined,
-      dueAt: due ? parseMonthDay(due, year) : undefined,
-      status: 'unknown',
-    });
+      const titleLink = pickAssignmentTitleLink(specCells);
+      const title = titleLink ? normalizeAssignmentTableTitle(titleLink.text) : '';
+      if (!title) {
+        continue;
+      }
+
+      const release = cells.find((cell) => isReleaseColumn(cell.header))?.text ?? cells.at(-2)?.text;
+      const due = cells.find((cell) => isDueColumn(cell.header))?.text ?? cells.at(-1)?.text;
+      const specLabels = dedupeCaseInsensitive(
+        specCells.map((cell) => formatAssignmentSpecLabel(cell.header, cell.text)),
+      );
+      const specColumnLabels = dedupeCaseInsensitive(
+        specCells.map((cell) => normalizeWhitespace(cell.header ?? cell.text)),
+      );
+
+      assignments.push({
+        id: `course-sites:assignment:${courseSlugKey(course)}:${slugify(title)}`,
+        kind: 'assignment',
+        site: 'course-sites',
+        source: buildSource(pageUrl, 'assignment_row', `${course.id}:${slugify(title)}`),
+        url: titleLink?.href,
+        courseId: course.id,
+        title,
+        summary:
+          [
+            specLabels.length ? `Spec witness: ${specLabels.join(' · ')}.` : '',
+            release ? `Released ${release}.` : '',
+          ]
+            .filter(Boolean)
+            .join(' ') || undefined,
+        detail: specColumnLabels.length ? `Spec columns: ${specColumnLabels.join(' · ')}.` : undefined,
+        dueAt: due ? parseMonthDay(due, year) : undefined,
+        status: 'unknown',
+        actionHints: specLabels.map((label) => `Open ${label}`),
+      });
+    }
   }
 
   return assignments;

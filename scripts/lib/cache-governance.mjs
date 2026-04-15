@@ -479,6 +479,8 @@ export function resolveCacheGovernancePolicy(env = process.env, options = {}) {
     runtimeTempRoot: join(repoRoot, '.runtime-cache', 'temp'),
     runtimeBrowserEvidenceRoot: join(repoRoot, '.runtime-cache', 'browser-evidence'),
     runtimeLiveTraceRoot: join(repoRoot, '.runtime-cache', 'live-traces'),
+    runtimeLiveFixturesRoot: join(repoRoot, '.runtime-cache', 'live-fixtures'),
+    runtimeBrowserIdentityRoot: join(repoRoot, '.runtime-cache', 'browser-identity'),
     runtimeCoverageRoot: join(repoRoot, '.runtime-cache', 'coverage'),
     runtimeRawRoot: join(repoRoot, '.runtime-cache', 'raw'),
     runtimeCleanupMode: env.CAMPUS_COPILOT_RUNTIME_CLEAN_LEVEL?.trim().toLowerCase() === 'closeout' ? 'closeout' : 'standard',
@@ -513,6 +515,8 @@ export function summarizeCachePolicy(policy) {
     runtimeTempTtlHours: policy.runtimeTempTtlHours,
     runtimeEvidenceTtlHours: policy.runtimeEvidenceTtlHours,
     supportBundleRetentionCount: policy.supportBundleRetentionCount,
+    runtimeLiveFixturesRoot: policy.runtimeLiveFixturesRoot,
+    runtimeBrowserIdentityRoot: policy.runtimeBrowserIdentityRoot,
   };
 }
 
@@ -554,6 +558,8 @@ export function cleanupRuntimeArtifacts(policy) {
     removedLiveTraceEntries: closeoutMode
       ? removeDirectoryChildren(policy.runtimeLiveTraceRoot)
       : pruneDirectoryChildrenByAge(policy.runtimeLiveTraceRoot, policy.runtimeEvidenceTtlHours),
+    removedLiveFixtureEntries: closeoutMode ? removeDirectoryChildren(policy.runtimeLiveFixturesRoot) : [],
+    removedBrowserIdentityEntries: closeoutMode ? removeDirectoryChildren(policy.runtimeBrowserIdentityRoot) : [],
     removedCoverageArtifacts: trimCoverageArtifacts(policy.runtimeCoverageRoot),
   };
 }
