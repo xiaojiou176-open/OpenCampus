@@ -236,6 +236,68 @@ function formatAuthorityFacetRole(value: string, uiLanguage: WorkbenchPanelsProp
   }
 }
 
+function formatAuthorityBoundaryKey(value: string, uiLanguage: WorkbenchPanelsProps['uiLanguage']) {
+  if (uiLanguage !== 'zh-CN') {
+    switch (value) {
+      case 'course_identity':
+        return 'identity';
+      case 'course_delivery':
+        return 'delivery';
+      case 'discussion_runtime':
+        return 'discussion';
+      case 'assessment_runtime':
+        return 'assessment';
+      case 'assignment_spec':
+        return 'spec';
+      case 'schedule_signal':
+        return 'schedule';
+      case 'submission_state':
+        return 'submission';
+      case 'feedback_detail':
+        return 'feedback';
+      default:
+        return value.replace(/_/g, ' ');
+    }
+  }
+
+  switch (value) {
+    case 'course_identity':
+      return '身份';
+    case 'course_delivery':
+      return '执行';
+    case 'discussion_runtime':
+      return '讨论';
+    case 'assessment_runtime':
+      return '评估';
+    case 'assignment_spec':
+      return '规格';
+    case 'schedule_signal':
+      return '时间';
+    case 'submission_state':
+      return '提交';
+    case 'feedback_detail':
+      return '反馈';
+    default:
+      return value.replace(/_/g, ' ');
+  }
+}
+
+function formatAuthorityBoundaryMap(
+  breakdown:
+    | Array<{
+        role: string;
+        surface: string;
+      }>
+    | undefined,
+  uiLanguage: WorkbenchPanelsProps['uiLanguage'],
+) {
+  if (!breakdown || breakdown.length === 0) {
+    return undefined;
+  }
+
+  return breakdown.map((facet) => `${formatAuthorityBoundaryKey(facet.role, uiLanguage)}=${facet.surface}`).join(' · ');
+}
+
 function formatAuthorityFacetSource(input: {
   surface: string;
   resourceType: string;
@@ -1685,6 +1747,12 @@ export function WorkbenchOperationsSections({
                       sitesLabel: groupedOperationsCopy.sitesLabel,
                     })}
                   </p>
+                  {formatAuthorityBoundaryMap(cluster.authorityBreakdown, uiLanguage) ? (
+                    <p className="surface__meta">
+                      {uiLanguage === 'zh-CN' ? '边界图' : 'Boundary map'}:{' '}
+                      {formatAuthorityBoundaryMap(cluster.authorityBreakdown, uiLanguage)}
+                    </p>
+                  ) : null}
                   {cluster.authorityNarrative ? <p className="surface__meta">{cluster.authorityNarrative}</p> : null}
                   {cluster.authorityBreakdown?.length ? (
                     <ul className="surface__list surface__list--compact">
@@ -1745,6 +1813,12 @@ export function WorkbenchOperationsSections({
                     })}
                     {cluster.dueAt ? ` · ${text.currentTasks.dueAt(formatDateTime(uiLanguage, cluster.dueAt))}` : ''}
                   </p>
+                  {formatAuthorityBoundaryMap(cluster.authorityBreakdown, uiLanguage) ? (
+                    <p className="surface__meta">
+                      {uiLanguage === 'zh-CN' ? '边界图' : 'Boundary map'}:{' '}
+                      {formatAuthorityBoundaryMap(cluster.authorityBreakdown, uiLanguage)}
+                    </p>
+                  ) : null}
                   {cluster.authorityNarrative ? <p className="surface__meta">{cluster.authorityNarrative}</p> : null}
                   {cluster.authorityBreakdown?.length ? (
                     <ul className="surface__list surface__list--compact">

@@ -268,7 +268,7 @@ const baseInput = {
       summary: 'Course website now leads the course identity merge.',
       authoritySource: 'course-sites:course_page',
       authorityNarrative:
-        'Course identity stays on the course website while Canvas keeps the execution lane and Gradescope keeps the assessment lane.',
+        'Course identity stays on the course website while Canvas keeps the execution lane, EdStem keeps the discussion lane, and Gradescope keeps the assessment lane.',
       authorityBreakdown: [
         {
           role: 'course_identity',
@@ -287,6 +287,14 @@ const baseInput = {
           reason: 'Canvas keeps the execution lane.',
         },
         {
+          role: 'discussion_runtime',
+          surface: 'edstem',
+          entityKey: 'edstem:course:cse312',
+          resourceType: 'thread',
+          label: 'CSE 312',
+          reason: 'EdStem keeps the discussion lane.',
+        },
+        {
           role: 'assessment_runtime',
           surface: 'gradescope',
           entityKey: 'gradescope:course:cse312',
@@ -296,7 +304,7 @@ const baseInput = {
         },
       ],
       matchConfidence: 'high' as const,
-      relatedSites: ['canvas', 'gradescope', 'course-sites'],
+      relatedSites: ['canvas', 'edstem', 'gradescope', 'course-sites'],
       needsReview: false,
     },
   ],
@@ -324,9 +332,17 @@ const baseInput = {
           label: 'Homework 5',
           reason: 'Canvas still owns the submission state.',
         },
+        {
+          role: 'feedback_detail',
+          surface: 'gradescope',
+          entityKey: 'gradescope:grade:hw5',
+          resourceType: 'grade',
+          label: 'Homework 5',
+          reason: 'Gradescope still owns the richer feedback lane.',
+        },
       ],
       matchConfidence: 'medium' as const,
-      relatedSites: ['canvas', 'course-sites'],
+      relatedSites: ['canvas', 'course-sites', 'gradescope'],
       workType: 'assignment',
       dueAt: '2026-03-26T23:59:00-07:00',
       status: 'todo',
@@ -460,9 +476,16 @@ describe('exporter package', () => {
     expect(artifact.content).toContain('module Week 1 (assignment)');
     expect(artifact.content).toContain('authority course-sites · course page');
     expect(artifact.content).toContain('authority course-sites · assignment row');
-    expect(artifact.content).toContain('authority narrative Course identity stays on the course website while Canvas keeps the execution lane and Gradescope keeps the assessment lane.');
+    expect(artifact.content).toContain(
+      'authority narrative Course identity stays on the course website while Canvas keeps the execution lane, EdStem keeps the discussion lane, and Gradescope keeps the assessment lane.',
+    );
+    expect(artifact.content).toContain(
+      'boundary map identity=course-sites · delivery=canvas · discussion=edstem · assessment=gradescope',
+    );
     expect(artifact.content).toContain('course identity: course-sites · course page - Course identity stays on the course website.');
+    expect(artifact.content).toContain('discussion runtime: edstem · thread - EdStem keeps the discussion lane.');
     expect(artifact.content).toContain('assessment runtime: gradescope · assignment row - Gradescope keeps the assessment lane.');
+    expect(artifact.content).toContain('boundary map spec=course-sites · submission=canvas · feedback=gradescope');
   });
 
   it('treats locally reviewed cluster decisions as resolved export statuses instead of open review blockers', () => {

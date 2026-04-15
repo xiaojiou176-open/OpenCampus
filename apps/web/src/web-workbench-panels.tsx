@@ -123,6 +123,44 @@ function formatAuthorityFacetRole(value: string) {
   return value.replace(/_/g, ' ');
 }
 
+function formatAuthorityBoundaryKey(value: string) {
+  switch (value) {
+    case 'course_identity':
+      return 'identity';
+    case 'course_delivery':
+      return 'delivery';
+    case 'discussion_runtime':
+      return 'discussion';
+    case 'assessment_runtime':
+      return 'assessment';
+    case 'assignment_spec':
+      return 'spec';
+    case 'schedule_signal':
+      return 'schedule';
+    case 'submission_state':
+      return 'submission';
+    case 'feedback_detail':
+      return 'feedback';
+    default:
+      return value.replace(/_/g, ' ');
+  }
+}
+
+function formatAuthorityBoundaryMap(
+  breakdown:
+    | Array<{
+        role: string;
+        surface: string;
+      }>
+    | undefined,
+) {
+  if (!breakdown || breakdown.length === 0) {
+    return undefined;
+  }
+
+  return breakdown.map((facet) => `${formatAuthorityBoundaryKey(facet.role)}=${facet.surface}`).join(' · ');
+}
+
 function formatAuthorityFacetSource(input: {
   surface: string;
   resourceType: string;
@@ -799,6 +837,9 @@ export function WebWorkbenchPanels(props: {
                       relatedSites: cluster.relatedSites,
                     })}
                   </p>
+                  {formatAuthorityBoundaryMap(cluster.authorityBreakdown) ? (
+                    <p className="meta">Boundary map: {formatAuthorityBoundaryMap(cluster.authorityBreakdown)}</p>
+                  ) : null}
                   {cluster.authorityNarrative ? <p className="meta">{cluster.authorityNarrative}</p> : null}
                   {cluster.authorityBreakdown?.length ? (
                     <ul className="list list--compact">
@@ -856,6 +897,9 @@ export function WebWorkbenchPanels(props: {
                     })}
                     {cluster.dueAt ? ` · due ${formatDateTime(cluster.dueAt)}` : ''}
                   </p>
+                  {formatAuthorityBoundaryMap(cluster.authorityBreakdown) ? (
+                    <p className="meta">Boundary map: {formatAuthorityBoundaryMap(cluster.authorityBreakdown)}</p>
+                  ) : null}
                   {cluster.authorityNarrative ? <p className="meta">{cluster.authorityNarrative}</p> : null}
                   {cluster.authorityBreakdown?.length ? (
                     <ul className="list list--compact">

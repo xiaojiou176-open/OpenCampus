@@ -36,7 +36,7 @@ It is **not**:
 - broad student-record extraction
 - identity, finance, or account-management automation on `ctcLink`
 
-Think of it like adding new windows to observe the campus map, not new robot hands to press campus buttons.
+Think of it like adding more windows to observe the campus map, not robot hands to press campus buttons.
 
 ## Expansion Order
 
@@ -178,9 +178,8 @@ The same academic safety contract must apply across:
 - containerized local BFF routes
 - distribution-facing docs
 
-In plain language:
+Shipping through another surface does not grant broader rights:
 
-- shipping through another surface does not grant broader rights
 - MCP does not turn Campus Copilot into a campus-site operator
 - skills do not become permission to automate protected campus workflows
 - plugin-grade repo bundles do not become official academic-system integrations
@@ -188,13 +187,12 @@ In plain language:
 
 ## Engineering Guardrails
 
-The contract must live in four layers at once:
+The contract must survive in four layers at once:
 
 1. **docs and public wording**
    - say `repo-local`
    - say `read-only`
    - say `not official`
-   - say `user must follow school and platform policies`
 2. **UI/product behavior**
    - do not surface dangerous automation buttons
    - keep red-zone pages on static explanation or manual jump-link paths only
@@ -210,22 +208,18 @@ The contract must live in four layers at once:
 ## Current Enforcement Snapshot
 
 The contract above is the rulebook.  
-This section answers a narrower question:
+This section answers the narrower question: what is already real today?
 
-> which parts are already enforced today, and which parts are still governance/spec work for the next wave?
-
-| Layer | What is already real | What is still missing |
+| Layer | What is already real | What still needs caution |
 | :-- | :-- | :-- |
-| docs and public wording | root docs, distribution routers, privacy/security pages, and collaborator contracts already repeat the same red-zone and AI/material boundary | some leaf package/example surfaces still inherit only `read-only / not hosted` wording instead of the full contract |
-| extension/runtime permission boundary | the extension manifest stays cookie-free, does not request `Register.UW` / `Notify.UW` hosts, and now includes a scoped read-only `myplan.uw.edu/*` host lane so `MyPlan / DARS` capture can run through the same manual, repo-local extension path; the current extension surface also exposes reusable red-zone wrapper helpers for single-surface and multi-surface disabled/manual-only handling | this is still not the same thing as repo-wide UI adoption across every future surface |
-| static governance gate | `check:campus-readonly-boundary`, `check:docs:ssot`, `check:consumer-surfaces`, `check:public-surface`, and `check:host-safety` already guard major drift paths, and the campus-readonly lane now partially consumes `policies/integration-boundaries.yaml` for red-zone uniqueness, AI forbidden-input snippets, the shared default-disabled advanced-material deny wording, and current caller-wrapper adoption snippets | `policies/integration-boundaries.yaml` is still not the single generated registry behind every gate or every public table |
-| AI default runtime seam | current AI callers already route through structured workbench/export inputs, explicitly reject raw DOM / raw HTML / cookies / raw site payloads **and** raw course-material classes in the shared prompt contract, carry an explicit `advancedMaterialAnalysis` contract through the shared seam, fail fast on obvious raw-material questions by default, and now support a narrow default-off per-course excerpt-only lane across the current extension/web AI panels | direct raw-file ingestion still has no lawful canonical carrier, and there is still no universal proof that every future caller must inherit the same narrow opt-in scaffold |
-| product-layer hard-stop behavior | the contract already says red-zone pages should stop at static explanation or manual paths, the extension plus standalone web AI surfaces now render explicit manual-only red-zone notices and a disabled red-zone CTA scaffold through the shared caller guard wrapper, and the extension operations surface now carries a manual-only campus-boundary panel for `Register.UW` / `Notify.UW` through a reusable local red-zone helper | a repo-wide runtime/UI hard-stop for every future red-zone route, button, or polling loop is still a next-wave implementation/gate task |
+| docs and public wording | root docs, distribution routers, privacy/security pages, and collaborator contracts already repeat the same red-zone and AI/material boundary | some package/example leaves still inherit only shortened `read-only / not hosted` wording |
+| extension/runtime permission boundary | the extension manifest stays cookie-free, does not request `Register.UW` / `Notify.UW` hosts, and includes a scoped read-only `myplan.uw.edu/*` host lane for the same manual repo-local capture path | this is still not proof that every future surface automatically inherits the same UI posture |
+| static governance gate | `check:campus-readonly-boundary`, `check:docs:ssot`, `check:consumer-surfaces`, `check:public-surface`, and `check:host-safety` already guard major drift paths | the registry behind every gate is still not fully unified |
+| AI default runtime seam | current AI callers already reject raw DOM / raw HTML / cookies / raw site payloads and keep the default-disabled advanced-material lane narrow | direct raw-file ingestion still has no lawful canonical carrier |
 
 ## Canonical Cross-References
 
 - Product scope: [`01-product-prd.md`](01-product-prd.md)
-- Current public product boundary summary: [`07-security-privacy-compliance.md`](07-security-privacy-compliance.md)
 - Security/privacy brief: [`07-security-privacy-compliance.md`](07-security-privacy-compliance.md)
 - Integration boundary registry: [`integration-boundaries.md`](integration-boundaries.md)
 - Verification matrix: [`verification-matrix.md`](verification-matrix.md)
