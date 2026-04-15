@@ -703,6 +703,30 @@ function buildGradescopeEvaluationSummaryCount(comments: string[] | undefined) {
   return `[${count} comment${count === 1 ? '' : 's'}]`;
 }
 
+function formatGradescopeEvaluationPoints(points: number | undefined) {
+  if (points === undefined) {
+    return undefined;
+  }
+
+  return `${points > 0 ? '+' : ''}${points} pts`;
+}
+
+function buildGradescopeEvaluationDetailText(comments: string[] | undefined) {
+  const uniqueComments = Array.from(
+    new Set(
+      (comments ?? [])
+        .map((comment) => decodeHtmlText(comment))
+        .filter((comment): comment is string => Boolean(comment)),
+    ),
+  );
+  if (uniqueComments.length === 0) {
+    return undefined;
+  }
+
+  const prefix = uniqueComments.some((comment) => comment.startsWith('(')) ? 'Comment ' : 'Comment: ';
+  return `${prefix}${uniqueComments.join(' | ')}`;
+}
+
 function formatGradescopeAnnotationPages(pageNumbers: number[]) {
   if (pageNumbers.length === 0) {
     return undefined;
@@ -774,14 +798,7 @@ function buildGradescopeQuestionBreakdownDetail(detail: GradescopeSubmissionDeta
         ),
       );
       const rubricText = rubricLabels.length > 0 ? rubricLabels.join(', ') : undefined;
-      const evaluationComments = Array.from(
-        new Set(
-          (question.evaluationComments ?? [])
-            .map((comment) => decodeHtmlText(comment))
-            .filter((comment): comment is string => Boolean(comment)),
-        ),
-      );
-      const commentText = evaluationComments.length > 0 ? `Comment: ${evaluationComments.join(' | ')}` : undefined;
+      const commentText = buildGradescopeEvaluationDetailText(question.evaluationComments);
       return [label, scoreText, rubricText, commentText, question.annotationPreview].filter(Boolean).join(' · ');
     })
     .filter(Boolean);
@@ -978,7 +995,15 @@ function parseGradescopeAssignmentPageDetail(pageHtml: string | undefined, pageU
               new Set([...(rubricLabelsByQuestionId.get(String(question.id)) ?? []), ...annotationRubricLabels]),
             ),
             evaluationComments: (questionSubmission?.evaluations ?? [])
-              .map((evaluation) => decodeHtmlText(evaluation.comments ?? undefined))
+              .map((evaluation) => {
+                const comment = decodeHtmlText(evaluation.comments ?? undefined);
+                if (!comment) {
+                  return undefined;
+                }
+
+                const pointsText = formatGradescopeEvaluationPoints(toOptionalNumber(evaluation.points));
+                return pointsText ? `(${pointsText}): ${comment}` : comment;
+              })
               .filter((comment): comment is string => Boolean(comment)),
             annotationCount: annotationCount > 0 ? annotationCount : undefined,
             annotationPages: annotationPageNumbers,

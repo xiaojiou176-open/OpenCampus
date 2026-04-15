@@ -821,6 +821,34 @@ describe('GradescopeApiClient', () => {
     }
   });
 
+  it('preserves evaluation point context alongside comment text for a direct submission page', async () => {
+    const client = new GradescopeApiClient(
+      okExecutor({
+        '/internal/assignments': undefined,
+        '/internal/grades': undefined,
+      } as unknown as Record<string, unknown>),
+      paths,
+    );
+
+    const adapter = createGradescopeAdapter(client);
+    const result = await adapter.sync({
+      url: 'https://www.gradescope.com/courses/1064763/assignments/6758162/submissions/356585054',
+      site: 'gradescope',
+      now: '2026-03-24T18:00:00-07:00',
+      pageHtml: readFixture('submission-question-detail-evaluations.html').replace(
+        '&quot;points&quot;:null,&quot;comments&quot;:&quot;Solid explanation here. Like how you equated the ptrdiff_t to the size in bytes.&quot;',
+        '&quot;points&quot;:&quot;-0.5&quot;,&quot;comments&quot;:&quot;Solid explanation here. Like how you equated the ptrdiff_t to the size in bytes.&quot;',
+      ),
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.snapshot.assignments?.[0]?.detail).toContain(
+        'Comment (-0.5 pts): Solid explanation here. Like how you equated the ptrdiff_t to the size in bytes.',
+      );
+    }
+  });
+
   it('parses inline annotation detail from a state-backed submission fixture', async () => {
     const client = new GradescopeApiClient(
       okExecutor({
@@ -919,6 +947,46 @@ describe('GradescopeApiClient', () => {
       expect(result.snapshot.assignments?.[0]?.summary).toContain('[1 comment]');
       expect(result.snapshot.assignments?.[0]?.summary).toContain('Graded 24 / 24');
       expect(result.snapshot.assignments?.[0]?.detail).toContain('Comment: Solid explanation here. Like how you equated the ptrdiff_t to the size in bytes.');
+    }
+  });
+
+  it('enriches course-page assignment rows with evaluation point context from a fetched submission fixture', async () => {
+    const client = new GradescopeApiClient(
+      okExecutor({
+        '/internal/assignments': undefined,
+        '/internal/grades': undefined,
+        '/courses/1064763/assignments/6758162/submissions/356585054': readFixture(
+          'submission-question-detail-evaluations.html',
+        ).replace(
+          '&quot;points&quot;:null,&quot;comments&quot;:&quot;Solid explanation here. Like how you equated the ptrdiff_t to the size in bytes.&quot;',
+          '&quot;points&quot;:&quot;-0.5&quot;,&quot;comments&quot;:&quot;Solid explanation here. Like how you equated the ptrdiff_t to the size in bytes.&quot;',
+        ),
+      } as unknown as Record<string, unknown>),
+      paths,
+    );
+
+    const adapter = createGradescopeAdapter(client);
+    const result = await adapter.sync({
+      url: 'https://www.gradescope.com/courses/1064763',
+      site: 'gradescope',
+      now: '2026-03-24T18:00:00-07:00',
+      pageHtml: `
+        <table>
+          <tr>
+            <td>
+              <a href="/courses/1064763/assignments/6758162/submissions/356585054">redacted-text</a>
+            </td>
+            <td class="submissionStatus">24 / 24</td>
+          </tr>
+        </table>
+      `,
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.snapshot.assignments?.[0]?.detail).toContain(
+        'Comment (-0.5 pts): Solid explanation here. Like how you equated the ptrdiff_t to the size in bytes.',
+      );
     }
   });
 
