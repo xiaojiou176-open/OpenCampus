@@ -108,6 +108,9 @@ describe('@campus-copilot/adapters-course-sites', () => {
       expect(tableResult.snapshot.assignments?.[0]).toEqual(
         expect.objectContaining({
           title: 'Pset 1',
+          summary: 'Spec witness: PDF spec · HTML spec · LaTeX template. Released April 1.',
+          detail: 'Spec columns: Pset (pdf) · Pset (html) · Latex template.',
+          actionHints: ['Open PDF spec', 'Open HTML spec', 'Open LaTeX template'],
           dueAt: '2026-04-08T23:59:00-07:00',
           site: 'course-sites',
         }),
