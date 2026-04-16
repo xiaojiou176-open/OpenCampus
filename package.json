@@ -110,6 +110,7 @@
   "pnpm": {
     "overrides": {
       "defu": "^6.1.6",
+      "hono": "^4.12.14",
       "web-ext-run@0.2.4>multimatch": "^8.0.0"
     }
   }
