@@ -26,7 +26,7 @@ export function getSidepanelModeCopy(locale: ResolvedUiLanguage) {
       },
 	    assistant: {
 	      title: '你的校园桌面',
-	      description: '先看这张工作台里已经收进来的事实、AI 路线和当前最该处理的事，再决定要不要提问、导出或打开设置。',
+	      description: '先看这张工作台里的事实、AI 路线和下一步，再决定要不要提问、导出或打开设置。',
 	      currentContext: '当前视图',
 	        visibleFacts: '这一屏里有什么',
 	        activeConnection: 'AI 路线',
@@ -138,13 +138,13 @@ export function getSidepanelModeCopy(locale: ResolvedUiLanguage) {
       },
       popup: {
         launchTitle: '这一页速览',
-        launchDescription: 'Popup 只做轻量入口：打开助手、进入导出，或去信任中心，不把自己做成第二块工作台。',
+        launchDescription: '从这里快速进入助手、导出或信任中心。',
         openAssistant: '打开助手',
         openExport: '快速导出',
         openSettings: '信任中心',
         syncCurrentSite: '同步当前站点',
         quickExportTitle: '快速动作',
-        quickExportDescription: '先从这里进入助手、导出或信任中心；如果要更细的审阅，再进入侧边栏完整流程。',
+        quickExportDescription: '先走一步最直接的动作；更细的审阅再进侧边栏。',
         moreExports: '更多导出捷径',
         fewerExports: '收起额外导出',
       },
@@ -160,7 +160,7 @@ export function getSidepanelModeCopy(locale: ResolvedUiLanguage) {
     assistant: {
       title: 'Your campus desk',
       description:
-        'Start with the facts already gathered into this desk, check the desk status, and review the next task before you export or open the trust center.',
+        'Start with the facts, AI route, and next task already visible in this workspace.',
       currentContext: 'Current view',
       visibleFacts: 'What is in view',
       activeConnection: 'Assistant route',
@@ -276,14 +276,14 @@ export function getSidepanelModeCopy(locale: ResolvedUiLanguage) {
     popup: {
       launchTitle: 'Quick snapshot from this page',
       launchDescription:
-        'Keep the popup in quick-pulse launcher mode: open the assistant, jump into export, or review the trust center without turning this into a second dashboard.',
+        'Use this popup as a light entry point into assistant, export, or trust center.',
       openAssistant: 'Open assistant',
       openExport: 'Quick export',
       openSettings: 'Trust center',
       syncCurrentSite: 'Sync current site',
       quickExportTitle: 'Fast actions',
       quickExportDescription:
-        'Launch into assistant, export, or the trust center from here. Move into the sidepanel flow when you need a fuller review.',
+        'Take the quickest next action here, then open the sidepanel when you need the full workspace.',
       moreExports: 'More export shortcuts',
       fewerExports: 'Hide extra export shortcuts',
     },
