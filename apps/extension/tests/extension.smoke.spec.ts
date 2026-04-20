@@ -67,7 +67,7 @@ async function installExtensionMocks(page: import('@playwright/test').Page) {
           defaultExportFormat: 'markdown',
           uiLanguage: 'auto',
           ai: {
-            defaultProvider: 'openai',
+            defaultProvider: 'gemini',
             models: {
               openai: 'gpt-4.1-mini',
               gemini: 'gemini-2.5-flash',
@@ -636,14 +636,14 @@ test('opens the built sidepanel and shows four site status cards', async ({ page
   await expect(page.getByRole('tab', { name: 'Assistant' })).toBeVisible();
   await expect(page.getByRole('tab', { name: 'Export' })).toBeVisible();
   await expect(page.getByRole('tab', { name: 'Trust center' })).toBeVisible();
-  await expect(page.getByText('Desk status').first()).toBeVisible();
+  await expect(page.getByText('Assistant route').first()).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Ask AI about this workspace' })).toBeVisible();
   await expect(page.getByText("AI connection isn't ready yet.").first()).toBeVisible();
-  await expandDetailedWorkspace(page, 'Review this slice');
+  await expandDetailedWorkspace(page, 'Open full workspace');
   await expandDiagnosticsWorkspace(page, 'System check');
   await expect(page.locator('.surface__diagnostics-detail').getByText('System check').first()).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Start here' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Desk status' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Next up' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Workspace status' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Focus Queue' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Weekly Load' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Change Journal' })).toBeVisible();
@@ -692,7 +692,7 @@ test('saves settings/auth center changes, syncs edstem, and records export downl
   });
 
   await gotoSmokePage(page, baseURL, '/sidepanel.html');
-  await expandDetailedWorkspace(page, 'Review this slice');
+  await expandDetailedWorkspace(page, 'Open full workspace');
   await page.getByRole('button', { name: 'Sync EdStem' }).click();
   await expect(page.getByRole('status').filter({ hasText: 'EdStem sync succeeded' })).toBeVisible();
   await page.evaluate(async () => {
@@ -755,7 +755,7 @@ test('saves settings/auth center changes, syncs edstem, and records export downl
     });
   });
   await page.reload();
-  await expandDetailedWorkspace(page, 'Review this slice');
+  await expandDetailedWorkspace(page, 'Open full workspace');
   const siteStatusPanel = page.locator('article.surface__panel').filter({
     has: page.getByRole('heading', { name: 'Site Status' }),
   });
@@ -833,8 +833,8 @@ test('keeps ai gated until the current scope is explicitly allowed', async ({ pa
     askAiPanel.locator('article.surface__status-card--success article.surface__evidence-card').nth(2).getByText('MARKDOWN', { exact: true }),
   ).toBeVisible();
   const questionField = page.getByLabel('Question');
-  await expect(page.locator('.surface__workspace-detail summary').filter({ hasText: 'Review this slice first' })).toBeVisible();
-  await expandDetailedWorkspace(page, 'Review this slice');
+  await expect(page.locator('.surface__workspace-detail summary').filter({ hasText: 'Check this workspace first' })).toBeVisible();
+  await expandDetailedWorkspace(page, 'Open full workspace');
   const canvasFilterChip = page.locator('.surface__toolbar').getByRole('button', { name: 'Canvas', exact: true });
   await canvasFilterChip.click();
   await expect(canvasFilterChip).toHaveClass(/surface__chip--active/);
@@ -857,7 +857,7 @@ test('asks ai after the current workspace envelope is explicitly allowed', async
   });
 
   await gotoSmokePage(page, baseURL, '/sidepanel.html');
-  await expandDetailedWorkspace(page, 'Review this slice first');
+  await expandDetailedWorkspace(page, 'Check this workspace first');
   const canvasFilterChip = page.locator('.surface__toolbar').getByRole('button', { name: 'Canvas', exact: true });
   await canvasFilterChip.click();
   await page.getByLabel('Question').fill('What should I pay attention to right now?');
@@ -951,7 +951,7 @@ test('switches to Chinese UI and shows partial-success plus site-filter behavior
   await expect(chineseAskAiPanel.getByRole('heading', { name: 'AI 当前能看见什么' })).toBeVisible();
   await expect(chineseVisibleEvidenceCard.getByText('今日快照', { exact: true })).toBeVisible();
   await expect(chineseVisibleEvidenceCard.getByText(/待办作业 \d+ · 48 小时内截止 \d+ · 新成绩 \d+/)).toBeVisible();
-  await expandDetailedWorkspace(page, '查看这一屏');
+  await expandDetailedWorkspace(page, '打开完整工作台');
   await expandDiagnosticsWorkspace(page, '诊断');
   await expect(page.locator('.surface__diagnostics-detail').getByText('诊断').first()).toBeVisible();
   await expect(page.locator('.surface__diagnostics-detail').getByText('被环境或运行时阻塞').first()).toBeVisible();
