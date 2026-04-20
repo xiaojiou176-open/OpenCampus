@@ -623,11 +623,11 @@ const TEXT: Record<ResolvedUiLanguage, UiText> = {
       sidepanelEyebrow: 'Campus Copilot Sidepanel',
       sidepanelTitle: 'Trust-first campus desk',
       sidepanelDescription:
-        'Keep today\'s academic work, administrative signals, and trust state on one desk before you ask, export, or go deeper.',
+        'Keep today\'s academic work, administrative signals, and workspace state in one place before you ask, export, or go deeper.',
       popupEyebrow: 'Campus Copilot Popup',
       popupTitle: 'Quick pulse',
       popupDescription:
-        'Popup stays lightweight and acts like a quick pulse check: sync status, priority counts, and the fastest way into the main workbench.',
+        'Check sync and the highest-signal numbers before deciding whether to open the full workbench.',
       optionsEyebrow: 'Campus Copilot Options',
       optionsTitle: 'Trust center',
       optionsDescription:
@@ -891,7 +891,7 @@ const TEXT: Record<ResolvedUiLanguage, UiText> = {
     askAi: {
       title: 'Ask AI about this workspace',
       description:
-        'AI acts like a study copilot here. It explains the current Focus Queue, Weekly Load, Change Journal, and recent updates after structure instead of reading raw pages or DOM.',
+        'AI explains the structured facts already visible in this workspace instead of reading raw pages or DOM.',
       runtimeSummary: 'Current AI route',
       whatAiCanSee: 'What AI can see',
       whatAiCannotDo: 'What AI cannot do',
@@ -1250,10 +1250,10 @@ const TEXT: Record<ResolvedUiLanguage, UiText> = {
     hero: {
       sidepanelEyebrow: 'Campus Copilot 侧边栏',
       sidepanelTitle: '学习工作台',
-      sidepanelDescription: '先把今天的学业任务、行政信号和 trust 状态放到同一张桌面上，再决定要不要提问、导出或继续下钻。',
+      sidepanelDescription: '先看今天的学业任务、行政信号和工作台状态，再决定要不要提问、导出或继续下钻。',
       popupEyebrow: 'Campus Copilot 弹窗',
       popupTitle: '轻量速览',
-      popupDescription: 'Popup 保持轻量，负责给你一个很快的体温计：有没有同步、有没有高优先级数字、要不要立刻打开主工作台。',
+      popupDescription: '先看同步有没有到位，再决定要不要立刻打开主工作台。',
       optionsEyebrow: 'Campus Copilot 设置',
       optionsTitle: '信任中心',
       optionsDescription: '先看清产品能读什么、AI 能分析什么、当前连的是哪条本地 AI 路线；更深设置留在下层，不把这页做成第二张桌面。',
@@ -1516,7 +1516,7 @@ const TEXT: Record<ResolvedUiLanguage, UiText> = {
     askAi: {
       title: '围绕这张工作台来问 AI',
       description:
-        'AI 在这里更像学习副驾驶，专门解释当前的专注队列、本周负荷、变化账本和最近更新。它只吃结构化工作台结果，不碰网页和 DOM。',
+        'AI 只解释这张工作台里已经整理好的事实，不碰网页和 DOM。',
       runtimeSummary: '当前 AI 路线',
       whatAiCanSee: 'AI 当前能看见什么',
       whatAiCannotDo: 'AI 当前不能做什么',
