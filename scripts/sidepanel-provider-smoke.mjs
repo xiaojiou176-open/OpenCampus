@@ -721,11 +721,6 @@ try {
     .filter({ hasText: providerReadyStatusLabel })
     .filter({ hasText: providerConfiguredReasonLabel })
     .first();
-  const assistantRouteReadySummary = page
-    .locator('.surface__companion-cell')
-    .filter({ hasText: assistantRouteModeLabel })
-    .filter({ hasText: assistantReadySummaryLabel })
-    .first();
   if (!(await providerReadySummary.isVisible().catch(() => false))) {
     await page.getByRole('button', { name: refreshProviderLabel }).click().catch(() => {});
   }
