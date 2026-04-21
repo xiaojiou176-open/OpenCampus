@@ -95,6 +95,8 @@ const CanvasRawCourseSchema = z
     html_url: z.url().optional(),
     syllabus_body: z.string().nullable().optional(),
     access_restricted_by_date: z.boolean().optional(),
+    default_view: z.string().nullable().optional(),
+    restrict_enrollments_to_course_dates: z.boolean().optional(),
   })
   .passthrough();
 
@@ -207,7 +209,7 @@ const CanvasRawSubmissionSchema = z
   .object({
     assignment_id: z.union([z.number(), z.string()]),
     submission_comments: z.array(CanvasRawSubmissionCommentSchema).optional(),
-    submission_html_comments: z.string().nullable().optional(),
+    submission_html_comments: z.union([z.string(), z.array(z.unknown())]).nullable().optional(),
     rubric_assessment: z.record(z.string(), z.unknown()).optional(),
   })
   .passthrough();
@@ -516,6 +518,20 @@ function normalizeCourse(rawCourse: CanvasRawCourse): Course {
 function shouldSyncCourse(rawCourse: CanvasRawCourse): boolean {
   const hasVisibleMetadata = Boolean(rawCourse.name || rawCourse.course_code || rawCourse.html_url);
   if (rawCourse.access_restricted_by_date && !hasVisibleMetadata) {
+    return false;
+  }
+
+  const name = rawCourse.name?.trim();
+  const courseCode = rawCourse.course_code?.trim();
+  const defaultView = rawCourse.default_view?.trim().toLowerCase();
+  if (
+    !rawCourse.html_url &&
+    rawCourse.restrict_enrollments_to_course_dates === true &&
+    defaultView === 'wiki' &&
+    name &&
+    courseCode &&
+    name === courseCode
+  ) {
     return false;
   }
 
@@ -983,8 +999,34 @@ function dedupeCanvasResources(resources: Resource[]) {
   return Array.from(deduped.values());
 }
 
-function isOptionalCanvasFamilyGap(error: unknown) {
-  return error instanceof CanvasApiError && error.code === 'unsupported_context';
+function isArchivedCanvasCourse(rawCourse: CanvasRawCourse) {
+  const name = rawCourse.name?.trim().toLowerCase() ?? '';
+  const courseCode = rawCourse.course_code?.trim().toLowerCase() ?? '';
+  return name.startsWith('archived:') || courseCode.startsWith('archived:');
+}
+
+function isOptionalCanvasFamilyGap(
+  error: unknown,
+  family?: 'files' | 'modules' | 'groups' | 'media',
+  rawCourse?: CanvasRawCourse,
+) {
+  if (!(error instanceof CanvasApiError)) {
+    return false;
+  }
+
+  if (error.code === 'unsupported_context') {
+    return true;
+  }
+
+  if (error.code !== 'unauthorized') {
+    return false;
+  }
+
+  if (family === 'modules' || family === 'groups' || family === 'media') {
+    return true;
+  }
+
+  return family === 'files' && Boolean(rawCourse && isArchivedCanvasCourse(rawCourse));
 }
 
 function buildSyllabusSummary(rawCourse: CanvasRawCourse) {
@@ -1082,6 +1124,27 @@ function buildCanvasAssignmentSummary(rawAssignment: CanvasRawAssignment) {
 }
 
 function buildCanvasAssignmentDetail(rawSubmission: CanvasRawSubmission | undefined) {
+  const htmlComments = Array.isArray(rawSubmission?.submission_html_comments)
+    ? rawSubmission.submission_html_comments.flatMap((entry) => {
+        if (typeof entry === 'string') {
+          const normalized = stripCanvasHtml(entry);
+          return normalized ? [normalized] : [];
+        }
+
+        if (entry && typeof entry === 'object') {
+          const htmlComment =
+            'html_comment' in entry && typeof entry.html_comment === 'string'
+              ? stripCanvasHtml(entry.html_comment)
+              : 'comment' in entry && typeof entry.comment === 'string'
+                ? stripCanvasHtml(entry.comment)
+                : undefined;
+          return htmlComment ? [htmlComment] : [];
+        }
+
+        return [];
+      })
+    : [stripCanvasHtml(rawSubmission?.submission_html_comments ?? undefined)].filter((value): value is string => Boolean(value));
+
   const comments = [
     ...(rawSubmission?.submission_comments ?? []).flatMap((comment) => {
       const attachmentHint =
@@ -1103,7 +1166,7 @@ function buildCanvasAssignmentDetail(rawSubmission: CanvasRawSubmission | undefi
 
       return [`Feedback (${feedbackContext.join(' · ')}): ${feedbackBody}`];
     }),
-    stripCanvasHtml(rawSubmission?.submission_html_comments ?? undefined),
+    ...htmlComments,
     ...Object.values(rawSubmission?.rubric_assessment ?? {}).flatMap((entry) => {
       if (!entry || typeof entry !== 'object') {
         return [];
@@ -1495,8 +1558,10 @@ class CanvasResourcesApiCollector implements ResourceCollector<Resource> {
         const rawFiles = await this.client.getFiles(courseId);
         collected.push(...rawFiles.map((rawFile) => normalizeFileResource(rawFile, courseId)));
       } catch (error) {
-        const reason = error instanceof Error ? error.message : 'resource_collector_failed';
-        failures.push(`course_${courseId}:files:${reason}`);
+        if (!isOptionalCanvasFamilyGap(error, 'files', rawCourse)) {
+          const reason = error instanceof Error ? error.message : 'resource_collector_failed';
+          failures.push(`course_${courseId}:files:${reason}`);
+        }
       }
 
       try {
@@ -1509,7 +1574,7 @@ class CanvasResourcesApiCollector implements ResourceCollector<Resource> {
           );
         }
       } catch (error) {
-        if (!isOptionalCanvasFamilyGap(error)) {
+        if (!isOptionalCanvasFamilyGap(error, 'modules', rawCourse)) {
           const reason = error instanceof Error ? error.message : 'module_collector_failed';
           failures.push(`course_${courseId}:modules:${reason}`);
         }
@@ -1519,7 +1584,7 @@ class CanvasResourcesApiCollector implements ResourceCollector<Resource> {
         const rawGroups = await this.client.getGroups(courseId);
         collected.push(...rawGroups.map((rawGroup) => normalizeCanvasGroupResource(rawGroup, courseId)));
       } catch (error) {
-        if (!isOptionalCanvasFamilyGap(error)) {
+        if (!isOptionalCanvasFamilyGap(error, 'groups', rawCourse)) {
           const reason = error instanceof Error ? error.message : 'group_collector_failed';
           failures.push(`course_${courseId}:groups:${reason}`);
         }
@@ -1533,7 +1598,7 @@ class CanvasResourcesApiCollector implements ResourceCollector<Resource> {
             .filter((resource): resource is Resource => Boolean(resource)),
         );
       } catch (error) {
-        if (!isOptionalCanvasFamilyGap(error)) {
+        if (!isOptionalCanvasFamilyGap(error, 'media', rawCourse)) {
           const reason = error instanceof Error ? error.message : 'media_collector_failed';
           failures.push(`course_${courseId}:media:${reason}`);
         }

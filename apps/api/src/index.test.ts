@@ -413,7 +413,7 @@ describe('api thin bff', () => {
     expect(body.provider).toBe('switchyard');
     expect(body.runtimePath).toBe('switchyard');
     expect(body.runtimeProvider).toBe('qwen');
-    expect(body.lane).toBe('web');
+    expect(body.lane).toBeUndefined();
     expect(body.answerText).toBe('Qwen 路径已通过 Switchyard 薄桥返回。');
     expect(body.citationCoverage).toBe('uncited_fallback');
     expect(fetchSpy.mock.calls[0]?.[1]?.body).toContain('"provider":"qwen"');
@@ -421,6 +421,43 @@ describe('api thin bff', () => {
     expect((fetchSpy.mock.calls[0]?.[1]?.headers as Headers).get('authorization')).toBe(
       'Bearer switchyard-token',
     );
+  });
+
+  it('lets Switchyard auto-select BYOK and mirrors the resolved lane instead of forcing web', async () => {
+    const fetchSpy = vi.fn(async (_input: string, init?: RequestInit) => ({
+      ok: true,
+      status: 200,
+      text: async () =>
+        JSON.stringify({
+          provider: 'gemini',
+          model: 'gemini/gemini-2.5-flash',
+          lane: 'byok',
+          text: 'Switchyard selected the BYOK lane.',
+        }),
+    }));
+
+    const response = await handleApiRequest(
+      createRequest('/api/providers/switchyard/chat', 'POST', {
+        provider: 'gemini',
+        model: 'gemini-2.5-flash',
+        messages: [{ role: 'user', content: 'hello from campus' }],
+      }),
+      loadApiEnv({
+        SWITCHYARD_BASE_URL: 'http://127.0.0.1:4010',
+      }),
+      fetchSpy,
+    );
+
+    expect(response.status).toBe(200);
+    const body = JSON.parse(response.body);
+    expect(body.provider).toBe('switchyard');
+    expect(body.runtimeProvider).toBe('gemini');
+    expect(body.lane).toBe('byok');
+    expect(body.answerText).toBe('Switchyard selected the BYOK lane.');
+
+    const outboundBody = `${fetchSpy.mock.calls[0]?.[1]?.body ?? ''}`;
+    expect(outboundBody).toContain('"provider":"gemini"');
+    expect(outboundBody).not.toContain('"lane":"web"');
   });
 
   it('returns provider_not_configured when switchyard base url is missing', async () => {

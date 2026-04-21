@@ -11,9 +11,10 @@ import {
   replacePlanningSubstratesBySource,
   type PlanningSubstrateOwner,
 } from '@campus-copilot/storage';
-import { extractPageHtml, getActiveTabContext, type SyncTargetOverride } from './background-tab-context';
+import { extractPageHtml, getActiveTabContext, getTabContextsByUrlPatterns, type ActiveTabContext, type SyncTargetOverride } from './background-tab-context';
 
 type PlanningCaptureKind = 'plan' | 'audit';
+const MYPLAN_CAPTURE_URL_PATTERNS = ['https://myplan.uw.edu/plan/*', 'https://myplan.uw.edu/audit/*'];
 type MyPlanBootstrapTermSummary = {
   termCode: string;
   termLabel: string;
@@ -443,6 +444,40 @@ function sumCounts(terms: PlanningSubstrateOwner['terms'], key: 'plannedCourseCo
   return terms.reduce((total, term) => total + term[key], 0);
 }
 
+function extractAcademicYearVisiblePlanningCourses(pageHtml: string) {
+  const includedStatuses = new Set(['planned', 'registered', 'backup']);
+  const matches: Array<{ code: string; title: string; creditText: string }> = [];
+
+  for (const sectionMatch of pageHtml.matchAll(
+    /<h3[^>]*id="plan-item-list-(?<status>[a-z]+)-[^"]+"[^>]*>[\s\S]*?<\/h3>[\s\S]{0,500}?<ul[^>]*>(?<list>[\s\S]*?)<\/ul>/gi,
+  )) {
+    const status = sectionMatch.groups?.status?.toLowerCase();
+    if (!status || !includedStatuses.has(status)) {
+      continue;
+    }
+
+    const listHtml = sectionMatch.groups?.list ?? '';
+    for (const itemMatch of listHtml.matchAll(/<li\b[^>]*>(?<item>[\s\S]*?)<\/li>/gi)) {
+      const itemHtml = itemMatch.groups?.item ?? '';
+      const code = stripTags(itemHtml.match(/<strong>(?<code>[\s\S]*?)<\/strong>/i)?.groups?.code ?? '');
+      const title =
+        stripTags(
+          itemHtml.match(/<a[^>]*class="[^"]*\bd-block\b[^"]*"[^>]*>(?<title>[\s\S]*?)<\/a>/i)?.groups?.title ?? '',
+        ) ||
+        stripTags(itemHtml.match(/<span[^>]*class="[^"]*\bsr-only\b[^"]*"[^>]*>(?<title>[\s\S]*?)<\/span>/i)?.groups?.title ?? '');
+      const creditText = itemHtml.match(/<abbr[^>]*title="(?<credits>\d+(?:-\d+)?)\s*Credits?"/i)?.groups?.credits ?? '';
+
+      if (!code || !title) {
+        continue;
+      }
+
+      matches.push({ code, title, creditText });
+    }
+  }
+
+  return matches;
+}
+
 function normalizeAuditRequirementStatus(rawStatus: string | undefined): AuditRequirementSignal['statusLabel'] | undefined {
   const normalized = rawStatus?.trim().toLowerCase();
   if (!normalized) {
@@ -585,6 +620,23 @@ function buildPlanningBase(previous: PlanningSubstrateOwner | undefined, capture
   };
 }
 
+function hasPlanCoverage(record: Pick<PlanningSubstrateOwner, 'termCount' | 'plannedCourseCount' | 'backupCourseCount' | 'scheduleOptionCount'>) {
+  return record.termCount > 0 || record.plannedCourseCount > 0 || record.backupCourseCount > 0 || record.scheduleOptionCount > 0;
+}
+
+function hasAuditCoverage(record: Pick<PlanningSubstrateOwner, 'requirementGroupCount' | 'degreeProgressSummary'>) {
+  return (
+    record.requirementGroupCount > 0 ||
+    (record.degreeProgressSummary != null &&
+      record.degreeProgressSummary.trim().length > 0 &&
+      !record.degreeProgressSummary.includes('Requirement progress is not exposed on this MyPlan planning page yet.'))
+  );
+}
+
+function isPlanningPromotionComplete(record: PlanningSubstrateOwner) {
+  return hasPlanCoverage(record) && hasAuditCoverage(record);
+}
+
 function buildPlanCaptureFromHtml(
   pageHtml: string,
   url: string,
@@ -598,6 +650,7 @@ function buildPlanCaptureFromHtml(
   const termLabel = rawHeading.replace(/\s*Current Quarter$/i, '').trim() || 'Current MyPlan term';
   const termCode = slugFromUrl(url);
   const uniqueCourses = new Map<string, { code: string; title: string; credits: number }>();
+  const academicYearCourseMatches = extractAcademicYearVisiblePlanningCourses(pageHtml);
   const issueCardBlocks = Array.from(
     pageHtml.matchAll(/<li[^>]*id="plan-item-[^"]+"[^>]*>(?<block>[\s\S]*?)(?=<li[^>]*id="plan-item-[^"]+"|<\/ul>)/gi),
   );
@@ -617,6 +670,8 @@ function buildPlanCaptureFromHtml(
             return { code, title, creditText };
           })
           .filter((match) => match.code && match.title)
+      : academicYearCourseMatches.length > 0
+        ? academicYearCourseMatches
       : Array.from(
           pageHtml.matchAll(
             /<h3[^>]*>\s*(?<code>[A-Z][A-Z0-9& ]+\d{3}[A-Z]?)\s*<\/h3>[\s\S]{0,1200}?<a[^>]*class="[^"]*d-block lead[^"]*"[^>]*>\s*(?<title>[\s\S]*?)\s*<\/a>[\s\S]{0,600}?(?:title="(?<credits>\d+(?:-\d+)?)\s*Credits?"|(?<creditsText>\d+(?:-\d+)?)\s*Credits?)/gi,
@@ -746,6 +801,24 @@ export function buildMyPlanPlanningSubstrateFromHtml(input: {
   return applyPlanningPromotionState(buildAuditCaptureFromHtml(input.pageHtml, input.capturedAt, input.previous));
 }
 
+async function capturePlanningRecordFromTabContext(
+  context: ActiveTabContext,
+  now: string,
+  previous: PlanningSubstrateOwner | undefined,
+) {
+  const pageHtml = await extractPageHtml(context.tabId);
+  if (!pageHtml) {
+    return undefined;
+  }
+
+  return buildMyPlanPlanningSubstrateFromHtml({
+    pageHtml,
+    url: context.url,
+    capturedAt: now,
+    previous,
+  });
+}
+
 export async function capturePlanningSubstrateFromActiveTab(now: string, targetOverride?: SyncTargetOverride) {
   const activeTab = await getActiveTabContext(targetOverride);
   if (!activeTab || !detectPlanningCaptureKind(activeTab.url)) {
@@ -757,8 +830,10 @@ export async function capturePlanningSubstrateFromActiveTab(now: string, targetO
     };
   }
 
-  const pageHtml = await extractPageHtml(activeTab.tabId);
-  if (!pageHtml) {
+  const firstCaptureKind = detectPlanningCaptureKind(activeTab.url);
+  const previous = await getLatestPlanningSubstrateBySource('myplan', campusCopilotDb);
+  let next = await capturePlanningRecordFromTabContext(activeTab, now, previous);
+  if (!next) {
     return {
       ok: false as const,
       outcome: 'normalize_failed' as SiteSyncOutcome,
@@ -767,13 +842,31 @@ export async function capturePlanningSubstrateFromActiveTab(now: string, targetO
     };
   }
 
-  const previous = await getLatestPlanningSubstrateBySource('myplan', campusCopilotDb);
-  const next = buildMyPlanPlanningSubstrateFromHtml({
-    pageHtml,
-    url: activeTab.url,
-    capturedAt: now,
-    previous,
-  });
+  let usedCompanionCapture = false;
+  if (!isPlanningPromotionComplete(next) && firstCaptureKind) {
+    const companionKind: PlanningCaptureKind = firstCaptureKind === 'plan' ? 'audit' : 'plan';
+    const companionTabs = await getTabContextsByUrlPatterns(MYPLAN_CAPTURE_URL_PATTERNS);
+    for (const companionTab of companionTabs) {
+      if (companionTab.tabId === activeTab.tabId) {
+        continue;
+      }
+      if (detectPlanningCaptureKind(companionTab.url) !== companionKind) {
+        continue;
+      }
+
+      const mergedCapture = await capturePlanningRecordFromTabContext(companionTab, now, next);
+      if (!mergedCapture) {
+        continue;
+      }
+
+      next = mergedCapture;
+      usedCompanionCapture = true;
+      if (isPlanningPromotionComplete(next)) {
+        break;
+      }
+    }
+  }
+
   await replacePlanningSubstratesBySource('myplan', [next], campusCopilotDb);
 
   const hasPlanData = next.termCount > 0;
@@ -787,7 +880,9 @@ export async function capturePlanningSubstrateFromActiveTab(now: string, targetO
     planLabel: next.planLabel,
     message:
       outcome === 'success'
-        ? `Captured ${next.planLabel} into Planning Pulse.`
+        ? usedCompanionCapture
+          ? `Captured ${next.planLabel} into Planning Pulse with both MyPlan plan and DARS audit context.`
+          : `Captured ${next.planLabel} into Planning Pulse.`
         : `Captured ${next.planLabel} into Planning Pulse, but the other MyPlan/DARS half is still missing.`,
   };
 }

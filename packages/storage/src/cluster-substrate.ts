@@ -1,4 +1,4 @@
-import type { Announcement, Assignment, Course, Event, Grade, Site } from '@campus-copilot/schema';
+import type { Announcement, Assignment, Course, Event, Grade, Resource, Site } from '@campus-copilot/schema';
 import { campusCopilotDb, type CampusCopilotDB } from './db.ts';
 import {
   type AdminCarrierRecord,
@@ -85,6 +85,9 @@ type WorkItemCandidate = {
   status?: string;
   resourceType: string;
   url?: string;
+  summary?: string;
+  detail?: string;
+  downloadUrl?: string;
 };
 
 function formatCorroboratedFieldList(fields: Array<string | undefined>) {
@@ -155,6 +158,19 @@ function buildWorkFieldCorroboration(input: {
         'summary/spec',
         input.member.url ? 'deep-link' : undefined,
       ]);
+    case 'resource_identity':
+      return formatCorroboratedFieldList([
+        'title',
+        input.member.summary ? 'summary' : undefined,
+        input.member.detail ? 'detail' : undefined,
+        input.member.url ? 'deep-link' : undefined,
+      ]);
+    case 'resource_access':
+      return formatCorroboratedFieldList([
+        input.member.downloadUrl ? 'downloadUrl' : undefined,
+        input.member.url ? 'link' : undefined,
+        'resource runtime',
+      ]);
     case 'schedule_signal':
       return formatCorroboratedFieldList([
         input.member.dueAt ? 'dueAt' : undefined,
@@ -178,6 +194,17 @@ function buildWorkValueCorroboration(input: {
     case 'assignment_spec':
       return formatCurrentValueList([
         ['title', input.member.title],
+        ['linkHost', extractUrlHost(input.member.url)],
+      ]);
+    case 'resource_identity':
+      return formatCurrentValueList([
+        ['title', input.member.title],
+        ['summary', input.member.summary],
+        ['linkHost', extractUrlHost(input.member.url)],
+      ]);
+    case 'resource_access':
+      return formatCurrentValueList([
+        ['downloadHost', extractUrlHost(input.member.downloadUrl)],
         ['linkHost', extractUrlHost(input.member.url)],
       ]);
     case 'schedule_signal':
@@ -218,6 +245,10 @@ function formatAuthorityRoleLabel(role: ClusterAuthorityFacet['role']) {
       return '评估流';
     case 'assignment_spec':
       return '作业规格';
+    case 'resource_identity':
+      return '资源定义';
+    case 'resource_access':
+      return '资源访问';
     case 'schedule_signal':
       return '时间锚点';
     case 'submission_state':
@@ -496,6 +527,29 @@ function pickWorkFacetMember(
   workType: WorkItemCluster['workType'],
 ) {
   const score = (member: WorkItemCandidate) => {
+    if (role === 'resource_identity') {
+      if (member.surface === 'course-sites') return 100;
+      if (member.surface === 'edstem') return 96;
+      if (member.surface === 'canvas') return 92;
+      if (member.surface === 'gradescope') return 86;
+      return 0;
+    }
+
+    if (role === 'resource_access') {
+      if (member.downloadUrl) {
+        if (member.surface === 'edstem') return 100;
+        if (member.surface === 'canvas') return 96;
+        if (member.surface === 'course-sites') return 94;
+        if (member.surface === 'gradescope') return 90;
+      }
+      if (member.url) {
+        if (member.surface === 'course-sites') return 88;
+        if (member.surface === 'edstem') return 86;
+        if (member.surface === 'canvas') return 82;
+      }
+      return 0;
+    }
+
     if (role === 'assignment_spec') {
       if (member.surface === 'course-sites') return 100;
       if (member.surface === 'canvas') return 95;
@@ -548,6 +602,51 @@ function buildWorkAuthorityBreakdown(input: {
 }) {
   const { members, authority, workType } = input;
   const breakdown: ClusterAuthorityFacet[] = [];
+
+  if (workType === 'resource_material') {
+    const identityMember = pickWorkFacetMember(members, 'resource_identity', workType);
+    if (identityMember) {
+      breakdown.push(
+        authorityFacet({
+          role: 'resource_identity',
+          surface: identityMember.surface,
+          entityKey: identityMember.entityKey,
+          resourceType: identityMember.resourceType,
+          label: identityMember.label,
+          reason: `资源定义优先跟随最强 material carrier，避免把下载入口误写成资源身份。 ${buildWorkFieldCorroboration({ role: 'resource_identity', member: identityMember })} ${buildWorkValueCorroboration({ role: 'resource_identity', member: identityMember })}`.trim(),
+        }),
+      );
+    }
+
+    const accessMember = pickWorkFacetMember(members, 'resource_access', workType);
+    if (accessMember) {
+      breakdown.push(
+        authorityFacet({
+          role: 'resource_access',
+          surface: accessMember.surface,
+          entityKey: accessMember.entityKey,
+          resourceType: accessMember.resourceType,
+          label: accessMember.label,
+          reason: `资源访问面优先跟随最强 download/runtime carrier，而不是复用资源定义面。 ${buildWorkFieldCorroboration({ role: 'resource_access', member: accessMember })} ${buildWorkValueCorroboration({ role: 'resource_access', member: accessMember })}`.trim(),
+        }),
+      );
+    }
+
+    if (breakdown.length === 0) {
+      breakdown.push(
+        authorityFacet({
+          role: 'resource_identity',
+          surface: authority.surface,
+          entityKey: authority.entityKey,
+          resourceType: authority.resourceType,
+          label: authority.label,
+          reason: `当前只有一个可用 resource carrier，所以统一沿用主 authority。 ${buildWorkFieldCorroboration({ role: 'resource_identity', member: authority })} ${buildWorkValueCorroboration({ role: 'resource_identity', member: authority })}`.trim(),
+        }),
+      );
+    }
+
+    return breakdown;
+  }
 
   const specMember =
     workType === 'assignment' || workType === 'deadline_signal'
@@ -642,6 +741,16 @@ function buildWorkAuthorityNarrative(breakdown: ClusterAuthorityFacet[]) {
   return buildCompressedAuthorityNarrative(breakdown);
 }
 
+function buildFieldAuthorityMap<TFieldKey extends string>(breakdown: ClusterAuthorityFacet[], allowedRoles: TFieldKey[]) {
+  const allowed = new Set<string>(allowedRoles);
+  return breakdown.reduce<Record<string, ClusterAuthorityFacet>>((accumulator, facet) => {
+    if (allowed.has(facet.role)) {
+      accumulator[facet.role] = facet;
+    }
+    return accumulator;
+  }, {});
+}
+
 function confidenceFromSites(distinctSites: number, hasStrongKey: boolean) {
   if (distinctSites >= 2 && hasStrongKey) {
     return MatchConfidenceBandSchema.parse('high');
@@ -724,6 +833,12 @@ function buildCourseClusters(courses: Course[]) {
       courseSitesCsAuthorityOverride,
       exactAnchor,
     });
+    const fieldAuthorityMap = buildFieldAuthorityMap(authorityBreakdown, [
+      'course_identity',
+      'course_delivery',
+      'discussion_runtime',
+      'assessment_runtime',
+    ]);
     const authorityNarrative = buildCourseAuthorityNarrative(authorityBreakdown);
     const summary =
       members.length === 1
@@ -809,6 +924,7 @@ function buildCourseClusters(courses: Course[]) {
         summary,
         authorityNarrative,
         authorityBreakdown,
+        fieldAuthorityMap,
         createdAt: now,
         updatedAt: now,
       }),
@@ -821,6 +937,7 @@ function buildCourseClusters(courses: Course[]) {
 
 function buildWorkItemClusters(
   assignments: Assignment[],
+  resources: Resource[],
   grades: Grade[],
   events: Event[],
   courseToClusterId: Map<string, string>,
@@ -852,6 +969,32 @@ function buildWorkItemClusters(
       status: assignment.status,
       resourceType: assignment.source.resourceType,
       url: assignment.url,
+    });
+  }
+
+  for (const resource of resources) {
+    const courseClusterId = resource.courseId ? courseToClusterId.get(resource.courseId) : undefined;
+    if (!courseClusterId) {
+      continue;
+    }
+
+    const canonicalResourceTitle = resource.resourceGroup?.label ?? resource.title;
+    const key = `cluster:work:${courseClusterId}:resource_material:${slugify(canonicalResourceTitle)}`;
+    addCandidate({
+      key,
+      surface: resource.site,
+      entityKind: 'resource',
+      entityKey: resource.id,
+      title: canonicalResourceTitle,
+      relation: 'resource_material',
+      label: resource.title,
+      courseClusterId,
+      observedAt: resource.releasedAt ?? resource.updatedAt ?? resource.createdAt,
+      resourceType: resource.source.resourceType,
+      url: resource.url,
+      summary: resource.summary,
+      detail: resource.detail,
+      downloadUrl: resource.downloadUrl,
     });
   }
 
@@ -913,6 +1056,19 @@ function buildWorkItemClusters(
   }
 
   function getWorkItemAuthorityScore(member: WorkItemCandidate, workType: WorkItemCluster['workType']) {
+    if (workType === 'resource_material') {
+      if (isCsCourse(member.courseClusterId)) {
+        if (member.surface === 'course-sites') return 100;
+        if (member.surface === 'edstem') return 96;
+        if (member.surface === 'canvas') return 92;
+        if (member.surface === 'gradescope') return 88;
+      }
+      if (member.surface === 'edstem') return 100;
+      if (member.surface === 'canvas') return 94;
+      if (member.surface === 'course-sites') return 90;
+      if (member.surface === 'gradescope') return 86;
+    }
+
     if (workType === 'grade_signal') {
       if (member.surface === 'gradescope') return 100;
       if (member.surface === 'canvas') return 90;
@@ -946,7 +1102,9 @@ function buildWorkItemClusters(
 
   for (const [id, members] of grouped.entries()) {
     const workType =
-      members.some((member) => member.relation === 'grade_feedback')
+      members.some((member) => member.relation === 'resource_material')
+        ? 'resource_material'
+        : members.some((member) => member.relation === 'grade_feedback')
         ? 'grade_signal'
         : members.some((member) => member.relation === 'deadline_signal' || member.relation === 'exam_schedule')
         ? 'deadline_signal'
@@ -960,13 +1118,22 @@ function buildWorkItemClusters(
         member.surface === 'course-sites' &&
         /gradescope|canvas\.uw\.edu|edstem/i.test(member.url ?? ''),
     );
-    const band = confidenceFromSites(
-      relatedSites.length,
-      exactAnchor || (Boolean(authority.courseClusterId) && Boolean(authority.dueAt || authority.startAt || authority.endAt)),
-    );
-    const authorityBreakdown = buildWorkAuthorityBreakdown({ members, authority, workType });
-    const authorityNarrative = buildWorkAuthorityNarrative(authorityBreakdown);
     const title = authority.title;
+    const hasStrongKey =
+      workType === 'resource_material'
+        ? exactAnchor || (Boolean(authority.courseClusterId) && normalizeTitle(title).length > 0)
+        : exactAnchor || (Boolean(authority.courseClusterId) && Boolean(authority.dueAt || authority.startAt || authority.endAt));
+    const band = confidenceFromSites(relatedSites.length, hasStrongKey);
+    const authorityBreakdown = buildWorkAuthorityBreakdown({ members, authority, workType });
+    const fieldAuthorityMap = buildFieldAuthorityMap(authorityBreakdown, [
+      'assignment_spec',
+      'resource_identity',
+      'resource_access',
+      'schedule_signal',
+      'submission_state',
+      'feedback_detail',
+    ]);
+    const authorityNarrative = buildWorkAuthorityNarrative(authorityBreakdown);
     const dueAt = authority.dueAt ?? members.find((member) => member.dueAt)?.dueAt;
     const startAt = authority.startAt ?? members.find((member) => member.startAt)?.startAt;
     const endAt = authority.endAt ?? members.find((member) => member.endAt)?.endAt;
@@ -1040,13 +1207,20 @@ function buildWorkItemClusters(
           ...(exactAnchor ? [evidence('exact_anchor', 'A course-site deep link points directly at another site carrier.')] : []),
         ],
         summary:
-          band === 'high'
+          workType === 'resource_material'
+            ? band === 'high'
+              ? `${title} is now a high-confidence merged resource cluster: ${authorityNarrative}.`
+              : band === 'medium'
+              ? `${title} now has a usable merged resource cluster: ${authorityNarrative}; some authority still needs manual review.`
+              : `${title} still needs a clearer cross-site resource merge before it can act like one combined material.`
+            : band === 'high'
             ? `${title} is now a high-confidence merged work item: ${authorityNarrative}.`
             : band === 'medium'
             ? `${title} now has a usable merged cluster: ${authorityNarrative}; some authority still needs manual review.`
             : `${title} still needs a clearer cross-site merge before it can act like one combined task.`,
         authorityNarrative,
         authorityBreakdown,
+        fieldAuthorityMap,
         createdAt: observedAt,
         updatedAt: observedAt,
       }),
@@ -1247,10 +1421,11 @@ function buildAdministrativeSummaries(
 }
 
 export async function recomputeClusterSubstrate(db: CampusCopilotDB = campusCopilotDb) {
-  const [courses, assignments, grades, events, planningSubstrates, announcements, adminCarriers, reviewOverrides] =
+  const [courses, assignments, resources, grades, events, planningSubstrates, announcements, adminCarriers, reviewOverrides] =
     await Promise.all([
       db.courses.toArray(),
       db.assignments.toArray(),
+      db.resources.toArray(),
       db.grades.toArray(),
       db.events.toArray(),
       db.planning_substrates.toArray(),
@@ -1262,6 +1437,7 @@ export async function recomputeClusterSubstrate(db: CampusCopilotDB = campusCopi
   const { clusters: rawCourseClusters, ledger: courseLedger, courseToClusterId, courseClusterById } = buildCourseClusters(courses);
   const { clusters: rawWorkItemClusters, ledger: workItemLedger } = buildWorkItemClusters(
     assignments,
+    resources,
     grades,
     events,
     courseToClusterId,

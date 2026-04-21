@@ -125,6 +125,12 @@ export interface TimeScheduleRuntimePromotionBlocker {
   whyItStopsPromotion: string;
 }
 
+export type TimeScheduleFieldDecision = {
+  field: (typeof TIME_SCHEDULE_FIELD_DECISIONS)[number]['field'];
+  status: (typeof TIME_SCHEDULE_FIELD_DECISIONS)[number]['status'];
+  reason: string;
+};
+
 export interface TimeScheduleRuntimePromotionPacket {
   surface: 'time-schedule';
   stage: typeof TIME_SCHEDULE_STAGE_UNDERSTANDING.currentStage;
@@ -134,7 +140,7 @@ export interface TimeScheduleRuntimePromotionPacket {
   noRegistrationAutomation: true;
   boundaryProof: TimeScheduleBoundaryProof;
   prototype: ReturnType<typeof extractPublicCourseOfferingsPrototype>;
-  fieldDecisions: typeof TIME_SCHEDULE_FIELD_DECISIONS;
+  fieldDecisions: readonly TimeScheduleFieldDecision[];
   promotionHolds: typeof TIME_SCHEDULE_PROMOTION_HOLDS;
   exactBlockers: TimeScheduleRuntimePromotionBlocker[];
 }
@@ -161,7 +167,8 @@ export interface PublicCourseOfferingSection {
   daysSource: 'row' | 'note';
   timeSource: 'row' | 'note';
   locationText?: string;
-  locationSource?: 'note';
+  locationSource?: 'row' | 'note';
+  instructorText?: string;
   modality?: 'hybrid' | 'online' | 'remote_async' | 'remote_sync';
   noteLines: string[];
   meetings: PublicCourseOfferingMeeting[];
@@ -500,6 +507,31 @@ function parseMeetingTokens(rawTail: string) {
   };
 }
 
+function extractSectionLeadLine(sectionHtml: string) {
+  return htmlToPlainTextWithLineBreaks(sectionHtml)
+    .split('\n')
+    .map((line) => line.replace(/\s+$/g, ''))
+    .find((line) => line.trim().length > 0)
+    ?.trim();
+}
+
+function parseStructuredSectionColumns(line: string) {
+  const normalized = line.replace(/\s+/g, ' ').trim();
+  const match = normalized.match(
+    /^(?:>\s*)?(?<sln>\d{5})\s+(?<sectionId>[A-Z0-9]+)\s+(?<credits>\S+)\s+(?<days>MTWThF|MTWTh|MTW|TTh|MWF|MW|WF|Th|T|W|F)\s+(?<time>\d{3,4}-\d{3,4}[A-Z]?)\s+(?<building>[A-Z*]{1,5})\s+(?<room>[0-9A-Z*]{1,6})\s+(?<instructor>[A-Za-z][A-Za-z,.' -]+?)\s+(?<status>Open|Closed)\s+(?<enrollment>\d+\/\s*\d+)/i,
+  );
+
+  if (!match?.groups) {
+    return undefined;
+  }
+
+  const locationParts = [match.groups.building, match.groups.room].filter((part) => part && part !== '*');
+  return {
+    locationText: locationParts.length > 0 ? locationParts.join(' ') : undefined,
+    instructorText: match.groups.instructor?.trim() || undefined,
+  };
+}
+
 function parseExtraMeetings(noteLines: string[]) {
   return noteLines.flatMap((line) => {
     const match = line.match(/^(?<days>MTWThF|MTWTh|MTW|TTh|MWF|MW|WF|Th|T|W|F)\s+(?<time>\d{3,4}-\d{3,4}[A-Z]?)$/i);
@@ -614,13 +646,17 @@ function splitTimeRange(timeText: string) {
 
 function parseSection(sectionHtml: string, courseKey: string, warnings: string[]) {
   const lineText = normalizeWhitespace(sectionHtml);
+  const leadLine = extractSectionLeadLine(sectionHtml) ?? lineText;
   const prefixMatch = lineText.match(/^(?:(?:Restr|IS)\s+)?(?<sln>\d{5})\s+(?<sectionId>[A-Z0-9]+)\s+(?<tail>.+)$/i);
   if (!prefixMatch?.groups?.sln || !prefixMatch.groups.sectionId || !prefixMatch.groups.tail) {
     return undefined;
   }
 
   const noteLines = parseNoteLines(sectionHtml);
-  const locationText = inferLocation(noteLines);
+  const structuredColumns = parseStructuredSectionColumns(leadLine);
+  const noteLocation = inferLocation(noteLines);
+  const rowLocation = structuredColumns?.locationText;
+  const locationText = rowLocation ?? noteLocation;
   const modality = inferModality(noteLines);
   const rowMeeting = parseMeetingTokens(prefixMatch.groups.tail);
   const noteMeeting = extractMeetingFromNotes(noteLines);
@@ -642,7 +678,7 @@ function parseSection(sectionHtml: string, courseKey: string, warnings: string[]
     ...parseExtraMeetings(noteLines),
   ];
 
-  if (locationText) {
+  if (noteLocation && !rowLocation) {
     warnings.push(`location_can_be_note_derived:${courseKey}:${prefixMatch.groups.sectionId}`);
   }
   if (modality) {
@@ -664,7 +700,8 @@ function parseSection(sectionHtml: string, courseKey: string, warnings: string[]
     daysSource: primaryDaysSource,
     timeSource: primaryTimeSource,
     locationText,
-    locationSource: locationText ? ('note' as const) : undefined,
+    locationSource: rowLocation ? ('row' as const) : noteLocation ? ('note' as const) : undefined,
+    instructorText: structuredColumns?.instructorText,
     modality,
     noteLines,
     meetings,
@@ -874,7 +911,10 @@ export function extractPublicCourseOfferingsPage(html: string): PublicCourseOffe
   return {
     carrier: 'public_course_offerings',
     quarter:
-      getFirstTextBlock(html, 'h1', (text) => text.endsWith('Course Offerings')).replace(/ Course Offerings$/, '') ||
+      getFirstTextBlock(html, 'h1', (text) => text.endsWith('Course Offerings') || text.endsWith('Time Schedule')).replace(
+        / (Course Offerings|Time Schedule)$/,
+        '',
+      ) ||
       '',
     department: getFirstTextBlock(html, 'h2') || undefined,
     lastUpdatedText,
@@ -905,6 +945,7 @@ export function extractPublicCourseOfferingsPrototype(input: {
           ? 'mixed'
           : section.modality,
       location: section.locationText,
+      instructor: section.instructorText,
     })),
   );
 
@@ -922,6 +963,7 @@ export function extractPublicCourseOfferingsPrototype(input: {
         credits: section.credits,
         status: section.status,
         location: section.locationText,
+        instructor: section.instructorText,
         modality: section.modality === 'hybrid' ? 'mixed' : section.modality,
         meetings: section.meetings.map((meeting) => ({
           days: meeting.days,
@@ -943,6 +985,31 @@ export function buildTimeScheduleRuntimePromotionPacket(input: {
   sourceUrl: string;
   quarterLabel: string;
 }): TimeScheduleRuntimePromotionPacket {
+  const authenticatedFullSchedule = /\/students\/timeschd\/(?!pub\/)[A-Z]{3}\d{4}\//i.test(input.sourceUrl);
+  const fieldDecisions: readonly TimeScheduleFieldDecision[] = authenticatedFullSchedule
+    ? TIME_SCHEDULE_FIELD_DECISIONS.map((decision) => {
+        if (decision.field === 'location') {
+          return {
+            ...decision,
+            status: 'proved' as const,
+            reason: 'authenticated full schedule rows expose Bldg/Rm directly in the row grid',
+          };
+        }
+        if (decision.field === 'modality') {
+          return {
+            ...decision,
+            status: 'proved' as const,
+            reason: 'authenticated full schedule notes consistently expose remote / in-person modality cues for the current read-only planning lane',
+          };
+        }
+        return decision;
+      })
+    : TIME_SCHEDULE_FIELD_DECISIONS;
+  const exactBlockers = TIME_SCHEDULE_EXACT_BLOCKERS.filter((blocker) =>
+    authenticatedFullSchedule
+      ? blocker.id !== 'netid_richer_schedule_view' && blocker.id !== 'structured_location_modality_proof'
+      : true,
+  ).map((blocker) => ({ ...blocker }));
   return {
     surface: 'time-schedule',
     stage: TIME_SCHEDULE_STAGE_UNDERSTANDING.currentStage,
@@ -956,8 +1023,8 @@ export function buildTimeScheduleRuntimePromotionPacket(input: {
       sourceUrl: input.sourceUrl,
       quarterLabel: input.quarterLabel,
     }),
-    fieldDecisions: TIME_SCHEDULE_FIELD_DECISIONS,
+    fieldDecisions,
     promotionHolds: TIME_SCHEDULE_PROMOTION_HOLDS,
-    exactBlockers: TIME_SCHEDULE_EXACT_BLOCKERS.map((blocker) => ({ ...blocker })),
+    exactBlockers,
   };
 }

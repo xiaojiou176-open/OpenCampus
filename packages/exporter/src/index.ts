@@ -240,6 +240,17 @@ export interface ExportInput {
       label: string;
       reason: string;
     }>;
+    fieldAuthorityMap?: Record<
+      string,
+      {
+        role: string;
+        surface: string;
+        entityKey: string;
+        resourceType: string;
+        label: string;
+        reason: string;
+      }
+    >;
     matchConfidence: ExportMatchConfidence;
     relatedSites: string[];
     needsReview?: boolean;
@@ -259,6 +270,17 @@ export interface ExportInput {
       label: string;
       reason: string;
     }>;
+    fieldAuthorityMap?: Record<
+      string,
+      {
+        role: string;
+        surface: string;
+        entityKey: string;
+        resourceType: string;
+        label: string;
+        reason: string;
+      }
+    >;
     matchConfidence: ExportMatchConfidence;
     relatedSites: string[];
     workType: string;
@@ -1565,11 +1587,13 @@ function buildCsvRows(dataset: ExportDataset): CsvRow[] {
   for (const cluster of dataset.courseClusters) {
     const disposition = getClusterDisposition(cluster);
     const boundaryMap = formatAuthorityBoundaryMap(cluster.authorityBreakdown);
+    const fieldWinners = formatFieldAuthorityMap(cluster.fieldAuthorityMap);
     const surfaceCoverageMap = formatAuthoritySurfaceCoverageMap(cluster.authorityBreakdown);
     const coverageGaps = formatCourseAuthorityCoverageGaps(cluster.authorityBreakdown);
     const detailParts = [
       `Authority: ${cluster.authoritySource}`,
       boundaryMap ? `Boundary map: ${boundaryMap}` : '',
+      fieldWinners ? `Field winners: ${fieldWinners}` : '',
       surfaceCoverageMap ? `Surface coverage: ${surfaceCoverageMap}` : '',
       coverageGaps ? `Coverage gaps: ${coverageGaps}` : '',
       cluster.authorityNarrative ? `Narrative: ${cluster.authorityNarrative}` : '',
@@ -1605,10 +1629,12 @@ function buildCsvRows(dataset: ExportDataset): CsvRow[] {
   for (const cluster of dataset.workItemClusters) {
     const disposition = getClusterDisposition(cluster);
     const boundaryMap = formatAuthorityBoundaryMap(cluster.authorityBreakdown);
+    const fieldWinners = formatFieldAuthorityMap(cluster.fieldAuthorityMap);
     const surfaceCoverageMap = formatAuthoritySurfaceCoverageMap(cluster.authorityBreakdown);
     const detailParts = [
       `Authority: ${cluster.authoritySource}`,
       boundaryMap ? `Boundary map: ${boundaryMap}` : '',
+      fieldWinners ? `Field winners: ${fieldWinners}` : '',
       surfaceCoverageMap ? `Surface coverage: ${surfaceCoverageMap}` : '',
       cluster.authorityNarrative ? `Narrative: ${cluster.authorityNarrative}` : '',
       ...formatAuthorityBreakdownLines(cluster.authorityBreakdown),
@@ -1830,6 +1856,10 @@ function formatAuthorityBoundaryKey(value: string) {
       return 'assessment';
     case 'assignment_spec':
       return 'spec';
+    case 'resource_identity':
+      return 'resource';
+    case 'resource_access':
+      return 'access';
     case 'schedule_signal':
       return 'schedule';
     case 'submission_state':
@@ -1856,6 +1886,10 @@ function getAuthorityFieldMapTokens(input: {
       return ['submissions', 'scores', 'review'];
     case 'assignment_spec':
       return input.resourceType === 'assignment_row' ? ['title', 'spec', 'link'] : ['title', 'spec'];
+    case 'resource_identity':
+      return ['title', 'summary', 'detail', 'link'];
+    case 'resource_access':
+      return ['download', 'link', 'runtime'];
     case 'schedule_signal':
       return input.resourceType === 'event' ? ['startAt', 'endAt'] : ['dueAt', 'startAt', 'endAt'];
     case 'submission_state':
@@ -1865,6 +1899,32 @@ function getAuthorityFieldMapTokens(input: {
     default:
       return [];
   }
+}
+
+function formatFieldAuthorityMap(
+  fieldAuthorityMap:
+    | Record<
+        string,
+        {
+          role: string;
+          surface: string;
+          resourceType?: string;
+        }
+      >
+    | undefined,
+) {
+  if (!fieldAuthorityMap) {
+    return undefined;
+  }
+
+  const entries = Object.values(fieldAuthorityMap);
+  if (entries.length === 0) {
+    return undefined;
+  }
+
+  return entries
+    .map((facet) => `${formatAuthorityBoundaryFacetLabel({ role: facet.role, resourceType: facet.resourceType })}->${facet.surface}`)
+    .join(' · ');
 }
 
 function formatAuthorityBoundaryFacetLabel(input: {
@@ -2202,15 +2262,17 @@ function renderMarkdown(dataset: ExportDataset) {
         const flag = formatClusterDisposition(cluster);
         const narrative = cluster.authorityNarrative ? ` - authority narrative ${cluster.authorityNarrative}` : '';
         const boundaryMap = formatAuthorityBoundaryMap(cluster.authorityBreakdown);
+        const fieldWinners = formatFieldAuthorityMap(cluster.fieldAuthorityMap);
         const surfaceCoverageMap = formatAuthoritySurfaceCoverageMap(cluster.authorityBreakdown);
         const coverageGaps = formatCourseAuthorityCoverageGaps(cluster.authorityBreakdown);
         const breakdown = formatAuthorityBreakdownLines(cluster.authorityBreakdown)
           .map((line) => `\n  - ${line}`)
           .join('');
         const boundary = boundaryMap ? ` - boundary map ${boundaryMap}` : '';
+        const fieldWinnerLine = fieldWinners ? ` - field winners ${fieldWinners}` : '';
         const surfaceCoverage = surfaceCoverageMap ? ` - surface coverage ${surfaceCoverageMap}` : '';
         const gaps = coverageGaps ? ` - ${coverageGaps}` : '';
-        return `- ${cluster.title} (${flag}; ${cluster.matchConfidence}; authority ${formatAuthoritySource(cluster.authoritySource)}) - ${cluster.summary}${boundary}${surfaceCoverage}${gaps}${narrative}${breakdown}`;
+        return `- ${cluster.title} (${flag}; ${cluster.matchConfidence}; authority ${formatAuthoritySource(cluster.authoritySource)}) - ${cluster.summary}${boundary}${fieldWinnerLine}${surfaceCoverage}${gaps}${narrative}${breakdown}`;
       }),
     ),
   );
@@ -2223,13 +2285,15 @@ function renderMarkdown(dataset: ExportDataset) {
         const flag = formatClusterDisposition(cluster);
         const narrative = cluster.authorityNarrative ? ` - authority narrative ${cluster.authorityNarrative}` : '';
         const boundaryMap = formatAuthorityBoundaryMap(cluster.authorityBreakdown);
+        const fieldWinners = formatFieldAuthorityMap(cluster.fieldAuthorityMap);
         const surfaceCoverageMap = formatAuthoritySurfaceCoverageMap(cluster.authorityBreakdown);
         const breakdown = formatAuthorityBreakdownLines(cluster.authorityBreakdown)
           .map((line) => `\n  - ${line}`)
           .join('');
         const boundary = boundaryMap ? ` - boundary map ${boundaryMap}` : '';
+        const fieldWinnerLine = fieldWinners ? ` - field winners ${fieldWinners}` : '';
         const surfaceCoverage = surfaceCoverageMap ? ` - surface coverage ${surfaceCoverageMap}` : '';
-        return `- ${cluster.title} (${cluster.workType}; ${flag}; ${cluster.matchConfidence}; authority ${formatAuthoritySource(cluster.authoritySource)})${due} - ${cluster.summary}${boundary}${surfaceCoverage}${narrative}${breakdown}`;
+        return `- ${cluster.title} (${cluster.workType}; ${flag}; ${cluster.matchConfidence}; authority ${formatAuthoritySource(cluster.authoritySource)})${due} - ${cluster.summary}${boundary}${fieldWinnerLine}${surfaceCoverage}${narrative}${breakdown}`;
       }),
     ),
   );

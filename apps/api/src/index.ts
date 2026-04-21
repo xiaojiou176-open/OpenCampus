@@ -241,9 +241,39 @@ function buildSwitchyardEndpoint(payload: SwitchyardProxyPayload, env: ApiEnv): 
       provider: payload.provider,
       model: payload.model,
       input: buildSwitchyardInput(payload.messages),
-      lane: payload.lane ?? 'web',
+      ...(payload.lane ? { lane: payload.lane } : {}),
     },
   };
+}
+
+function extractSwitchyardAnswer(payload: unknown) {
+  if (!payload || typeof payload !== 'object') {
+    return undefined;
+  }
+
+  const runtimePayload = payload as {
+    outputText?: unknown;
+    text?: unknown;
+  };
+
+  if (typeof runtimePayload.outputText === 'string') {
+    return runtimePayload.outputText;
+  }
+
+  if (typeof runtimePayload.text === 'string') {
+    return runtimePayload.text;
+  }
+
+  return undefined;
+}
+
+function extractSwitchyardLane(payload: unknown) {
+  if (!payload || typeof payload !== 'object') {
+    return undefined;
+  }
+
+  const lane = (payload as { lane?: unknown }).lane;
+  return lane === 'web' || lane === 'byok' ? lane : undefined;
 }
 
 async function readJsonBody(req: RequestLike) {
@@ -369,20 +399,16 @@ export async function handleSwitchyardProxy(
     }
 
     const resolvedAnswer = resolveAiAnswer({
-      answerText:
-        responseJson &&
-        typeof responseJson === 'object' &&
-        typeof (responseJson as { outputText?: unknown }).outputText === 'string'
-          ? (responseJson as { outputText: string }).outputText
-          : undefined,
+      answerText: extractSwitchyardAnswer(responseJson),
     });
+    const resolvedLane = extractSwitchyardLane(responseJson);
 
     return jsonResponse(response.status, {
       ok: response.ok,
       provider: 'switchyard',
       runtimePath: 'switchyard',
       runtimeProvider: payload.provider,
-      lane: payload.lane ?? 'web',
+      lane: resolvedLane ?? payload.lane,
       forwardedStatus: response.status,
       answerText: resolvedAnswer.answerText,
       structuredAnswer: resolvedAnswer.structuredAnswer,

@@ -64,6 +64,7 @@ import {
   extractMyUWContext,
   extractPageHtml,
   getActiveTabContext,
+  getTabContextsByUrlPatterns,
   type ActiveTabContext,
   type SyncTargetOverride,
 } from './background-tab-context';
@@ -525,6 +526,58 @@ function buildTimeScheduleDetailCorroboration(snapshot: SiteSnapshotPayload) {
   return [detailParts[0], courseTitle, ...detailParts.slice(1)].filter(Boolean).join(' · ');
 }
 
+const TIME_SCHEDULE_PUBLIC_PATTERNS = ['https://www.washington.edu/students/timeschd/pub/*'];
+const TIME_SCHEDULE_DETAIL_PATTERNS = ['https://sdb.admin.washington.edu/timeschd/uwnetid/sln.asp*'];
+
+function isTimeSchedulePublicOfferingsUrl(url: string) {
+  return /\/students\/timeschd\/pub\//i.test(url);
+}
+
+function isTimeScheduleAuthenticatedFullScheduleUrl(url: string) {
+  return /\/students\/timeschd\/(?!pub\/)[A-Z]{3}\d{4}\//i.test(url);
+}
+
+async function readExistingTimeScheduleSnapshot(): Promise<SiteSnapshotPayload> {
+  const [courses, events] = await Promise.all([
+    campusCopilotDb.courses.where('site').equals('time-schedule').toArray(),
+    campusCopilotDb.events.where('site').equals('time-schedule').toArray(),
+  ]);
+
+  return {
+    courses,
+    events,
+  };
+}
+
+function mergeTimeScheduleSnapshots(input: {
+  detail?: SiteSnapshotPayload;
+  publicOffering?: SiteSnapshotPayload;
+  existing?: SiteSnapshotPayload;
+}) {
+  const dedupe = <T extends { id: string }>(records: T[]) => {
+    const merged = new Map<string, T>();
+    for (const record of records) {
+      if (!merged.has(record.id)) {
+        merged.set(record.id, record);
+      }
+    }
+    return [...merged.values()];
+  };
+
+  return {
+    courses: dedupe([
+      ...(input.detail?.courses ?? []),
+      ...(input.publicOffering?.courses ?? []),
+      ...(input.existing?.courses ?? []),
+    ]),
+    events: dedupe([
+      ...(input.detail?.events ?? []),
+      ...(input.publicOffering?.events ?? []),
+      ...(input.existing?.events ?? []),
+    ]),
+  } satisfies SiteSnapshotPayload;
+}
+
 function buildTimeSchedulePlanningSubstrate(input: {
   snapshot: SiteSnapshotPayload;
   capturedAt: string;
@@ -537,20 +590,43 @@ function buildTimeSchedulePlanningSubstrate(input: {
     scheduleOptionCount: number;
     summary?: string;
   };
+  detailSnapshot?: SiteSnapshotPayload;
+  detailSourceUrl?: string;
+  authenticatedScheduleCaptured?: boolean;
 }) {
   const quarterLabel = inferTimeScheduleQuarterLabel(input.snapshot);
   const termCode = slugifyTimeScheduleQuarter(quarterLabel) || 'current-quarter';
-  const capturedFromDetailPage = isTimeScheduleSectionDetailUrl(input.sourceUrl);
+  const capturedFromDetailPage = isTimeScheduleSectionDetailUrl(input.sourceUrl) || Boolean(input.detailSnapshot);
+  const authenticatedScheduleCaptured =
+    input.authenticatedScheduleCaptured || isTimeScheduleAuthenticatedFullScheduleUrl(input.sourceUrl);
   const exactBlockers = TIME_SCHEDULE_EXACT_BLOCKERS.filter((blocker) =>
-    capturedFromDetailPage ? blocker.id !== 'dom_sln_detail_fallback' : true,
+    capturedFromDetailPage && authenticatedScheduleCaptured
+      ? blocker.id !== 'dom_sln_detail_fallback' &&
+        blocker.id !== 'netid_richer_schedule_view' &&
+        blocker.id !== 'structured_location_modality_proof'
+      : capturedFromDetailPage
+      ? blocker.id !== 'dom_sln_detail_fallback'
+      : authenticatedScheduleCaptured
+      ? blocker.id !== 'netid_richer_schedule_view' && blocker.id !== 'structured_location_modality_proof'
+      : true,
   ).map((blocker) => ({ ...blocker }));
-  const runtimePosture = capturedFromDetailPage
+  const runtimePosture = capturedFromDetailPage && authenticatedScheduleCaptured
+    ? 'authenticated_full_schedule_planning_lane_with_sln_detail'
+    : capturedFromDetailPage
     ? 'public_course_offerings_planning_lane_with_sln_detail'
+    : authenticatedScheduleCaptured
+    ? 'authenticated_full_schedule_planning_lane'
     : TIME_SCHEDULE_STAGE_UNDERSTANDING.runtimePosture;
-  const currentTruth = capturedFromDetailPage
+  const currentTruth = capturedFromDetailPage && authenticatedScheduleCaptured
+    ? 'Time Schedule now has a real authenticated full-schedule lane and folds authenticated SLN detail corroboration back into the shared planning lane for richer meeting, location, instructor, seat-availability, section-type, and modality proof while still staying read-only.'
+    : capturedFromDetailPage
     ? 'Time Schedule still stays read-only and public-offerings-first, and the current planning lane now folds authenticated SLN detail corroboration back into the existing public carrier for richer section context, including concrete meeting, location, seat-availability, and exposed section-type / credit / requirement-tag proof.'
+    : authenticatedScheduleCaptured
+    ? 'Time Schedule now has a real authenticated full-schedule lane for richer row-backed meeting, location, instructor, and note-backed modality proof while still staying read-only.'
     : TIME_SCHEDULE_STAGE_UNDERSTANDING.currentTruth;
-  const detailCorroboration = capturedFromDetailPage ? buildTimeScheduleDetailCorroboration(input.snapshot) : undefined;
+  const detailCorroboration = capturedFromDetailPage
+    ? buildTimeScheduleDetailCorroboration(input.detailSnapshot ?? input.snapshot)
+    : undefined;
   const preservedPlannedCourseCount =
     capturedFromDetailPage && input.previous
       ? Math.max(input.snapshot.courses?.length ?? 0, input.previous.plannedCourseCount)
@@ -561,8 +637,8 @@ function buildTimeSchedulePlanningSubstrate(input: {
       : input.snapshot.events?.length ?? 0;
   const termSummary = capturedFromDetailPage
     ? detailCorroboration
-      ? `${input.previous ? `Public course offerings remain the broader planning carrier for ${input.previous.plannedCourseCount} course(s) and ${input.previous.scheduleOptionCount} schedule context item(s). ` : ''}Authenticated SLN detail was captured from ${input.sourceUrl} and merged back into that same planning lane. Detail corroboration: ${detailCorroboration}.`
-      : `${input.previous ? `Public course offerings remain the broader planning carrier for ${input.previous.plannedCourseCount} course(s) and ${input.previous.scheduleOptionCount} schedule context item(s). ` : ''}Authenticated SLN detail was captured from ${input.sourceUrl} and merged back into that same planning lane.`
+      ? `${input.previous ? `Public course offerings remain the broader planning carrier for ${input.previous.plannedCourseCount} course(s) and ${input.previous.scheduleOptionCount} schedule context item(s). ` : ''}Authenticated SLN detail was captured from ${input.detailSourceUrl ?? input.sourceUrl} and merged back into that same planning lane. Detail corroboration: ${detailCorroboration}.`
+      : `${input.previous ? `Public course offerings remain the broader planning carrier for ${input.previous.plannedCourseCount} course(s) and ${input.previous.scheduleOptionCount} schedule context item(s). ` : ''}Authenticated SLN detail was captured from ${input.detailSourceUrl ?? input.sourceUrl} and merged back into that same planning lane.`
     : `Public course offerings captured from ${input.sourceUrl}.`;
 
   return {
@@ -922,9 +998,52 @@ export const SITE_SYNC_HANDLERS: Record<Site, (input: SiteSyncDependencies) => P
     }
 
     try {
-      const snapshot = isTimeScheduleSectionDetailUrl(activeTab.url)
+      const activeDetail = isTimeScheduleSectionDetailUrl(activeTab.url)
         ? buildTimeScheduleDetailSnapshot(html, activeTab.url)
-        : buildTimeScheduleSnapshot(html, activeTab.url);
+        : undefined;
+      const activePublic = isTimeSchedulePublicOfferingsUrl(activeTab.url)
+        ? buildTimeScheduleSnapshot(html, activeTab.url)
+        : undefined;
+      const existingSnapshot = await readExistingTimeScheduleSnapshot();
+      const companionTabs = await getTabContextsByUrlPatterns([
+        ...TIME_SCHEDULE_PUBLIC_PATTERNS,
+        ...TIME_SCHEDULE_DETAIL_PATTERNS,
+      ]);
+      let companionDetail: SiteSnapshotPayload | undefined;
+      let companionDetailUrl: string | undefined;
+      let companionPublic: SiteSnapshotPayload | undefined;
+      let authenticatedScheduleCaptured = isTimeScheduleAuthenticatedFullScheduleUrl(activeTab.url);
+
+      for (const companionTab of companionTabs) {
+        if (companionTab.tabId === activeTab.tabId) {
+          continue;
+        }
+
+        if (!companionDetail && isTimeScheduleSectionDetailUrl(companionTab.url)) {
+          const companionHtml = await extractPageHtml(companionTab.tabId);
+          if (companionHtml) {
+            companionDetail = buildTimeScheduleDetailSnapshot(companionHtml, companionTab.url);
+            companionDetailUrl = companionTab.url;
+          }
+          continue;
+        }
+
+        if (!companionPublic && isTimeSchedulePublicOfferingsUrl(companionTab.url)) {
+          const companionHtml = await extractPageHtml(companionTab.tabId);
+          if (companionHtml) {
+            companionPublic = buildTimeScheduleSnapshot(companionHtml, companionTab.url);
+          }
+        }
+        if (isTimeScheduleAuthenticatedFullScheduleUrl(companionTab.url)) {
+          authenticatedScheduleCaptured = true;
+        }
+      }
+
+      const snapshot = mergeTimeScheduleSnapshots({
+        detail: activeDetail ?? companionDetail,
+        publicOffering: activePublic ?? companionPublic,
+        existing: activeDetail ? existingSnapshot : undefined,
+      });
       const previousPlanning = await getLatestPlanningSubstrateBySource('time-schedule', campusCopilotDb);
       const nextQuarterLabel = inferTimeScheduleQuarterLabel(snapshot);
       const nextTermCode = slugifyTimeScheduleQuarter(nextQuarterLabel) || 'current-quarter';
@@ -937,6 +1056,9 @@ export const SITE_SYNC_HANDLERS: Record<Site, (input: SiteSyncDependencies) => P
             capturedAt: now,
             sourceUrl: activeTab.url,
             previous: previousTerm,
+            detailSnapshot: activeDetail ?? companionDetail,
+            detailSourceUrl: activeDetail ? activeTab.url : companionDetailUrl,
+            authenticatedScheduleCaptured,
           }),
         ],
         campusCopilotDb,

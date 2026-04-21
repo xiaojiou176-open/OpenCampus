@@ -21,6 +21,22 @@ function readFixture(relativePath: string) {
 }
 
 describe('adapters-time-schedule limited shared landing', () => {
+  const authenticatedFullScheduleHtml = `
+    <html><body>
+      <a class="navlink" href="/students/timeschd/SPR2026/">Spring 2026 Time Schedule</a>
+      <h1>Spring Quarter 2026 Time Schedule</h1>
+      <div>Enrollment and status (open/closed) were accurate when this page was created (<b>12:03 am April 21, 2026</b>) but may have changed since then.</div>
+      <table bgcolor="#ccffcc" width="100%">
+        <tr>
+          <td width="50%"><b><a name="cse121">CSE 121 </a>&nbsp;<a href="/students/crscat/cse.html#cse121">COMP PROGRAMMING I</a></b></td>
+          <td width="15%"><b>(NSc,RSN)</b></td>
+        </tr>
+      </table>
+      <table width="100%"><tr><td><pre>       <a href="https://sdb.admin.washington.edu/timeschd/uwnetid/sln.asp?QTRYR=SPR+2026&amp;SLN=12473">12473</a> A  4       WF     1130-1220  <a href="https://map.uw.edu/?id=2099#!m/973190">GUG</a>  220      Wang,Matt                  Open    161/ 250                      
+                        --                                                          <br/>                        SEE THE CSE 12X SELF-PLACEMENT                              <br/>                        WEBPAGE FOR GUIDANCE ON CHOOSING                            <br/>                        THE APPROPRIATE CSE 12X COURSE:                             <br/>                        HTTPS://PLACEMENT.CS.WASHINGTON.EDU                         <br/>                        (COPY/PASTE INTO WEB BROWSER)                               <br/>                        --                                                          <br/>                        NO CREDIT FOR STUDENTS WHO HAVE                             <br/>                        COMPLETED CSE 142                                           <br/></pre></td></tr></table>
+    </body></html>
+  `;
+
   it('keeps the carrier order public-first, session-second, DOM-fallback-last', () => {
     const snapshot = extractScheduleRootSnapshot(readFixture('schedule-root.html'));
 
@@ -233,5 +249,35 @@ describe('adapters-time-schedule limited shared landing', () => {
     expect(detail.noteLines).toContain(
       'SEE THE CSE 12X SELF-PLACEMENT WEBPAGE FOR GUIDANCE ON CHOOSING THE APPROPRIATE CSE 12X COURSE',
     );
+  });
+
+  it('extracts structured location and instructor proof from an authenticated full-schedule row', () => {
+    const page = extractPublicCourseOfferingsPage(authenticatedFullScheduleHtml);
+    const cse121 = page.courses.find((course: PublicCourseOfferingCourse) => course.courseKey === 'CSE 121');
+
+    expect(page.quarter).toBe('Spring Quarter 2026');
+    expect(page.lastUpdatedText).toBe('12:03 am April 21, 2026');
+    expect(cse121?.sections[0]).toEqual(
+      expect.objectContaining({
+        locationText: 'GUG 220',
+        locationSource: 'row',
+        instructorText: 'Wang,Matt',
+      }),
+    );
+    expect(page.warnings).not.toContain('location_can_be_note_derived:CSE 121:A');
+  });
+
+  it('drops the netid blocker once an authenticated full-schedule carrier is used for promotion', () => {
+    const packet = buildTimeScheduleRuntimePromotionPacket({
+      rootHtml: readFixture('schedule-root.html'),
+      offeringsHtml: authenticatedFullScheduleHtml,
+      sourceUrl: 'https://www.washington.edu/students/timeschd/SPR2026/cse.html',
+      quarterLabel: 'Spring Quarter 2026',
+    });
+
+    expect(packet.exactBlockers.map((blocker) => blocker.id)).not.toContain('netid_richer_schedule_view');
+    expect(packet.exactBlockers.map((blocker) => blocker.id)).not.toContain('structured_location_modality_proof');
+    expect(packet.fieldDecisions.find((decision) => decision.field === 'location')?.status).toBe('proved');
+    expect(packet.fieldDecisions.find((decision) => decision.field === 'modality')?.status).toBe('proved');
   });
 });
