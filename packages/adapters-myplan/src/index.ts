@@ -41,7 +41,7 @@ export const MYPLAN_CONTINUATION_PROVED_FIELDS = [
 ] as const;
 
 export const MYPLAN_BOUNDARY_CLASS = 'institution_recognized_session_backed_surface' as const;
-export const MYPLAN_PUBLIC_CLAIM = 'planned_readonly_expansion' as const;
+export const MYPLAN_PUBLIC_CLAIM = 'current_shipped_support' as const;
 
 export const MYPLAN_DEFERRED_FIELDS = [
   'registrationHandoff',
@@ -87,7 +87,7 @@ export const MYPLAN_STAGE_UNDERSTANDING = {
   readOnly: true,
   noRegistrationAutomation: true,
   currentTruth:
-    'MyPlan already lands in the shared Planning Pulse lane, but it still stays summary-first and read-only instead of claiming full standalone MyPlan parity.',
+    'MyPlan now lands in the shipped read-only Planning Pulse lane. It stays comparison-oriented and read-only without claiming registration automation or full standalone MyPlan parity.',
 } as const;
 
 export const MYPLAN_EXACT_BLOCKERS = [
@@ -291,7 +291,7 @@ export function deriveMyPlanPromotionState(input: {
   if (hasPlanCoverage && hasAuditCoverage) {
     return {
       currentTruth:
-        'Planning Pulse already includes both MyPlan plan context and DARS-style audit-summary context, while still staying summary-first and read-only.',
+        'Planning Pulse already includes both MyPlan plan context and DARS-style audit context on the shipped read-only planning runtime lane.',
       exactBlockers,
     };
   }

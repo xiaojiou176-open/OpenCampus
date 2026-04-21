@@ -42,7 +42,7 @@ describe('MyPlanPrototype', () => {
     expect(snapshot.metadata.requirementGroupCount).toBe(2);
     expect(snapshot.provenance.sourceKind).toBe('redacted_html_shell');
     expect(snapshot.provenance.boundaryClass).toBe('institution_recognized_session_backed_surface');
-    expect(snapshot.provenance.publicClaim).toBe('planned_readonly_expansion');
+    expect(snapshot.provenance.publicClaim).toBe('current_shipped_support');
     expect(snapshot.planLabel).toBe('Computer Science transfer plan');
     expect(snapshot.terms).toHaveLength(2);
     expect(snapshot.terms[0]?.plannedCourses.map((course: { courseCode: string }) => course.courseCode)).toEqual([
@@ -198,7 +198,7 @@ describe('MyPlanPrototype', () => {
     expect(packet.surface).toBe('myplan');
     expect(packet.stage).toBe(MYPLAN_STAGE_UNDERSTANDING.currentStage);
     expect(packet.runtimePosture).toBe(MYPLAN_STAGE_UNDERSTANDING.runtimePosture);
-    expect(packet.currentTruth).toContain('both MyPlan plan context and DARS-style audit-summary context');
+    expect(packet.currentTruth).toContain('both MyPlan plan context and DARS-style audit context');
     expect(packet.prototype.planLabel).toBe('Computer Science transfer plan');
     expect(packet.comparison?.surface).toBe('myplan');
     expect(packet.exactBlockers).toEqual([

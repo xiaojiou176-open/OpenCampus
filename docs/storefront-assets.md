@@ -32,6 +32,7 @@ Do not use it as the router for SDK / CLI / MCP examples; those live under [`10-
 | `docs/assets/hero-workbench-overview.svg` | Give first-visit GitHub readers a simple OpenCampus-to-Campus-Copilot orientation without pretending to be proof | Maintainer-authored SVG overview backed by current formal product paths | Update when the public product shape, naming split, or first-screen promise changes materially |
 | `docs/assets/sidepanel-overview.png` | Show the `Campus Copilot for UW` extension shell in a clean, school-specific public-proof crop instead of an internal dashboard dump | Captured from the built sidepanel page with seeded fixture data, real provider readiness, explicit English UI mode, and a clipped public screenshot viewport | Re-capture when the main workbench layout, screenshot fixture, or public-facing English copy changes materially |
 | `docs/assets/ask-ai-evidence-first.png` | Show that Ask AI still starts from the same desk and does not collapse into a blank chat shell when the visible workspace is thin | Captured from the real installed-state extension surface in the repo-owned `Profile 1` lane after the current Ask AI empty-state and evidence-first review pass | Re-capture when the Ask AI first-screen wording, empty-state routing, or evidence-summary hierarchy changes materially |
+| `docs/assets/ask-ai-answer-proof.png` | Show the current Ask AI answer surface with citations/provenance still anchored to the same desk instead of an isolated chat shell | Captured from the built sidepanel proof lane with provider-ready seeded state and a public-proof crop of the current answer panel | Re-capture when the answer card hierarchy, citation strip, or public-facing Ask AI wording changes materially |
 | `docs/assets/web-workbench-overview.png` | Show the broader read-only workbench as a real OpenCampus surface, not as metadata or a concept card | Captured from the built web workbench through a local preview plus Playwright screenshot pass | Re-capture when the workbench first fold, public heading, or proof-facing web layout changes materially |
 | `docs/assets/social-preview-source.svg` + `docs/assets/social-preview.png` | Keep the repository social preview truthful, simple, and legible on GitHub without turning the card into a text wall | Maintainer-authored wide source art plus rendered PNG upload target, aligned with GitHub's 1280x640 best-display guidance | Update whenever hero/storefront positioning changes materially, then re-render the PNG with `pnpm render:social-preview`; the checked PNG must stay `1280x640` and `<1MB` |
 | `apps/opencampus-video/out/opencampus-walkthrough-still.png` + `apps/opencampus-video/out/opencampus-walkthrough.mp4` | Keep one first-party walkthrough asset family that reuses the same proof screenshots and OpenCampus-first narration as the repo front door | Rendered from the Remotion walkthrough in `apps/opencampus-video`, using repo-owned proof screenshots instead of generic motion filler | Re-render when storefront proof screenshots, scene narrative, or frame selection change materially; treat the still as a review/share asset only when its brand anchor remains explicit |
@@ -52,3 +53,14 @@ Everything else that is primarily a builder example, local consumer packet, or M
 - Keep builder examples, OpenClaw-style notes, and MCP wiring packets out of this storefront list unless they become first-screen public proof assets.
 - Keep standalone web metadata and share assets truthful to the imported-snapshot contract; do not imply hosted SaaS behavior.
 - If an asset becomes stale, replace it or remove it from README/docs.
+
+## Current Proof Chain
+
+The public proof chain stays honest only when these layers remain aligned:
+
+1. README/docs wording
+2. tracked storefront screenshots
+3. deterministic proof commands such as `pnpm proof:public`
+4. manual live/browser receipts when a claim depends on a real authenticated session
+
+Do not promote a richer public claim if only one of those layers moved.

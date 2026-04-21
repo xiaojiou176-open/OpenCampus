@@ -54,10 +54,10 @@ describe('extension config', () => {
     ).toBe(true);
     expect(
       ADMIN_HIGH_SENSITIVITY_FAMILY_DESCRIPTORS.find((family) => family.resourceFamily === 'degree_audit_summary')?.note,
-    ).toContain('review-first summary');
+    ).toContain('shipped read-only planning/detail lane');
     expect(
       config.authorization.rules.find((rule) => rule.id === 'tuition-account-layer1-summary')?.reason,
-    ).toContain('review-first summary');
+    ).toContain('shipped review-ready detail lanes');
   });
 
   it('merges partial updates without dropping nested models or site config', async () => {

@@ -51,16 +51,34 @@ Convenient does not automatically mean official, stable, or safe to overclaim.
 | BFF provider status | local loopback API | `official` | deterministic repo gate |
 | Provider round-trip | `OpenAI` / `Gemini` API-key flow | `official` | optional local smoke, not required CI |
 
+## Current Shipped Read-Only Expansion Registry
+
+These are current shipped read-only expansion surfaces.
+They are real product truth now, but they still keep their academic safety boundary:
+
+- read-only
+- export-first or AI-caution where required
+- no registration automation
+- no raw-material promotion just because a richer lane exists
+
+| Site | Shipped posture | Boundary classes | Validation expectation |
+| :-- | :-- | :-- | :-- |
+| MyPlan | shipped read-only planning runtime lane on the shared `Planning Pulse` substrate; prefer institution-recognized session-backed planning surfaces before weaker fallbacks | `session-backed`, `state-fallback`, `dom-fallback` | deterministic adapter/runtime tests plus manual live validation on the repo-owned browser lane when current-session proof matters |
+| DARS | shipped read-only degree-audit carrier on the shared planning substrate; current-user-only interpretation with export-first / AI-caution boundaries | `session-backed`, `dom-fallback` | deterministic adapter/runtime tests plus manual live validation on the repo-owned browser lane when current-session proof matters |
+| Transcript | shipped standalone review-ready detail lane on the admin high-sensitivity substrate | `session-backed`, `dom-fallback` | deterministic extractor/runtime tests plus manual live validation from a matching admin tab when current-session proof matters |
+| Financial aid | shipped standalone review-ready detail lane on the admin high-sensitivity substrate | `session-backed`, `dom-fallback` | deterministic extractor/runtime tests plus manual live validation from a matching admin tab when current-session proof matters |
+| Profile | shipped standalone review-ready detail lane on the admin high-sensitivity substrate | `session-backed`, `dom-fallback` | deterministic extractor/runtime tests plus manual live validation from a matching admin tab when current-session proof matters |
+| Accounts | shipped standalone review-ready detail lane on the admin high-sensitivity substrate | `session-backed`, `dom-fallback` | deterministic extractor/runtime tests plus manual live validation from a matching admin tab when current-session proof matters |
+| Tuition detail | shipped standalone review-ready detail lane on the admin high-sensitivity substrate | `session-backed`, `dom-fallback` | deterministic extractor/runtime tests plus manual live validation from a matching admin tab when current-session proof matters |
+| Time Schedule | shipped read-only planning runtime lane across public offerings plus authenticated corroboration, without registration support | `official`, `session-backed`, `dom-fallback` | deterministic adapter/runtime tests plus manual live validation when current authenticated schedule proof matters |
+| Course websites | shipped read-only `CS only` canonical-merge lane on the shared `Course / Assignment / Event / Resource` contracts | `dom-fallback` | deterministic merge/export/UI tests plus manual live validation when current course-site proof matters |
+
 ## Planned Read-Only Expansion Registry
 
-These are read-only expansion registry surfaces, not automatic full shipped integrations.
-Some rows below now have limited repo-side/workbench adoption, but they still require narrow wording and must not be overstated.
+These remain next-lane candidates, not current shipped integrations.
 
 | Site | Planned posture | Boundary classes | Validation expectation |
 | :-- | :-- | :-- | :-- |
-| MyPlan | read-only academic-planning lane; prefer official/public planning surfaces before session-backed or DOM fallback, and do not treat historical Kuali lineage as proof of a current public API | not yet locked | a shared planning substrate now exists in storage, extension/web `Planning Pulse` adoption is landed, and manual live validation is still required before any stronger claim |
-| DARS | read-only degree-audit lane; prefer official/public degree-audit surfaces before session-backed or DOM fallback | not yet locked | contract design first, then deterministic adapter tests plus manual live validation |
-| Time Schedule | read-only catalog/schedule lane; prefer official/public schedule surfaces before session-backed or DOM fallback | not yet locked | a repo-side shared runtime landing now exists on the public course-offerings carrier, and broader docs/product wording still needs follow-through |
 | DawgPath | read-only program-path lane; prefer official/public program-path surfaces before session-backed or DOM fallback | not yet locked | contract design first, then deterministic adapter tests plus manual live validation |
 | ctcLink class search | class-search-only discovery lane; validate institution-by-institution before trusting internal endpoints or DOM fallback, and do not market current carriers as a stable anonymous API across every school | `internal`, `dom-fallback` likely candidates until a stronger carrier is proved | school-by-school validation plus deterministic adapter tests once a stable carrier is proved |
 

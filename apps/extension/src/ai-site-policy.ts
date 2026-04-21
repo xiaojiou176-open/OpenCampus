@@ -60,9 +60,9 @@ const AI_SITE_POLICY_OVERLAYS: Record<AiPolicySite, AiSitePolicyOverlay> = {
     ],
     forbiddenAiObjects: ['degree audit detail', 'transcript detail', 'financial aid detail', 'profile detail', 'emergency contact detail', 'tuition or account detail'],
     carrierHonesty:
-      'Treat MyUW as a read-only student status carrier; current notices can inform the desk, but DARS/transcript/finaid/profile/tuition detail still need explicit future lanes and stronger human confirmation.',
+      'Treat MyUW as a read-only student-status carrier; current notices can inform the desk, and transcript/finaid/profile/tuition detail now land as shipped review-ready detail surfaces with stricter export-first / AI-blocked handling.',
     operatorNote:
-      'MyUW answers should separate current notices from high-sensitivity records and prefer export-first handoff when an administrative detail lane is not yet landed.',
+      'MyUW answers should separate current notices from high-sensitivity records and keep the shipped detail lanes export-first unless a narrower AI-allowed policy explicitly says otherwise.',
   },
   myplan: {
     site: 'myplan',
@@ -73,7 +73,7 @@ const AI_SITE_POLICY_OVERLAYS: Record<AiPolicySite, AiSitePolicyOverlay> = {
     carrierHonesty:
       'Treat MyPlan as a read-only planning substrate and comparison-oriented carrier, not as proof of enrollment entitlement or registration execution state.',
     operatorNote:
-      'MyPlan answers should stay planning-oriented, keep requirement uncertainty visible, and prefer export-first review while the current lane remains a landed summary lane rather than a detail/runtime lane.',
+      'MyPlan answers should stay planning-oriented, keep requirement uncertainty visible, and prefer export-first review while the current lane is now a shipped read-only planning runtime lane rather than registration tooling.',
   },
   'time-schedule': {
     site: 'time-schedule',
@@ -100,7 +100,7 @@ const AI_SITE_POLICY_OVERLAYS: Record<AiPolicySite, AiSitePolicyOverlay> = {
     carrierHonesty:
       'Treat course websites as read-only metadata and schedule carriers first; public visibility does not make their raw materials AI-readable by default.',
     operatorNote:
-      'Course-site answers should stay within the current scope-limited runtime lane, preserve possible-match uncertainty, and prefer export-first review for syllabus, policy, and exam material.',
+      'Course-site answers should stay within the current shipped CS-only merge lane, preserve possible-match uncertainty, and prefer export-first review for syllabus, policy, and exam material.',
   },
 };
 

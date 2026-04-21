@@ -27,6 +27,8 @@ Available today:
 - local web workbench
 - manual sync
 - read-only workflow
+- shipped read-only planning/admin surfaces
+- current shipped `Course Websites` (`CS only`) merge surfaces
 
 Fastest first pass: `README -> product brief -> user surfaces -> proof`.
 

@@ -534,7 +534,7 @@ describe('capturePlanningSubstrateFromActiveTab', () => {
     expect(stored?.plannedCourseCount).toBe(1);
     expect(stored?.requirementGroupCount).toBe(1);
     expect(stored?.exactBlockers).toHaveLength(0);
-    expect(stored?.currentTruth).toContain('both MyPlan plan context and DARS-style audit-summary context');
+    expect(stored?.currentTruth).toContain('both MyPlan plan context and DARS-style audit context');
     expect(getTabContextsByUrlPatterns).toHaveBeenCalledWith([
       'https://myplan.uw.edu/plan/*',
       'https://myplan.uw.edu/audit/*',

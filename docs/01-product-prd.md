@@ -6,6 +6,8 @@ Campus Copilot is an academic decision workspace for students who need one struc
 - Gradescope
 - EdStem
 - MyUW
+- shipped read-only planning/admin surfaces such as `MyPlan`, `DARS`, `Transcript`, `Financial aid`, `Accounts`, `Tuition detail`, `Profile`, and `Time Schedule`
+- the current `Course Websites` (`CS only`) merge surface on the same shared desk
 
 ## What The Product Does
 
@@ -68,8 +70,8 @@ In plain language:
 
 Use four buckets, not one blurry promise:
 
-- **current formal scope**: the four-site decision workspace, cited AI over structured results, and the thin local BFF for `OpenAI` / `Gemini`
-- **current repo-side extension lane**: read-only planning/search expansion such as `MyPlan`, `DARS`, `Time Schedule`, `DawgPath`, and class-search-only `ctcLink`, but only with narrow, truthful wording and never as registration automation or full upstream-site parity
+- **current formal scope**: the four-site decision workspace, the shipped read-only planning/admin and `Course Websites` (`CS only`) surfaces, cited AI over structured results, and the thin local BFF for `OpenAI` / `Gemini`
+- **current repo-side extension lane**: later read-only planning/search candidates such as `DawgPath` and class-search-only `ctcLink`, but only with narrow, truthful wording and never as registration automation or full upstream-site parity
 - **current preview scope**: repo-public read-only builder surfaces such as `MCP / SDK / CLI / Skills / site API preview packages`; these are real but still secondary to the student workbench
 - **later ambition**: official listing, broader launch packaging, hosted distribution, or anything that outruns repo-local proof
 

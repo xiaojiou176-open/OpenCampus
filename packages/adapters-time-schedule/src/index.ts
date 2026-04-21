@@ -69,7 +69,7 @@ export const TIME_SCHEDULE_STAGE_UNDERSTANDING = {
   readOnly: true,
   noRegistrationAutomation: true,
   currentTruth:
-    'Time Schedule is already a real public planning carrier, but it is still intentionally limited to public course offerings instead of full authenticated schedule/runtime parity.',
+    'Time Schedule now lands as a shipped read-only planning runtime lane across public offerings plus authenticated corroboration, without claiming registration automation or full upstream-site parity.',
 } as const;
 
 export const TIME_SCHEDULE_EXACT_BLOCKERS = [

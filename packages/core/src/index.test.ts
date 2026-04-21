@@ -335,7 +335,7 @@ describe('core contracts', () => {
 
     expect(request.body.messages[0]?.content).toContain('Current site policy overlay: MyPlan.');
     expect(request.body.messages[1]?.content).toContain('"coverageStatus":"plan_and_audit"');
-    expect(request.body.messages[1]?.content).toContain('now behaves like a review-first summary lane, but it still stays read-only and detail/runtime-lane pending');
+    expect(request.body.messages[1]?.content).toContain('now behaves like a shipped read-only planning runtime lane');
     expect(request.body.messages[1]?.content).toContain('Transfer equivalency review remains manual.');
   });
 

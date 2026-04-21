@@ -57,27 +57,27 @@ export const ADMIN_HIGH_SENSITIVITY_FAMILY_DESCRIPTORS = [
   {
     resourceFamily: 'degree_audit_summary',
     label: 'Degree-audit / DARS summaries',
-    note: 'DARS now appears as a review-first summary. It is real shared truth, but detail/runtime promotion still remains pending.',
+    note: 'DARS now lands as a shipped read-only planning/detail lane. It stays export-first and AI-cautious by policy.',
   },
   {
     resourceFamily: 'transcript_summary',
     label: 'Transcript summaries',
-    note: 'Transcript now appears as a review-first summary. Historical-record detail still stays outside a standalone runtime lane.',
+    note: 'Transcript now lands as a shipped review-ready detail lane. Historical-record detail still stays export-first and AI-blocked by policy.',
   },
   {
     resourceFamily: 'financial_aid_summary',
     label: 'Financial-aid summaries',
-    note: 'Financial aid now appears as a review-first summary. High-sensitivity detail still stays export-first and outside the AI-readable path.',
+    note: 'Financial aid now lands as a shipped review-ready detail lane. High-sensitivity detail still stays export-first and AI-blocked by policy.',
   },
   {
     resourceFamily: 'profile_summary',
     label: 'Profile summaries',
-    note: 'Profile now appears as a review-first summary. Personal-profile detail remains export-first and outside the default AI-readable path.',
+    note: 'Profile now lands as a shipped review-ready detail lane. Personal-profile detail remains export-first and AI-blocked by policy.',
   },
   {
     resourceFamily: 'tuition_account_summary',
     label: 'Tuition / account summaries',
-    note: 'Tuition/account now appears as a review-first summary. Billing detail is still not a standalone runtime lane.',
+    note: 'Tuition/account now land as shipped review-ready detail lanes. Billing detail remains export-first and AI-blocked by policy.',
   },
 ] as const;
 
@@ -223,7 +223,7 @@ function buildDefaultAuthorizationRules(): AuthorizationState['rules'] {
       resourceFamily: 'degree_audit_summary',
       label: 'Degree-audit summaries require explicit export confirmation',
       reason:
-        'The current DARS posture is a review-first summary on the shared planning/admin substrate. It is a real review/export lane, but not yet a detail/runtime lane.',
+        'The current DARS posture is a shipped read-only review-ready lane on the shared planning/admin substrate. It is lawful for review/export, while AI remains stricter by policy.',
     },
     {
       id: 'degree-audit-layer2-summary',
@@ -231,7 +231,7 @@ function buildDefaultAuthorizationRules(): AuthorizationState['rules'] {
       status: 'blocked',
       resourceFamily: 'degree_audit_summary',
       label: 'Degree-audit AI analysis stays blocked until a stronger DARS lane is promoted',
-      reason: 'The current DARS posture is a review-first summary and export-first, not an AI-readable detail/runtime lane.',
+      reason: 'The current DARS posture is a shipped review-ready export lane, but direct AI analysis of degree-audit detail remains blocked by policy.',
     },
     {
       id: 'transcript-layer1-summary',
@@ -240,7 +240,7 @@ function buildDefaultAuthorizationRules(): AuthorizationState['rules'] {
       resourceFamily: 'transcript_summary',
       label: 'Transcript summaries require explicit export confirmation',
       reason:
-        'Transcript already has a review-first summary and stays export-first. Historical-record detail still remains outside a detail/runtime lane.',
+        'Transcript already has a shipped review-ready detail lane and stays export-first. Historical-record detail still remains outside the default AI-readable runtime path.',
     },
     {
       id: 'transcript-layer2-summary',
@@ -257,7 +257,7 @@ function buildDefaultAuthorizationRules(): AuthorizationState['rules'] {
       resourceFamily: 'financial_aid_summary',
       label: 'Financial-aid summaries require explicit export confirmation',
       reason:
-        'Financial aid already has a review-first summary and stays export-first. High-sensitivity detail still remains outside a detail/runtime lane.',
+        'Financial aid already has a shipped review-ready detail lane and stays export-first. High-sensitivity detail still remains outside the default AI-readable runtime path.',
     },
     {
       id: 'financial-aid-layer2-summary',
@@ -274,7 +274,7 @@ function buildDefaultAuthorizationRules(): AuthorizationState['rules'] {
       resourceFamily: 'profile_summary',
       label: 'Profile summaries require explicit export confirmation',
       reason:
-        'Profile already has a review-first summary and stays export-first. Personal-profile detail still stays outside the default AI-readable runtime path.',
+        'Profile already has a shipped review-ready detail lane and stays export-first. Personal-profile detail still stays outside the default AI-readable runtime path.',
     },
     {
       id: 'profile-layer2-summary',
@@ -291,7 +291,7 @@ function buildDefaultAuthorizationRules(): AuthorizationState['rules'] {
       resourceFamily: 'tuition_account_summary',
       label: 'Tuition and account summaries require explicit export confirmation',
       reason:
-        'Tuition/account now stays at the review-first summary level. Billing detail is still not a standalone runtime lane.',
+        'Tuition/account now land as shipped review-ready detail lanes and stay export-first. Billing detail still remains outside the default AI-readable runtime path.',
     },
     {
       id: 'tuition-account-layer2-summary',
