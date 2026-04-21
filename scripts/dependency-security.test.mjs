@@ -58,3 +58,31 @@ test('wxt dependency chain resolves defu to a patched version in the lockfile', 
   const resolvedVersion = defuLine.split(':').slice(1).join(':').trim();
   assertVersionAtLeast(resolvedVersion, '6.1.5');
 });
+
+test('lockfile no longer contains the vulnerable @eslint/plugin-kit release', () => {
+  assert.equal(
+    /@eslint\/plugin-kit@0\.2\.8/.test(lockfile),
+    false,
+    'expected pnpm-lock.yaml to stop resolving @eslint/plugin-kit 0.2.8',
+  );
+});
+
+test('eslint dependency chains resolve @eslint/plugin-kit to a patched version in the lockfile', () => {
+  const vulnerableSnapshots = Array.from(
+    lockfile.matchAll(/eslint@9\.[\s\S]*?\n {4}dependencies:\n([\s\S]*?)\n {2}[^\s]/g),
+  );
+  assert.ok(vulnerableSnapshots.length > 0, 'expected to find eslint@9 dependency snapshots in pnpm-lock.yaml');
+
+  for (const snapshot of vulnerableSnapshots) {
+    const pluginKitLine = snapshot[1]
+      .split('\n')
+      .find((line) => line.trim().startsWith('@eslint/plugin-kit:'));
+
+    if (!pluginKitLine) {
+      continue;
+    }
+
+    const resolvedVersion = pluginKitLine.split(':').slice(1).join(':').trim();
+    assertVersionAtLeast(resolvedVersion, '0.3.4');
+  }
+});
