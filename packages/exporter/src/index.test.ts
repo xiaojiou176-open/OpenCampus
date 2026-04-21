@@ -894,6 +894,112 @@ describe('exporter package', () => {
     );
   });
 
+  it('renders explicit field-winner summaries for merged clusters when fieldAuthorityMap is present', () => {
+    const artifact = createExportArtifact({
+      preset: 'current_view',
+      format: 'markdown',
+      input: {
+        ...baseInput,
+        resources: [],
+        assignments: [],
+        announcements: [],
+        messages: [],
+        grades: [],
+        events: [],
+        alerts: [],
+        timelineEntries: [],
+        focusQueue: [],
+        weeklyLoad: [],
+        syncRuns: [],
+        changeEvents: [],
+        courseClusters: [
+          {
+            id: 'cluster:course:cse312',
+            title: 'CSE 312',
+            summary: 'Course website now leads the course identity merge.',
+            authoritySource: 'course-sites:course_page',
+            authorityNarrative: 'Course website keeps the identity lane.',
+            authorityBreakdown: [
+              {
+                role: 'course_identity',
+                surface: 'course-sites',
+                entityKey: 'course-sites:course:cse312:26sp',
+                resourceType: 'course_page',
+                label: 'CSE 312',
+                reason: 'Course website keeps the identity lane.',
+              },
+            ],
+            fieldAuthorityMap: {
+              course_identity: {
+                role: 'course_identity',
+                surface: 'course-sites',
+                entityKey: 'course-sites:course:cse312:26sp',
+                resourceType: 'course_page',
+                label: 'CSE 312',
+                reason: 'Course website keeps the identity lane.',
+              },
+            },
+            matchConfidence: 'high' as const,
+            relatedSites: ['course-sites'],
+          },
+        ],
+        workItemClusters: [
+          {
+            id: 'cluster:work:cse312:week8-review',
+            title: 'Week 8 review walkthrough',
+            summary: 'Merged resource cluster.',
+            authoritySource: 'course-sites:resources_page',
+            authorityNarrative: 'course-sites owns resource identity; edstem keeps download/runtime access.',
+            authorityBreakdown: [
+              {
+                role: 'resource_identity',
+                surface: 'course-sites',
+                entityKey: 'course-sites:resource:cse312:resources:week-8-review-walkthrough',
+                resourceType: 'resources_page',
+                label: 'Week 8 review walkthrough',
+                reason: 'Course website owns the resource identity.',
+              },
+              {
+                role: 'resource_access',
+                surface: 'edstem',
+                entityKey: 'edstem:resource:cse312:week8-review',
+                resourceType: 'lesson_slide',
+                label: 'Week 8 review walkthrough',
+                reason: 'EdStem keeps the strongest download/runtime access.',
+              },
+            ],
+            fieldAuthorityMap: {
+              resource_identity: {
+                role: 'resource_identity',
+                surface: 'course-sites',
+                entityKey: 'course-sites:resource:cse312:resources:week-8-review-walkthrough',
+                resourceType: 'resources_page',
+                label: 'Week 8 review walkthrough',
+                reason: 'Course website owns the resource identity.',
+              },
+              resource_access: {
+                role: 'resource_access',
+                surface: 'edstem',
+                entityKey: 'edstem:resource:cse312:week8-review',
+                resourceType: 'lesson_slide',
+                label: 'Week 8 review walkthrough',
+                reason: 'EdStem keeps the strongest download/runtime access.',
+              },
+            },
+            matchConfidence: 'high' as const,
+            relatedSites: ['course-sites', 'edstem'],
+            workType: 'resource_material',
+          },
+        ],
+      },
+    });
+
+    expect(artifact.content).toContain('field winners identity[title/code/term/link]->course-sites');
+    expect(artifact.content).toContain(
+      'field winners resource[title/summary/detail/link]->course-sites · access[download/link/runtime]->edstem',
+    );
+  });
+
   it('treats locally reviewed cluster decisions as resolved export statuses instead of open review blockers', () => {
     const artifact = createExportArtifact({
       preset: 'current_view',

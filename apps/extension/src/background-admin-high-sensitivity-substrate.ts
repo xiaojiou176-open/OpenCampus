@@ -14,6 +14,41 @@ function extractFirstMatch(html: string, pattern: RegExp) {
   return stripHtml(match?.[1]);
 }
 
+function extractLastMatch(html: string, pattern: RegExp) {
+  const matches = Array.from(html.matchAll(pattern));
+  const value = matches.at(-1)?.[1];
+  return stripHtml(value);
+}
+
+function extractTranscriptHeaderValues(pageHtml: string) {
+  const match = pageHtml.match(
+    /<th[^>]*>\s*Student No\s*<\/th>\s*<th[^>]*>\s*Birth Date\s*<\/th>\s*<th[^>]*>\s*Class\s*<\/th>\s*<th[^>]*>\s*College\s*<\/th>\s*<th[^>]*>\s*Major\s*<\/th>\s*<\/tr>\s*<tr[^>]*>\s*<td[^>]*>[\s\S]*?<\/td>\s*<td[^>]*>[\s\S]*?<\/td>\s*<td[^>]*>([\s\S]*?)<\/td>\s*<td[^>]*>[\s\S]*?<\/td>\s*<td[^>]*>([\s\S]*?)<\/td>/i,
+  );
+
+  return {
+    classValue: stripHtml(match?.[1]),
+    majorValue: stripHtml(match?.[2]),
+  };
+}
+
+function extractFinaidPrimaryMessage(pageHtml: string) {
+  const messagesTableHtml =
+    pageHtml.match(/<table[^>]*(?:id="dgMessagesList[^"]*"|aria-label="dgMessagesList")[^>]*>([\s\S]*?)<\/table>/i)?.[1] ??
+    pageHtml;
+  const tableMessage = Array.from(
+    messagesTableHtml.matchAll(/<td[^>]*class="[^"]*\bfacontenttext\b[^"]*"[^>]*>[\s\S]*?<b>([\s\S]*?)<\/b>[\s\S]*?<\/td>/gi),
+  )
+    .map((match) => stripHtml(match[1]))
+    .find(Boolean);
+  if (tableMessage) {
+    return tableMessage;
+  }
+
+  return Array.from(pageHtml.matchAll(/<b[^>]*>([\s\S]*?)<\/b>/gi))
+    .map((match) => stripHtml(match[1]))
+    .find((candidate) => candidate.length > 0 && !/Student Personal Services|Financial Aid Status|Loan History|Messages/i.test(candidate));
+}
+
 function detectAdminCarrierFamily(url: string) {
   const normalized = url.toLowerCase();
   if (normalized.includes('untranscript.aspx')) {
@@ -66,12 +101,13 @@ function buildPendingLane(note: string, exactBlockers: AdminCarrierRecord['exact
 }
 
 function buildTranscriptCarrier(pageHtml: string, url: string, now: string): AdminCarrierRecord {
-  const classValue = extractFirstMatch(pageHtml, /<th>Class<\/th>[\s\S]*?<td[^>]*>([\s\S]*?)<\/td>/i);
-  const majorValue = extractFirstMatch(pageHtml, /<th>Major<\/th>[\s\S]*?<td[^>]*>([\s\S]*?)<\/td>/i);
+  const transcriptHeader = extractTranscriptHeaderValues(pageHtml);
+  const classValue = transcriptHeader.classValue || extractFirstMatch(pageHtml, /<th>Class<\/th>[\s\S]*?<td[^>]*>([\s\S]*?)<\/td>/i);
+  const majorValue = transcriptHeader.majorValue || extractFirstMatch(pageHtml, /<th>Major<\/th>[\s\S]*?<td[^>]*>([\s\S]*?)<\/td>/i);
   const transferCredits = extractFirstMatch(pageHtml, /TOTAL CREDITS EARNED:\s*([0-9.]+)/i);
-  const cumulativeGpa = extractFirstMatch(pageHtml, /CUM GPA:\s*([0-9.]+)/i);
+  const cumulativeGpa = extractLastMatch(pageHtml, /CUM GPA:\s*([0-9.]+)/gi);
   const standing = extractFirstMatch(pageHtml, /ACADEMIC STANDING:\s*([A-Z ]+)/i);
-  const workInProgress = extractFirstMatch(pageHtml, /WORK IN PROGRESS[\s\S]*?QTR REGISTERED:\s*([0-9.]+)/i);
+  const workInProgress = extractFirstMatch(pageHtml, /QTR\s+REGISTERED:\s*([0-9.]+)/i);
 
   return {
     id: 'admin-carrier:transcript',
@@ -106,8 +142,8 @@ function buildTranscriptCarrier(pageHtml: string, url: string, now: string): Adm
 function buildFinaidCarrier(pageHtml: string, url: string, now: string): AdminCarrierRecord {
   const messagesCount = extractFirstMatch(pageHtml, /Messages\s*\((\d+)\)/i);
   const mainStatus =
-    extractFirstMatch(pageHtml, /<b[^>]*>([\s\S]*?)<\/b>/i) ||
-    extractFirstMatch(pageHtml, /Aid status summary[\s\S]*?processing support\./i) ||
+    extractFinaidPrimaryMessage(pageHtml) ||
+    extractFirstMatch(pageHtml, /<b[^>]*>(Aid status summary[\s\S]*?processing support\.)<\/b>/i) ||
     'Financial aid application status is visible on the current page.';
   const totalPrincipal =
     extractFirstMatch(pageHtml, /Total borrowing[\s\S]*?\$([0-9,]+)/i) ||
@@ -272,11 +308,13 @@ function buildTuitionDetailCarrier(pageHtml: string, url: string, now: string): 
     pageHtml,
     /<b>TOTAL:<\/b>[\s\S]*?<td[^>]*><tt>[0-9.,]+<\/tt><\/td>\s*<td[^>]*><tt>([0-9.,]+)<\/tt><\/td>\s*<td[^>]*><tt>BALANCE:/i,
   );
-  const aidToAccount = extractFirstMatch(
-    pageHtml,
-    /Disbursed to Account[\s\S]*?<tt>([0-9.,]+)<\/tt>\s*<\/td>\s*<td[^>]*><tt>UNDISBURSED AID:/i,
+  const financialAidTableHtml =
+    pageHtml.match(/<table[^>]*id="tblFinancialAid"[^>]*>([\s\S]*?)<\/table>/i)?.[1] ?? pageHtml;
+  const financialAidTotalsMatch = financialAidTableHtml.match(
+    /<tt><b>TOTAL:<\/b><\/tt>[\s\S]*?<tt>([0-9.,]+)<\/tt>[\s\S]*?<tt>([0-9.,]+)<\/tt>[\s\S]*?<tt>([0-9.,]+)<\/tt>[\s\S]*?<tt>([0-9.,]+)<\/tt>[\s\S]*?UNDISBURSED AID:\s*\$&nbsp;?([0-9.,]+)/i,
   );
-  const undisbursedAid = extractFirstMatch(pageHtml, /UNDISBURSED AID:\s*\$\s*([0-9.,]+)/i);
+  const aidToAccount = stripHtml(financialAidTotalsMatch?.[3]);
+  const undisbursedAid = stripHtml(financialAidTotalsMatch?.[5]) || extractFirstMatch(pageHtml, /UNDISBURSED AID:\s*\$[^\d]*([0-9.,]+)/i);
   const hasBreakdown = /Tuition Charge Breakdown/i.test(pageHtml);
 
   return {

@@ -230,12 +230,18 @@ function formatAuthorityFacetRole(value: string, uiLanguage: WorkbenchPanelsProp
       return '评估流';
     case 'assignment_spec':
       return '任务定义';
+    case 'resource_identity':
+      return '资源定义';
+    case 'resource_access':
+      return '资源访问';
     case 'schedule_signal':
       return '时间信号';
     case 'submission_state':
       return '提交状态';
     case 'grade_truth':
       return '成绩真相';
+    case 'feedback_detail':
+      return '反馈细节';
     default:
       return normalized;
   }
@@ -276,6 +282,10 @@ function formatAuthorityBoundaryKey(value: string, uiLanguage: WorkbenchPanelsPr
       return '评估';
     case 'assignment_spec':
       return '规格';
+    case 'resource_identity':
+      return '资源';
+    case 'resource_access':
+      return '访问';
     case 'schedule_signal':
       return '时间';
     case 'submission_state':
@@ -285,6 +295,63 @@ function formatAuthorityBoundaryKey(value: string, uiLanguage: WorkbenchPanelsPr
     default:
       return value.replace(/_/g, ' ');
   }
+}
+
+function getAuthorityFieldMapTokens(role: string) {
+  switch (role) {
+    case 'course_identity':
+      return ['title', 'code', 'term', 'link'];
+    case 'course_delivery':
+      return ['modules', 'assignments', 'announcements', 'runtime'];
+    case 'discussion_runtime':
+      return ['threads', 'replies', 'lesson-entry'];
+    case 'assessment_runtime':
+      return ['submissions', 'scores', 'review'];
+    case 'assignment_spec':
+      return ['title', 'spec', 'link'];
+    case 'resource_identity':
+      return ['title', 'summary', 'detail', 'link'];
+    case 'resource_access':
+      return ['download', 'link', 'runtime'];
+    case 'schedule_signal':
+      return ['dueAt', 'startAt', 'endAt'];
+    case 'submission_state':
+      return ['status', 'submission'];
+    case 'feedback_detail':
+      return ['score', 'rubric', 'comment', 'annotation'];
+    default:
+      return [];
+  }
+}
+
+function formatFieldAuthorityMap(
+  fieldAuthorityMap:
+    | Record<
+        string,
+        {
+          role: string;
+          surface: string;
+        }
+      >
+    | undefined,
+  uiLanguage: WorkbenchPanelsProps['uiLanguage'],
+) {
+  if (!fieldAuthorityMap) {
+    return undefined;
+  }
+
+  const entries = Object.values(fieldAuthorityMap);
+  if (entries.length === 0) {
+    return undefined;
+  }
+
+  return entries
+    .map((facet) => {
+      const tokens = getAuthorityFieldMapTokens(facet.role);
+      const fieldLabel = `${formatAuthorityBoundaryKey(facet.role, uiLanguage)}${tokens.length ? `[${tokens.join('/')}]` : ''}`;
+      return `${fieldLabel}->${facet.surface}`;
+    })
+    .join(' · ');
 }
 
 function formatAuthorityBoundaryMap(
@@ -1787,6 +1854,12 @@ export function WorkbenchOperationsSections({
                       {formatAuthorityBoundaryMap(cluster.authorityBreakdown, uiLanguage)}
                     </p>
                   ) : null}
+                  {formatFieldAuthorityMap(cluster.fieldAuthorityMap, uiLanguage) ? (
+                    <p className="surface__meta">
+                      {uiLanguage === 'zh-CN' ? '字段赢家' : 'Field winners'}:{' '}
+                      {formatFieldAuthorityMap(cluster.fieldAuthorityMap, uiLanguage)}
+                    </p>
+                  ) : null}
                   {cluster.authorityNarrative ? <p className="surface__meta">{cluster.authorityNarrative}</p> : null}
                   {cluster.authorityBreakdown?.length ? (
                     <ul className="surface__list surface__list--compact">
@@ -1851,6 +1924,12 @@ export function WorkbenchOperationsSections({
                     <p className="surface__meta">
                       {uiLanguage === 'zh-CN' ? '边界图' : 'Boundary map'}:{' '}
                       {formatAuthorityBoundaryMap(cluster.authorityBreakdown, uiLanguage)}
+                    </p>
+                  ) : null}
+                  {formatFieldAuthorityMap(cluster.fieldAuthorityMap, uiLanguage) ? (
+                    <p className="surface__meta">
+                      {uiLanguage === 'zh-CN' ? '字段赢家' : 'Field winners'}:{' '}
+                      {formatFieldAuthorityMap(cluster.fieldAuthorityMap, uiLanguage)}
                     </p>
                   ) : null}
                   {cluster.authorityNarrative ? <p className="surface__meta">{cluster.authorityNarrative}</p> : null}

@@ -20,6 +20,23 @@ const finaidHtml = `
   </body></html>
 `;
 
+const finaidLiveStyleHtml = `
+  <html><body>
+    <b>Student Support Portal | Help | Logout · Registration · Grade Inquiry · Degree Review · Aid Overview</b>
+    <div id="divLNItem3"><a href="javascript:displayDiv('Messages');">Messages (5)</a></div>
+    <table id="dgMessagesList">
+      <tr>
+        <td class="facontenttext"><img alt=" For your information."></td>
+        <td class="facontenttext"><b>We have received your financial aid application for the year, but have not yet offered you aid.</b></td>
+      </tr>
+    </table>
+    <div id="LoanHistory">
+      <span>Total borrowing</span><span>$15,000</span>
+      <span>Estimated monthly payment</span><span>$167</span>
+    </div>
+  </body></html>
+`;
+
 const accountsHtml = `
   <html><head><title>Administrative summary</title></head><body>
     <h2>Tuition &amp; Fees</h2>
@@ -70,6 +87,42 @@ const tuitionHtml = `
   </body></html>
 `;
 
+const tuitionLiveStyleHtml = `
+  <html><body>
+    <h1>Official Tuition Charge Statement - Spring 2026</h1>
+    <table id="tblClassification">
+      <tr><th>Tuition Classification:</th><td>UNDERGRAD RESIDENT</td></tr>
+      <tr><th>Credit Hours:</th><td>14</td></tr>
+    </table>
+    <table id="tblDetailOfAccount">
+      <tr><td><tt><b>TOTAL:</b></tt></td><td><tt>4468.00</tt></td><td><tt>4468.00</tt></td><td><tt>BALANCE: $ 0.00</tt></td></tr>
+    </table>
+    <table id="tblFinancialAid">
+      <tr><th>Program</th><th>Amount Offered</th><th>Disbursement Date</th><th>Disbursed to Check</th><th>Disbursed to Account</th><th>Direct Deposit</th><th>Comments</th></tr>
+      <tr><td><tt>PEDRIZETTI FAMILY SCHOLARSHIP</tt></td><td><tt>1000.00</tt></td><td><tt>3/30/26</tt></td><td><tt>0.00</tt></td><td><tt>1000.00</tt></td><td><tt>0.00</tt></td><td></td></tr>
+      <tr><td><tt>WASHINGTON COLLEGE GRANT</tt></td><td><tt>4260.00</tt></td><td><tt>3/30/26</tt></td><td><tt>0.00</tt></td><td><tt>3468.00</tt></td><td><tt>792.00</tt></td><td></td></tr>
+      <tr><td><tt><b>TOTAL:</b></tt></td><td><tt>5260.00</tt></td><td></td><td><tt>0.00</tt></td><td><tt>4468.00</tt></td><td><tt>792.00</tt></td><td><tt>UNDISBURSED AID: $&nbsp;0.00</tt></td></tr>
+    </table>
+    <div id="panelTuitionBreakdown"><h3>Tuition Charge Breakdown</h3></div>
+  </body></html>
+`;
+
+const transcriptLiveStyleHtml = `
+  <html><body>
+    <table>
+      <tr bgcolor="#d0d0d0"><th>Student No</th><th>Birth Date</th><th>Class</th><th>College</th><th>Major</th></tr>
+      <tr><td>2582656</td><td>07/31/XX</td><td>JUNIOR</td><td>Arts &amp; Sciences</td><td>COMPUTER SCIENCE</td></tr>
+    </table>
+    TOTAL CREDITS EARNED:              101.0 GPA:4.00
+    CUM GRADED AT:  8.0 GRADE PTS:  17.6  CUM GPA:  2.20
+    CUM GRADED AT: 21.0 GRADE PTS:  17.6  CUM GPA:  0.84
+    ACADEMIC STANDING: WARNING
+    <table><tr><th>WORK IN PROGRESS</th></tr><tr><td><pre>SPRING 2026 C SCI 3
+      QTR  REGISTERED:             14.0
+    </pre></td></tr></table>
+  </body></html>
+`;
+
 describe('background admin high-sensitivity substrate', () => {
   it('extracts a transcript summary carrier from transcript html', () => {
     const records = extractAdminCarriersFromPageHtml({
@@ -95,6 +148,18 @@ describe('background admin high-sensitivity substrate', () => {
     expect(records[0]?.family).toBe('finaid');
     expect(records[0]?.summary).toContain('5 message');
     expect(records[0]?.summary).toContain('$15,000');
+  });
+
+  it('prefers the first live financial-aid message instead of a generic page header', () => {
+    const records = extractAdminCarriersFromPageHtml({
+      url: 'https://example.invalid/redacted/finaidstatus.aspx',
+      pageHtml: finaidLiveStyleHtml,
+      now: '2026-04-21T10:00:00-07:00',
+    });
+
+    expect(records).toHaveLength(1);
+    expect(records[0]?.summary).toContain('We have received your financial aid application for the year');
+    expect(records[0]?.summary).not.toContain('Student Personal Services');
   });
 
   it('extracts accounts and tuition-detail carriers from accounts html', () => {
@@ -140,5 +205,31 @@ describe('background admin high-sensitivity substrate', () => {
     expect(records[0]?.summary).toContain('payments $4468.00');
     expect(records[0]?.summary).toContain('undisbursed aid $0.00');
     expect(records[0]?.summary).toContain('visible mandatory-fee breakdown');
+  });
+
+  it('extracts live tuition disbursement totals from the financial-aid summary row', () => {
+    const records = extractAdminCarriersFromPageHtml({
+      url: 'https://example.invalid/redacted/tuition.aspx',
+      pageHtml: tuitionLiveStyleHtml,
+      now: '2026-04-21T10:00:00-07:00',
+    });
+
+    expect(records).toHaveLength(1);
+    expect(records[0]?.summary).toContain('aid to account $4468.00');
+    expect(records[0]?.summary).toContain('undisbursed aid $0.00');
+  });
+
+  it('extracts live transcript class, major, cumulative GPA, and registered credits from the transcript table layout', () => {
+    const records = extractAdminCarriersFromPageHtml({
+      url: 'https://example.invalid/redacted/untranscript.aspx',
+      pageHtml: transcriptLiveStyleHtml,
+      now: '2026-04-21T10:00:00-07:00',
+    });
+
+    expect(records).toHaveLength(1);
+    expect(records[0]?.summary).toContain('class JUNIOR');
+    expect(records[0]?.summary).toContain('major COMPUTER SCIENCE');
+    expect(records[0]?.summary).toContain('cumulative GPA 0.84');
+    expect(records[0]?.summary).toContain('14.0 credits currently in progress');
   });
 });

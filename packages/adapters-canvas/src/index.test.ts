@@ -690,6 +690,61 @@ describe('CanvasApiClient', () => {
     }
   });
 
+  it('accepts submission_html_comments when Canvas returns them as an array payload', async () => {
+    const client = new CanvasApiClient(
+      okExecutor({
+        [CANVAS_COURSES_PATH]: [
+          {
+            id: 42,
+            name: 'CSE 142',
+            course_code: 'CSE 142',
+            html_url: 'https://canvas.example.edu/courses/42',
+          },
+        ],
+        ...canvasDepthResourcePayloads(42),
+        [canvasSubmissionFeedbackPath(42, [10])]: [
+          {
+            assignment_id: 10,
+            submission_comments: [],
+            submission_html_comments: ['<p>Rendered rubric feedback</p>', '<p>Second note</p>'],
+          },
+        ],
+        '/api/v1/courses/42/assignments?include[]=submission&order_by=due_at&per_page=100': [
+          {
+            id: 10,
+            course_id: 42,
+            name: 'Homework 3',
+            html_url: 'https://canvas.example.edu/courses/42/assignments/10',
+            due_at: '2026-03-26T23:59:00-07:00',
+            points_possible: 25,
+            submission: {
+              workflow_state: 'submitted',
+              submitted_at: '2026-03-24T08:15:00-07:00',
+              score: 24,
+            },
+          },
+        ],
+        '/api/v1/announcements?per_page=100&context_codes%5B%5D=course_42': [],
+        '/api/v1/conversations?scope=inbox&per_page=100': [],
+        '/api/v1/calendar_events?all_events=true&per_page=100&context_codes%5B%5D=course_42': [],
+      }),
+    );
+
+    const adapter = createCanvasAdapter(client);
+    const result = await adapter.sync({
+      url: 'https://canvas.example.edu/courses/42',
+      site: 'canvas',
+      now: '2026-03-24T18:00:00-07:00',
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.outcome).toBe('success');
+      expect(result.snapshot.assignments?.[0]?.detail).toContain('Rendered rubric feedback');
+      expect(result.snapshot.assignments?.[0]?.detail).toContain('Second note');
+    }
+  });
+
   it('keeps module completion requirements in resource detail truth', async () => {
     const client = new CanvasApiClient(
       okExecutor({
@@ -1196,6 +1251,138 @@ describe('CanvasApiClient', () => {
       expect(result.snapshot.messages).toHaveLength(0);
       expect(result.snapshot.events).toHaveLength(0);
     }
+  });
+
+  it('filters non-navigable shell courses out of the current academic sync set', async () => {
+    const fallback = okExecutor({
+      [CANVAS_COURSES_PATH]: [
+        {
+          id: 42,
+          name: 'CSE 142',
+          course_code: 'CSE 142',
+          html_url: 'https://canvas.example.edu/courses/42',
+        },
+        {
+          id: 283480000000000260,
+          name: 'Understanding Civil Rights 2025-2026',
+          course_code: 'Understanding Civil Rights 2025-2026',
+          default_view: 'wiki',
+          restrict_enrollments_to_course_dates: true,
+        },
+      ],
+      ...canvasDepthResourcePayloads(42),
+      '/api/v1/courses/42/assignments?include[]=submission&order_by=due_at&per_page=100': [],
+      '/api/v1/announcements?per_page=100&context_codes%5B%5D=course_42': [],
+      '/api/v1/conversations?scope=inbox&per_page=100': [],
+      '/api/v1/calendar_events?all_events=true&per_page=100&context_codes%5B%5D=course_42': [],
+    });
+    const client = new CanvasApiClient(async (path) => {
+      if (path.startsWith('/api/v1/courses/283480000000000260/')) {
+        return {
+          ok: true,
+          status: 403,
+          responseUrl: `https://canvas.example.edu${path}`,
+          bodyText: '{"status":"unauthorized","errors":[{"message":"user not authorized to perform that action"}]}',
+          contentType: 'application/json',
+        };
+      }
+
+      return fallback(path);
+    });
+
+    const adapter = createCanvasAdapter(client);
+    const result = await adapter.sync({
+      url: 'https://canvas.example.edu',
+      site: 'canvas',
+      now: '2026-03-24T18:00:00-07:00',
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.outcome).toBe('success');
+      expect(result.snapshot.courses).toHaveLength(1);
+      expect(result.snapshot.courses[0]?.source.resourceId).toBe('42');
+    }
+  });
+
+  it('treats archived-course resource denials as optional deepwater gaps instead of partial sync failures', async () => {
+    const fallback = okExecutor({
+      [CANVAS_COURSES_PATH]: [
+        {
+          id: 42,
+          name: 'CSE 142',
+          course_code: 'CSE 142',
+          html_url: 'https://canvas.example.edu/courses/42',
+        },
+        {
+          id: 84,
+          name: 'ARCHIVED: CSE 351',
+          course_code: 'ARCHIVED: CSE 351',
+          html_url: 'https://canvas.example.edu/courses/84',
+        },
+      ],
+      ...canvasDepthResourcePayloads(42, {
+        [canvasFilesPath(42)]: [
+          {
+            id: 501,
+            display_name: 'lecture-01.pdf',
+            filename: 'lecture-01.pdf',
+            html_url: 'https://canvas.example.edu/courses/42/files/501',
+            url: 'https://canvas.example.edu/files/501/download',
+            size: 204800,
+            updated_at: '2026-03-24T09:00:00-07:00',
+          },
+        ],
+      }),
+      ...canvasDepthResourcePayloads(84),
+      '/api/v1/courses/42/assignments?include[]=submission&order_by=due_at&per_page=100': [],
+      '/api/v1/courses/84/assignments?include[]=submission&order_by=due_at&per_page=100': [],
+      '/api/v1/announcements?per_page=100&context_codes%5B%5D=course_42&context_codes%5B%5D=course_84': [],
+      '/api/v1/conversations?scope=inbox&per_page=100': [],
+      '/api/v1/calendar_events?all_events=true&per_page=100&context_codes%5B%5D=course_42&context_codes%5B%5D=course_84': [],
+    });
+    const client = new CanvasApiClient(async (path) => {
+      if (
+        path === canvasFilesPath(84) ||
+        path === canvasGroupsPath(84) ||
+        path === canvasMediaObjectsPath(84)
+      ) {
+        return {
+          ok: true,
+          status: 403,
+          responseUrl: `https://canvas.example.edu${path}`,
+          bodyText: '{"status":"unauthorized","errors":[{"message":"user not authorized to perform that action"}]}',
+          contentType: 'application/json',
+        };
+      }
+
+      return fallback(path);
+    });
+
+    const adapter = createCanvasAdapter(client);
+    const result = await adapter.sync({
+      url: 'https://canvas.example.edu',
+      site: 'canvas',
+      now: '2026-03-24T18:00:00-07:00',
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.outcome).toBe('success');
+      expect(result.health.code).toBe('supported');
+      expect(result.snapshot.resources).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: 'canvas:resource:501',
+            courseId: 'canvas:course:42',
+          }),
+        ]),
+      );
+    }
+    expect(result.attemptsByResource?.resources?.[0]).toMatchObject({
+      collectorName: 'CanvasResourcesApiCollector',
+      success: true,
+    });
   });
 
   it('returns partial_success when assignments fail but courses still sync', async () => {

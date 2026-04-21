@@ -364,6 +364,8 @@ export const ClusterAuthorityRoleSchema = z.enum([
   'discussion_runtime',
   'assessment_runtime',
   'assignment_spec',
+  'resource_identity',
+  'resource_access',
   'schedule_signal',
   'submission_state',
   'feedback_detail',
@@ -381,6 +383,28 @@ export const ClusterAuthorityFacetSchema = z
   })
   .strict();
 export type ClusterAuthorityFacet = z.infer<typeof ClusterAuthorityFacetSchema>;
+
+export const CourseClusterFieldAuthorityMapSchema = z
+  .object({
+    course_identity: ClusterAuthorityFacetSchema.optional(),
+    course_delivery: ClusterAuthorityFacetSchema.optional(),
+    discussion_runtime: ClusterAuthorityFacetSchema.optional(),
+    assessment_runtime: ClusterAuthorityFacetSchema.optional(),
+  })
+  .strict();
+export type CourseClusterFieldAuthorityMap = z.infer<typeof CourseClusterFieldAuthorityMapSchema>;
+
+export const WorkItemClusterFieldAuthorityMapSchema = z
+  .object({
+    assignment_spec: ClusterAuthorityFacetSchema.optional(),
+    resource_identity: ClusterAuthorityFacetSchema.optional(),
+    resource_access: ClusterAuthorityFacetSchema.optional(),
+    schedule_signal: ClusterAuthorityFacetSchema.optional(),
+    submission_state: ClusterAuthorityFacetSchema.optional(),
+    feedback_detail: ClusterAuthorityFacetSchema.optional(),
+  })
+  .strict();
+export type WorkItemClusterFieldAuthorityMap = z.infer<typeof WorkItemClusterFieldAuthorityMapSchema>;
 
 export const CourseClusterSchema = z
   .object({
@@ -402,6 +426,7 @@ export const CourseClusterSchema = z
     summary: z.string().min(1),
     authorityNarrative: z.string().min(1).optional(),
     authorityBreakdown: z.array(ClusterAuthorityFacetSchema).optional(),
+    fieldAuthorityMap: CourseClusterFieldAuthorityMapSchema.optional(),
     reviewDecision: z.enum(['accepted', 'review_later', 'dismissed']).optional(),
     reviewDecidedAt: IsoDateTimeSchema.optional(),
     createdAt: IsoDateTimeSchema,
@@ -412,6 +437,7 @@ export type CourseCluster = z.infer<typeof CourseClusterSchema>;
 
 export const WorkItemClusterTypeSchema = z.enum([
   'assignment',
+  'resource_material',
   'deadline_signal',
   'grade_signal',
   'admin_requirement',
@@ -442,6 +468,7 @@ export const WorkItemClusterSchema = z
     summary: z.string().min(1),
     authorityNarrative: z.string().min(1).optional(),
     authorityBreakdown: z.array(ClusterAuthorityFacetSchema).optional(),
+    fieldAuthorityMap: WorkItemClusterFieldAuthorityMapSchema.optional(),
     reviewDecision: z.enum(['accepted', 'review_later', 'dismissed']).optional(),
     reviewDecidedAt: IsoDateTimeSchema.optional(),
     createdAt: IsoDateTimeSchema,

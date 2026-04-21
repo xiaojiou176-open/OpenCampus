@@ -140,6 +140,10 @@ function formatAuthorityBoundaryKey(value: string) {
       return 'assessment';
     case 'assignment_spec':
       return 'spec';
+    case 'resource_identity':
+      return 'resource';
+    case 'resource_access':
+      return 'access';
     case 'schedule_signal':
       return 'schedule';
     case 'submission_state':
@@ -149,6 +153,58 @@ function formatAuthorityBoundaryKey(value: string) {
     default:
       return value.replace(/_/g, ' ');
   }
+}
+
+function getAuthorityFieldMapTokens(role: string) {
+  switch (role) {
+    case 'course_identity':
+      return ['title', 'code', 'term', 'link'];
+    case 'course_delivery':
+      return ['modules', 'assignments', 'announcements', 'runtime'];
+    case 'discussion_runtime':
+      return ['threads', 'replies', 'lesson-entry'];
+    case 'assessment_runtime':
+      return ['submissions', 'scores', 'review'];
+    case 'assignment_spec':
+      return ['title', 'spec', 'link'];
+    case 'resource_identity':
+      return ['title', 'summary', 'detail', 'link'];
+    case 'resource_access':
+      return ['download', 'link', 'runtime'];
+    case 'schedule_signal':
+      return ['dueAt', 'startAt', 'endAt'];
+    case 'submission_state':
+      return ['status', 'submission'];
+    case 'feedback_detail':
+      return ['score', 'rubric', 'comment', 'annotation'];
+    default:
+      return [];
+  }
+}
+
+function formatFieldAuthorityMap(
+  fieldAuthorityMap:
+    | Record<
+        string,
+        {
+          role: string;
+          surface: string;
+        }
+      >
+    | undefined,
+) {
+  if (!fieldAuthorityMap) {
+    return undefined;
+  }
+
+  const entries = Object.values(fieldAuthorityMap);
+  if (entries.length === 0) {
+    return undefined;
+  }
+
+  return entries
+    .map((facet) => `${formatAuthorityBoundaryKey(facet.role)}${getAuthorityFieldMapTokens(facet.role).length ? `[${getAuthorityFieldMapTokens(facet.role).join('/')}]` : ''}->${facet.surface}`)
+    .join(' · ');
 }
 
 function formatAuthorityBoundaryMap(
@@ -842,6 +898,9 @@ export function WebWorkbenchPanels(props: {
                   {formatAuthorityBoundaryMap(cluster.authorityBreakdown) ? (
                     <p className="meta">Boundary map: {formatAuthorityBoundaryMap(cluster.authorityBreakdown)}</p>
                   ) : null}
+                  {formatFieldAuthorityMap(cluster.fieldAuthorityMap) ? (
+                    <p className="meta">Field winners: {formatFieldAuthorityMap(cluster.fieldAuthorityMap)}</p>
+                  ) : null}
                   {cluster.authorityNarrative ? <p className="meta">{cluster.authorityNarrative}</p> : null}
                   {cluster.authorityBreakdown?.length ? (
                     <ul className="list list--compact">
@@ -901,6 +960,9 @@ export function WebWorkbenchPanels(props: {
                   </p>
                   {formatAuthorityBoundaryMap(cluster.authorityBreakdown) ? (
                     <p className="meta">Boundary map: {formatAuthorityBoundaryMap(cluster.authorityBreakdown)}</p>
+                  ) : null}
+                  {formatFieldAuthorityMap(cluster.fieldAuthorityMap) ? (
+                    <p className="meta">Field winners: {formatFieldAuthorityMap(cluster.fieldAuthorityMap)}</p>
                   ) : null}
                   {cluster.authorityNarrative ? <p className="meta">{cluster.authorityNarrative}</p> : null}
                   {cluster.authorityBreakdown?.length ? (

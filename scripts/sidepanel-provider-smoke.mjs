@@ -16,6 +16,7 @@ const defaultModel = defaultProvider === 'gemini'
   ? process.env.GEMINI_MODEL ?? 'gemini-2.5-flash'
   : process.env.OPENAI_MODEL ?? 'gpt-4.1-mini';
 const screenshotPath = process.env.CAPTURE_SCREENSHOT_PATH;
+const answerScreenshotPath = process.env.CAPTURE_ANSWER_SCREENSHOT_PATH;
 const uiLanguage = process.env.SIDEPANEL_UI_LANGUAGE ?? (screenshotPath ? 'en' : 'auto');
 const browserLanguage = process.env.SIDEPANEL_BROWSER_LANGUAGE ?? 'en-US';
 const screenshotMode = screenshotPath ? 'public-proof' : 'runtime-smoke';
@@ -420,6 +421,54 @@ async function capturePublicProofScreenshot(page, path) {
   });
 }
 
+async function captureAskAiAnswerProofScreenshot(page, path) {
+  await page.addStyleTag({
+    content: `
+      #ask-ai-proof-snapshot {
+        max-width: 1240px !important;
+        padding: 28px !important;
+        margin: 24px auto !important;
+        display: grid !important;
+        gap: 20px !important;
+        border: 1px solid rgba(226, 221, 214, 0.92) !important;
+        border-radius: 24px !important;
+        background: rgba(251, 250, 246, 0.98) !important;
+        box-shadow: 0 18px 40px rgba(39, 72, 61, 0.08) !important;
+      }
+      #ask-ai-proof-snapshot .surface__panel--ask-ai {
+        max-width: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: 0 !important;
+        box-shadow: none !important;
+        background: transparent !important;
+      }
+      #ask-ai-proof-snapshot .surface__advanced-settings,
+      #ask-ai-proof-snapshot .surface__feedback {
+        display: none !important;
+      }
+    `,
+  });
+
+  await page.evaluate(() => {
+    document.getElementById('ask-ai-proof-snapshot')?.remove();
+    const askAiPanel = Array.from(document.querySelectorAll('article.surface__panel')).find((node) =>
+      node.textContent?.includes('Ask AI about this workspace'),
+    );
+    if (!askAiPanel) {
+      throw new Error('ask_ai_proof_capture_panel_missing');
+    }
+    const snapshot = document.createElement('section');
+    snapshot.id = 'ask-ai-proof-snapshot';
+    snapshot.append(askAiPanel.cloneNode(true));
+    document.body.append(snapshot);
+  });
+
+  await page.locator('#ask-ai-proof-snapshot').screenshot({
+    path,
+  });
+}
+
 async function ensureServer(url, start, validate) {
   try {
     await waitForHealthy(url, 2, validate);
@@ -794,6 +843,10 @@ try {
   if (!answerText.toUpperCase().includes('READY') && !citationsVisible) {
     throw new Error(`answer_text_missing_ready:${answerText}`);
   }
+  if (answerScreenshotPath) {
+    mkdirSync(dirname(answerScreenshotPath), { recursive: true });
+    await captureAskAiAnswerProofScreenshot(page, answerScreenshotPath);
+  }
 
   console.log(
     JSON.stringify(
@@ -805,6 +858,7 @@ try {
         sidepanelUrl,
         bffBaseUrl,
         ...(screenshotPath ? { screenshotPath } : {}),
+        ...(answerScreenshotPath ? { answerScreenshotPath } : {}),
       },
       null,
       2,

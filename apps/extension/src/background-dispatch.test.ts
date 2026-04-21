@@ -40,6 +40,22 @@ const unsupportedMyUwApiResult: ExecuteScriptMockResult = [
   },
 ];
 
+const authenticatedTimeScheduleHtml = `
+  <html><body>
+    <a class="navlink" href="/students/timeschd/SPR2026/">Spring 2026 Time Schedule</a>
+    <h1>Spring Quarter 2026 Time Schedule</h1>
+    <div>Enrollment and status (open/closed) were accurate when this page was created (<b>12:03 am April 21, 2026</b>) but may have changed since then.</div>
+    <table bgcolor="#ccffcc" width="100%">
+      <tr>
+        <td width="50%"><b><a name="cse121">CSE 121 </a>&nbsp;<a href="/students/crscat/cse.html#cse121">COMP PROGRAMMING I</a></b></td>
+        <td width="15%"><b>(NSc,RSN)</b></td>
+      </tr>
+    </table>
+    <table width="100%"><tr><td><pre>       <a href="https://sdb.admin.washington.edu/timeschd/uwnetid/sln.asp?QTRYR=SPR+2026&amp;SLN=12473">12473</a> A  4       WF     1130-1220  <a href="https://map.uw.edu/?id=2099#!m/973190">GUG</a>  220      Wang,Matt                  Open    161/ 250                      
+                        --                                                          <br/>                        SEE THE CSE 12X SELF-PLACEMENT                              <br/>                        WEBPAGE FOR GUIDANCE ON CHOOSING                            <br/>                        THE APPROPRIATE CSE 12X COURSE:                             <br/>                        HTTPS://PLACEMENT.CS.WASHINGTON.EDU                         <br/>                        (COPY/PASTE INTO WEB BROWSER)                               <br/>                        --                                                          <br/>                        NO CREDIT FOR STUDENTS WHO HAVE                             <br/>                        COMPLETED CSE 142                                           <br/></pre></td></tr></table>
+  </body></html>
+`;
+
 function mockMyUwAdminOnlyPage(
   executeScriptMock: {
     mockImplementation: (
@@ -67,6 +83,7 @@ describe('background site dispatch', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     vi.clearAllMocks();
+    (browser.tabs.query as unknown as { mockResolvedValue: (value: unknown) => void }).mockResolvedValue([]);
   });
 
   it('registers all five site handlers in the extension runtime', () => {
@@ -417,6 +434,150 @@ describe('background site dispatch', () => {
     expect(storedPlanning[0]?.scheduleOptionCount).toBe(broaderScheduleOptionCount);
     expect(storedPlanning[0]?.runtimePosture).toBe('public_course_offerings_planning_lane_with_sln_detail');
     expect(storedPlanning[0]?.terms[0]?.summary).toContain('Public course offerings remain the broader planning carrier');
+    expect(storedPlanning[0]?.terms[0]?.summary).toContain('Authenticated SLN detail was captured');
+    expect(storedPlanning[0]?.terms[0]?.summary).toContain('Detail corroboration: CSE 121 A');
+  });
+
+  it('promotes Time Schedule into the authenticated full-schedule lane when a richer NetID page is captured', async () => {
+    await campusCopilotDb.planning_substrates.clear();
+    const executeScriptMock = vi.spyOn(
+      browser.scripting as {
+        executeScript: (...args: unknown[]) => Promise<ExecuteScriptMockResult>;
+      },
+      'executeScript',
+    );
+    executeScriptMock.mockResolvedValueOnce([
+      {
+        result: authenticatedTimeScheduleHtml,
+      },
+    ]);
+
+    const result = await SITE_SYNC_HANDLERS['time-schedule']({
+      activeTab: {
+        tabId: 1,
+        url: 'https://www.washington.edu/students/timeschd/SPR2026/cse.html',
+      },
+      now: '2026-04-21T17:20:00Z',
+      config: getDefaultExtensionConfig(),
+    });
+
+    expect(result.ok).toBe(true);
+
+    const storedPlanning = await getPlanningSubstratesBySource('time-schedule', campusCopilotDb);
+    expect(storedPlanning[0]?.runtimePosture).toBe('authenticated_full_schedule_planning_lane');
+    expect(storedPlanning[0]?.currentTruth).toContain('authenticated full-schedule lane');
+    expect(storedPlanning[0]?.exactBlockers.map((blocker) => blocker.id)).not.toContain('netid_richer_schedule_view');
+    expect(storedPlanning[0]?.exactBlockers.map((blocker) => blocker.id)).not.toContain('structured_location_modality_proof');
+  });
+
+  it('clears all Time Schedule promotion blockers when an authenticated full schedule page and SLN detail companion are both available', async () => {
+    await campusCopilotDb.planning_substrates.clear();
+
+    (browser.tabs.query as unknown as { mockResolvedValue: (value: unknown) => void }).mockResolvedValue([
+      {
+        id: 1,
+        url: 'https://www.washington.edu/students/timeschd/SPR2026/cse.html',
+      },
+      {
+        id: 2,
+        url: 'https://sdb.admin.washington.edu/timeschd/uwnetid/sln.asp?QTRYR=SPR+2026&SLN=12473',
+      },
+    ]);
+
+    const executeScriptMock = vi.spyOn(
+      browser.scripting as {
+        executeScript: (...args: unknown[]) => Promise<ExecuteScriptMockResult>;
+      },
+      'executeScript',
+    );
+    executeScriptMock.mockResolvedValueOnce([
+      {
+        result: authenticatedTimeScheduleHtml,
+      },
+    ]);
+    executeScriptMock.mockResolvedValueOnce([
+      {
+        result: readFileSync(
+          new URL('../../../packages/adapters-time-schedule/src/__fixtures__/section-detail-cse121a.html', import.meta.url),
+          'utf8',
+        ),
+      },
+    ]);
+
+    const result = await SITE_SYNC_HANDLERS['time-schedule']({
+      activeTab: {
+        tabId: 1,
+        url: 'https://www.washington.edu/students/timeschd/SPR2026/cse.html',
+      },
+      now: '2026-04-21T17:30:00Z',
+      config: getDefaultExtensionConfig(),
+    });
+
+    expect(result.ok).toBe(true);
+
+    const storedPlanning = await getPlanningSubstratesBySource('time-schedule', campusCopilotDb);
+    expect(storedPlanning[0]?.runtimePosture).toBe('authenticated_full_schedule_planning_lane_with_sln_detail');
+    expect(storedPlanning[0]?.exactBlockers).toHaveLength(0);
+    expect(storedPlanning[0]?.terms[0]?.summary).toContain('Authenticated SLN detail was captured');
+  });
+
+  it('auto-merges an open SLN detail companion tab into the public Time Schedule sync lane', async () => {
+    await campusCopilotDb.planning_substrates.clear();
+
+    (browser.tabs.query as unknown as { mockResolvedValue: (value: unknown) => void }).mockResolvedValue([
+      {
+        id: 1,
+        url: 'https://www.washington.edu/students/timeschd/pub/SPR2026/cse.html',
+      },
+      {
+        id: 2,
+        url: 'https://sdb.admin.washington.edu/timeschd/uwnetid/sln.asp?QTRYR=SPR+2026&SLN=12473',
+      },
+    ]);
+
+    const executeScriptMock = vi.spyOn(
+      browser.scripting as {
+        executeScript: (...args: unknown[]) => Promise<ExecuteScriptMockResult>;
+      },
+      'executeScript',
+    );
+
+    executeScriptMock.mockResolvedValueOnce([
+      {
+        result: readFileSync(
+          new URL('../../../packages/adapters-time-schedule/src/__fixtures__/public-course-offerings-cse.html', import.meta.url),
+          'utf8',
+        ),
+      },
+    ]);
+    executeScriptMock.mockResolvedValueOnce([
+      {
+        result: readFileSync(
+          new URL('../../../packages/adapters-time-schedule/src/__fixtures__/section-detail-cse121a.html', import.meta.url),
+          'utf8',
+        ),
+      },
+    ]);
+
+    const result = await SITE_SYNC_HANDLERS['time-schedule']({
+      activeTab: {
+        tabId: 1,
+        url: 'https://www.washington.edu/students/timeschd/pub/SPR2026/cse.html',
+      },
+      now: '2026-04-10T06:12:00Z',
+      config: getDefaultExtensionConfig(),
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.snapshot.courses?.length).toBeGreaterThan(1);
+      expect(result.snapshot.events?.some((event) => event.summary === 'Spring Quarter 2026 section detail')).toBe(true);
+      expect(result.snapshot.events?.find((event) => event.title === 'CSE 121 A')?.detail).toContain('89 seats available');
+    }
+
+    const storedPlanning = await getPlanningSubstratesBySource('time-schedule', campusCopilotDb);
+    expect(storedPlanning[0]?.runtimePosture).toBe('public_course_offerings_planning_lane_with_sln_detail');
+    expect(storedPlanning[0]?.exactBlockers.map((blocker) => blocker.id)).not.toContain('dom_sln_detail_fallback');
     expect(storedPlanning[0]?.terms[0]?.summary).toContain('Authenticated SLN detail was captured');
     expect(storedPlanning[0]?.terms[0]?.summary).toContain('Detail corroboration: CSE 121 A');
   });

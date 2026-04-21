@@ -225,3 +225,20 @@ export async function getActiveTabContext(input?: SyncTargetOverride): Promise<A
     url: activeTab.url,
   };
 }
+
+export async function getTabContextsByUrlPatterns(urlPatterns: string[]): Promise<ActiveTabContext[]> {
+  if (urlPatterns.length === 0) {
+    return [];
+  }
+
+  const tabs = await browser.tabs.query({
+    url: urlPatterns,
+  });
+
+  return tabs
+    .filter((tab): tab is typeof tab & { id: number; url: string } => Boolean(tab.id && tab.url && tab.url.startsWith('http')))
+    .map((tab) => ({
+      tabId: tab.id,
+      url: tab.url,
+    }));
+}
