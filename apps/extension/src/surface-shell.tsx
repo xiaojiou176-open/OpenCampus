@@ -757,6 +757,16 @@ export function SurfaceShell({ surface }: { surface: SurfaceKind }) {
     setSidepanelMode('export');
   }
 
+  function revealWorkspaceDetails() {
+    setWorkspaceDetailsOpen(true);
+    requestAnimationFrame(() => {
+      document.querySelector('.surface__workspace-detail')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    });
+  }
+
   return (
     <main className={`surface surface--${surface}`}>
       <section className="surface__card">
@@ -946,6 +956,8 @@ export function SurfaceShell({ surface }: { surface: SurfaceKind }) {
                     recentChangeEvents={recentChangeEvents}
                     onRefreshProviderStatus={refreshProviderStatus}
                     onOpenConfiguration={() => setSidepanelMode('settings')}
+                    onOpenWorkspace={revealWorkspaceDetails}
+                    onOpenExport={() => enterExportMode()}
                   />
                 </Suspense>
               </>

@@ -373,6 +373,11 @@ type UiText = {
     model: string;
     question: string;
     questionBox: string;
+    questionGuidance: string;
+    emptyStateTitle: string;
+    emptyStateDescription: string;
+    emptyStateOpenWorkspace: string;
+    emptyStateOpenExport: string;
     suggestedPrompts: string;
     answerWithCitations: string;
     advancedRuntimeSettings: string;
@@ -928,7 +933,12 @@ const TEXT: Record<ResolvedUiLanguage, UiText> = {
       provider: 'Provider',
       model: 'Model',
       question: 'Question',
-      questionBox: 'Question box',
+      questionBox: 'Ask from this desk',
+      questionGuidance: 'Start with what changed, what matters first, or what needs a closer look.',
+      emptyStateTitle: 'This desk needs facts first',
+      emptyStateDescription: 'Sync a site, reopen the full workspace, or export the current slice before asking AI to explain it.',
+      emptyStateOpenWorkspace: 'Check the full workspace',
+      emptyStateOpenExport: 'Open export',
       suggestedPrompts: 'Suggested prompts',
       answerWithCitations: 'Answer with citations',
       advancedRuntimeSettings: 'Advanced AI settings',
@@ -940,7 +950,7 @@ const TEXT: Record<ResolvedUiLanguage, UiText> = {
         recentChanges: 'What changed since the latest sync that I should care about?',
         trustGaps: 'Which trust gaps or sync blockers should I verify before acting?',
       },
-      placeholder: 'For example: What should I pay attention to right now? What changed recently?',
+      placeholder: 'For example: What should I do first today? What changed since the latest sync?',
       ask: 'Ask AI',
       configure: 'Open AI settings',
       missingBffFeedback: 'The local AI service URL is still missing, so the AI path should fail loudly instead of silently.',
@@ -1553,7 +1563,12 @@ const TEXT: Record<ResolvedUiLanguage, UiText> = {
       provider: '服务商',
       model: '模型',
       question: '问题',
-      questionBox: '提问框',
+      questionBox: '围绕这张桌面发问',
+      questionGuidance: '先问这三类：什么变了、什么最该先做、哪里还要复核。',
+      emptyStateTitle: '先让这张桌面有事实',
+      emptyStateDescription: '先同步站点、展开完整工作台，或先导出当前切片，再让 AI 来解释。',
+      emptyStateOpenWorkspace: '打开完整工作台',
+      emptyStateOpenExport: '打开导出',
       suggestedPrompts: '建议问题',
       answerWithCitations: '带引用的回答',
       advancedRuntimeSettings: '更深 AI 工具',
@@ -1565,7 +1580,7 @@ const TEXT: Record<ResolvedUiLanguage, UiText> = {
         recentChanges: '最近一次同步之后，有哪些变化值得我优先注意？',
         trustGaps: '在我开始行动之前，哪些可信度缺口或同步阻塞最该先确认？',
       },
-      placeholder: '例如：我现在最该关注什么？最近有什么变化？',
+      placeholder: '例如：我今天最该先做什么？最近一次同步后什么变了？',
       ask: '问 AI',
       configure: '打开 AI 设置',
       missingBffFeedback: '本地 AI 路线未就绪。',

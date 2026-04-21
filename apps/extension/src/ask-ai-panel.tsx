@@ -62,6 +62,8 @@ export function AskAiPanel(props: {
   onAskAi: () => Promise<void>;
   onRefreshProviderStatus: () => Promise<void>;
   onOpenConfiguration?: () => void;
+  onOpenWorkspace?: () => void;
+  onOpenExport?: () => void;
 }) {
   const {
     text,
@@ -99,6 +101,8 @@ export function AskAiPanel(props: {
     onAskAi,
     onRefreshProviderStatus,
     onOpenConfiguration,
+    onOpenWorkspace,
+    onOpenExport,
   } = props;
   const parsedStructuredAnswer = AiStructuredAnswerSchema.safeParse(aiStructuredAnswer);
   const selectedProviderLabel = PROVIDER_OPTIONS.find((option) => option.value === aiProvider)?.label ?? aiProvider;
@@ -160,10 +164,43 @@ export function AskAiPanel(props: {
   ];
   const evidenceFirstLabel = uiLanguage === 'zh-CN' ? '先核对这张桌面的证据' : 'Check this desk first';
   const routeSummaryLabel = uiLanguage === 'zh-CN' ? 'AI 路线' : 'AI route';
+  const evidenceDetailLabel = uiLanguage === 'zh-CN' ? '看 AI 会基于什么来答' : 'See what AI can use';
   const evidenceSummary = structuredInputs[0].value;
-  const evidenceMeta = `${structuredInputs[3].label} ${structuredInputs[3].value} · ${structuredInputs[9].label} ${structuredInputs[9].value}`;
-  const routeStatusSummary = `${selectedProviderLabel} · ${selectedProviderReady ? text.meta.ready : text.meta.notReady}`;
-  const policyReviewLabel = uiLanguage === 'zh-CN' ? '先核对这张桌面的证据' : 'Check the evidence first';
+  const visibleEvidenceSignals = [
+    { label: structuredInputs[3].label, value: structuredInputSummary.focusQueueCount },
+    { label: structuredInputs[1].label, value: structuredInputSummary.recentUpdatesCount },
+    { label: structuredInputs[4].label, value: structuredInputSummary.weeklyLoadCount },
+    { label: structuredInputs[5].label, value: structuredInputSummary.changeJournalCount },
+    { label: structuredInputs[8].label, value: structuredInputSummary.administrativeSummaryCount },
+  ];
+  const evidenceMetaSignals = visibleEvidenceSignals.filter((item) => item.value > 0);
+  const evidenceMeta = (evidenceMetaSignals.length ? evidenceMetaSignals : visibleEvidenceSignals.slice(0, 2))
+    .slice(0, 2)
+    .map((item) => `${item.label} ${item.value}`)
+    .join(' · ');
+  const routeStatusSummary = selectedProviderReady
+    ? uiLanguage === 'zh-CN'
+      ? '已就绪'
+      : 'Ready now'
+    : uiLanguage === 'zh-CN'
+      ? '还没就绪'
+      : 'Not ready yet';
+  const routeStatusMeta = selectedProviderReady ? routeStatusSummary : `${routeStatusSummary} · ${selectedProviderReason}`;
+  const hasStructuredDeskEvidence =
+    structuredInputSummary.totalAssignments +
+      structuredInputSummary.dueSoonAssignments +
+      structuredInputSummary.newGrades +
+      structuredInputSummary.recentUpdatesCount +
+      structuredInputSummary.priorityAlertsCount +
+      structuredInputSummary.focusQueueCount +
+      structuredInputSummary.weeklyLoadCount +
+      structuredInputSummary.changeJournalCount +
+      structuredInputSummary.courseClusterCount +
+      structuredInputSummary.workItemClusterCount +
+      structuredInputSummary.administrativeSummaryCount >
+    0;
+  const showEmptyStateCta =
+    !hasStructuredDeskEvidence && !aiQuestion.trim() && !aiPending && !aiAnswer && !parsedStructuredAnswer.success;
   const structuredLedgerLabel = uiLanguage === 'zh-CN' ? '这张桌面的输入' : 'Inputs on this desk';
   const currentSiteRulesLabel = uiLanguage === 'zh-CN' ? '当前站点规则' : 'Current site rules';
   const readAndExportLabel = uiLanguage === 'zh-CN' ? '读取与导出' : 'Read and export';
@@ -190,19 +227,15 @@ export function AskAiPanel(props: {
                 <p className="surface__item-lead">{evidenceSummary}</p>
                 <p className="surface__meta">{evidenceMeta}</p>
                 <p className="surface__meta">
-                  {routeSummaryLabel}: {routeStatusSummary} · {selectedProviderReason}
+                  {routeSummaryLabel}: {routeStatusMeta}
                 </p>
               </div>
-              <span className="surface__badge surface__badge--neutral">
-                {structuredInputs.length} items
-              </span>
             </div>
           </aside>
 
           <details className="surface__advanced-settings surface__advanced-settings--supporting">
             <summary className="surface__advanced-settings-summary">
-              <span>{policyReviewLabel}</span>
-              <span className="surface__badge surface__badge--neutral">{structuredInputs.length} items</span>
+              <span>{evidenceDetailLabel}</span>
             </summary>
             <div className="surface__advanced-settings-body">
               <article className="surface__status-card surface__status-card--success">
@@ -225,7 +258,7 @@ export function AskAiPanel(props: {
                   </article>
                 </div>
                 <p className="surface__meta">
-                  {routeSummaryLabel}: {routeStatusSummary} · {selectedProviderReason}
+                  {routeSummaryLabel}: {routeStatusMeta}
                 </p>
               </article>
 
@@ -263,53 +296,85 @@ export function AskAiPanel(props: {
 
         <div className="surface__ask-ai-shell">
           <div className="surface__question-card surface__question-card--primary">
-            <div className="surface__section-head">
-              <div>
-                <h3>{text.askAi.questionBox}</h3>
-              </div>
-              <span className="surface__badge surface__badge--neutral">{selectedProviderLabel}</span>
-            </div>
-            <label className="surface__field">
-              <span>{text.askAi.question}</span>
-              <textarea
-                rows={3}
-                value={aiQuestion}
-                onChange={(event) => onQuestionChange(event.target.value)}
-                placeholder={text.askAi.placeholder}
-              />
-            </label>
-            <div className="surface__actions surface__actions--wrap surface__actions--tight">
-              <button className="surface__button" disabled={aiPending} onClick={() => void onAskAi()} type="button">
-                {aiPending ? `${text.askAi.ask}…` : text.askAi.ask}
-              </button>
-              {onOpenConfiguration ? (
-                <button className="surface__button surface__button--ghost" onClick={() => onOpenConfiguration()} type="button">
-                  {text.askAi.configure}
-                </button>
-              ) : null}
-            </div>
-            <details className="surface__advanced-settings">
-              <summary className="surface__advanced-settings-summary">
-                <span>{suggestedPromptsLabel}</span>
-                <span className="surface__badge surface__badge--neutral">{Object.values(text.askAi.suggestions).length}</span>
-              </summary>
-              <div className="surface__advanced-settings-body">
-                <div className="surface__suggestion-strip" aria-label={text.askAi.suggestedPrompts}>
-                  {Object.values(text.askAi.suggestions).map((suggestion) => (
-                    <button
-                      key={suggestion}
-                      className="surface__button surface__button--ghost"
-                      onClick={() => onQuestionChange(suggestion)}
-                      type="button"
-                    >
-                      {suggestion}
-                    </button>
-                  ))}
+            {showEmptyStateCta ? (
+              <>
+                <div className="surface__section-head">
+                  <div>
+                    <h3>{text.askAi.emptyStateTitle}</h3>
+                    <p className="surface__meta">{text.askAi.emptyStateDescription}</p>
+                  </div>
+                  <span className="surface__badge surface__badge--neutral">{routeStatusSummary}</span>
                 </div>
-              </div>
-            </details>
+                <div className="surface__actions surface__actions--wrap surface__actions--tight">
+                  {onOpenWorkspace ? (
+                    <button className="surface__button" onClick={() => onOpenWorkspace()} type="button">
+                      {text.askAi.emptyStateOpenWorkspace}
+                    </button>
+                  ) : null}
+                  {onOpenExport ? (
+                    <button className="surface__button surface__button--secondary" onClick={() => onOpenExport()} type="button">
+                      {text.askAi.emptyStateOpenExport}
+                    </button>
+                  ) : null}
+                  {onOpenConfiguration && !selectedProviderReady ? (
+                    <button className="surface__button surface__button--ghost" onClick={() => onOpenConfiguration()} type="button">
+                      {text.askAi.configure}
+                    </button>
+                  ) : null}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="surface__section-head">
+                  <div>
+                    <h3>{text.askAi.questionBox}</h3>
+                    <p className="surface__meta">{text.askAi.questionGuidance}</p>
+                  </div>
+                  <span className="surface__badge surface__badge--neutral">{selectedProviderLabel}</span>
+                </div>
+                <label className="surface__field">
+                  <span>{text.askAi.question}</span>
+                  <textarea
+                    rows={3}
+                    value={aiQuestion}
+                    onChange={(event) => onQuestionChange(event.target.value)}
+                    placeholder={text.askAi.placeholder}
+                  />
+                </label>
+                <div className="surface__actions surface__actions--wrap surface__actions--tight">
+                  <button className="surface__button" disabled={aiPending} onClick={() => void onAskAi()} type="button">
+                    {aiPending ? `${text.askAi.ask}…` : text.askAi.ask}
+                  </button>
+                  {onOpenConfiguration && !selectedProviderReady ? (
+                    <button className="surface__button surface__button--ghost" onClick={() => onOpenConfiguration()} type="button">
+                      {text.askAi.configure}
+                    </button>
+                  ) : null}
+                </div>
+                <details className="surface__advanced-settings">
+                  <summary className="surface__advanced-settings-summary">
+                    <span>{suggestedPromptsLabel}</span>
+                    <span className="surface__badge surface__badge--neutral">{Object.values(text.askAi.suggestions).length}</span>
+                  </summary>
+                  <div className="surface__advanced-settings-body">
+                    <div className="surface__suggestion-strip" aria-label={text.askAi.suggestedPrompts}>
+                      {Object.values(text.askAi.suggestions).map((suggestion) => (
+                        <button
+                          key={suggestion}
+                          className="surface__button surface__button--ghost"
+                          onClick={() => onQuestionChange(suggestion)}
+                          type="button"
+                        >
+                          {suggestion}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </details>
+              </>
+            )}
 
-            {parsedStructuredAnswer.success ? (
+            {!showEmptyStateCta && parsedStructuredAnswer.success ? (
               <div aria-live="polite" className="surface__answer">
                 {parsedStructuredAnswer.data.citations.length ? (
                   <div className="surface__group">
@@ -365,7 +430,7 @@ export function AskAiPanel(props: {
                   </div>
                 ) : null}
               </div>
-            ) : aiAnswer ? (
+            ) : !showEmptyStateCta && aiAnswer ? (
               <div aria-live="polite" className="surface__answer">
                 <div className="surface__item-header">
                   <h3>{text.askAi.answerWithCitations}</h3>

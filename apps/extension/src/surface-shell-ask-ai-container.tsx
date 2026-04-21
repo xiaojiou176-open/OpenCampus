@@ -46,6 +46,8 @@ export function SurfaceShellAskAiContainer(props: {
   recentChangeEvents: ChangeEvent[];
   onRefreshProviderStatus: () => Promise<void>;
   onOpenConfiguration?: () => void;
+  onOpenWorkspace?: () => void;
+  onOpenExport?: () => void;
 }) {
   const {
     text,
@@ -66,6 +68,8 @@ export function SurfaceShellAskAiContainer(props: {
     recentChangeEvents,
     onRefreshProviderStatus,
     onOpenConfiguration,
+    onOpenWorkspace,
+    onOpenExport,
   } = props;
 
   const [aiProvider, setAiProvider] = useState<ProviderId>(config.ai.defaultProvider);
@@ -330,6 +334,8 @@ export function SurfaceShellAskAiContainer(props: {
       onAskAi={handleAskAi}
       onRefreshProviderStatus={onRefreshProviderStatus}
       onOpenConfiguration={onOpenConfiguration}
+      onOpenWorkspace={onOpenWorkspace}
+      onOpenExport={onOpenExport}
     />
   );
 }
