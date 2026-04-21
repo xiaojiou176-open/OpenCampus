@@ -30,6 +30,8 @@ const askAiLabel = effectiveUiLanguage === 'zh-CN' ? '问 AI' : 'Ask AI';
 const refreshProviderLabel = effectiveUiLanguage === 'zh-CN' ? '刷新 provider 状态' : 'Refresh provider status';
 const providerReadyStatusLabel = effectiveUiLanguage === 'zh-CN' ? '已就绪' : 'ready';
 const providerConfiguredReasonLabel = effectiveUiLanguage === 'zh-CN' ? '已配置' : 'configured';
+const assistantRouteModeLabel = effectiveUiLanguage === 'zh-CN' ? '自定义 AI 路线' : 'Custom AI route';
+const assistantReadySummaryLabel = effectiveUiLanguage === 'zh-CN' ? '可继续验证' : 'Ready to review';
 
 if (!defaultProvider) {
   console.error(
@@ -722,11 +724,47 @@ try {
   if (!(await providerReadySummary.isVisible().catch(() => false))) {
     await page.getByRole('button', { name: refreshProviderLabel }).click().catch(() => {});
   }
-  await providerReadySummary.waitFor({ timeout: 20000 });
+  await page.waitForFunction(
+    ({ providerLabel, providerReadyStatusLabel, providerConfiguredReasonLabel, assistantRouteModeLabel, assistantReadySummaryLabel }) => {
+      const text = document.body.innerText;
+      return (
+        (text.includes(providerLabel) &&
+          text.includes(providerReadyStatusLabel) &&
+          text.includes(providerConfiguredReasonLabel)) ||
+        (text.includes(assistantRouteModeLabel) && text.includes(assistantReadySummaryLabel))
+      );
+    },
+    {
+      providerLabel,
+      providerReadyStatusLabel,
+      providerConfiguredReasonLabel,
+      assistantRouteModeLabel,
+      assistantReadySummaryLabel,
+    },
+    { timeout: 20000 },
+  );
   if (screenshotPath) {
     await seedPublicScreenshotData(page);
     await page.reload();
-    await providerReadySummary.waitFor({ timeout: 20000 });
+    await page.waitForFunction(
+      ({ providerLabel, providerReadyStatusLabel, providerConfiguredReasonLabel, assistantRouteModeLabel, assistantReadySummaryLabel }) => {
+        const text = document.body.innerText;
+        return (
+          (text.includes(providerLabel) &&
+            text.includes(providerReadyStatusLabel) &&
+            text.includes(providerConfiguredReasonLabel)) ||
+          (text.includes(assistantRouteModeLabel) && text.includes(assistantReadySummaryLabel))
+        );
+      },
+      {
+        providerLabel,
+        providerReadyStatusLabel,
+        providerConfiguredReasonLabel,
+        assistantRouteModeLabel,
+        assistantReadySummaryLabel,
+      },
+      { timeout: 20000 },
+    );
     mkdirSync(dirname(screenshotPath), { recursive: true });
     await capturePublicProofScreenshot(page, screenshotPath);
   }

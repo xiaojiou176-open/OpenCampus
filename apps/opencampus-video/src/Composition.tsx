@@ -10,6 +10,7 @@ import {
   useVideoConfig,
 } from "remotion";
 import sidepanelShot from "../../../docs/assets/sidepanel-overview.png";
+import askAiShot from "../../../docs/assets/ask-ai-evidence-first.png";
 import webWorkbenchShot from "../../../docs/assets/web-workbench-overview.png";
 
 const palette = {
@@ -399,6 +400,36 @@ const WebWorkbenchScene: React.FC = () => {
   );
 };
 
+const AskAiScene: React.FC = () => {
+  const frame = useCurrentFrame();
+
+  return (
+    <AbsoluteFill style={sceneShell}>
+      <div
+        style={{
+          position: "absolute",
+          inset: 56,
+          display: "flex",
+          flexDirection: "column",
+          gap: 24,
+        }}
+      >
+        <div style={{ ...textStyles.eyebrow, ...entrance(frame, 0) }}>
+          OPENCAMPUS
+        </div>
+        <div style={{ ...entrance(frame, 6) }}>
+          <ScreenshotPanel
+            shot={askAiShot}
+            label="Campus Copilot for UW"
+            title="Ask from the same desk."
+            body="Inside OpenCampus, Campus Copilot keeps the AI lane anchored to the visible workspace. When the desk is still thin, students get sent back to workspace or export before a blank chat pretends to know enough."
+          />
+        </div>
+      </div>
+    </AbsoluteFill>
+  );
+};
+
 const ProofScene: React.FC = () => {
   const frame = useCurrentFrame();
 
@@ -574,13 +605,16 @@ export const OpenCampusWalkthrough: React.FC = () => {
       <Sequence from={150} durationInFrames={170}>
         <SidepanelScene />
       </Sequence>
-      <Sequence from={320} durationInFrames={170}>
+      <Sequence from={320} durationInFrames={150}>
+        <AskAiScene />
+      </Sequence>
+      <Sequence from={470} durationInFrames={170}>
         <WebWorkbenchScene />
       </Sequence>
-      <Sequence from={490} durationInFrames={130}>
+      <Sequence from={640} durationInFrames={130}>
         <ProofScene />
       </Sequence>
-      <Sequence from={620} durationInFrames={100}>
+      <Sequence from={770} durationInFrames={100}>
         <ClosingScene />
       </Sequence>
     </AbsoluteFill>

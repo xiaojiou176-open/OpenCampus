@@ -24,7 +24,7 @@
   "scripts": {
     "dev": "remotion studio",
     "build": "remotion bundle",
-    "render:still": "remotion still OpenCampusWalkthrough out/opencampus-walkthrough-still.png --frame=210",
+    "render:still": "remotion still OpenCampusWalkthrough out/opencampus-walkthrough-still.png --frame=360",
     "render:video": "remotion render OpenCampusWalkthrough out/opencampus-walkthrough.mp4",
     "upgrade": "remotion upgrade",
     "lint": "eslint src && tsc"

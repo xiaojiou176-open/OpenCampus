@@ -20,6 +20,9 @@ Real product proof, not concept art:
 ![Campus Copilot sidepanel overview](docs/assets/sidepanel-overview.png)
 Extension proof: the current student-facing sidepanel with explicit `Export` and `Trust center` paths.
 
+![Campus Copilot Ask AI evidence-first overview](docs/assets/ask-ai-evidence-first.png)
+Ask AI proof: the AI lane still starts from the same desk, and empty desks route students back to workspace or export before a blank chat pretends to know enough.
+
 Standalone web workbench proof:
 
 ![Campus Copilot web workbench overview](docs/assets/web-workbench-overview.png)
@@ -68,6 +71,7 @@ After a real sync, the product should feel simpler, not busier:
 - `Focus Queue`, `Weekly Load`, and `Change Journal` tell you what changed and what should come first
 - export presets carry the same structured evidence into Markdown, CSV, JSON, or ICS
 - cited AI explains the workspace instead of inventing a second source of truth
+- if the desk is still too thin, Ask AI now sends you back to workspace or export instead of acting like a blank chat shell
 
 ## What To Do First
 
