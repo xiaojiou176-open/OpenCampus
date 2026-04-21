@@ -1,6 +1,6 @@
 # OpenCampus
 
-> OpenCampus keeps Canvas, Gradescope, EdStem, and MyUW on one local-first desk so students can see what changed, what matters first, and what to export or ask next.
+> OpenCampus keeps Canvas, Gradescope, EdStem, MyUW, and the current shipped read-only planning/admin desk on one local-first surface so students can see what changed, what matters first, and what to export or ask next.
 
 > Campus Copilot is the first shipped workspace in that family. Today it is available as the `Campus Copilot for UW` browser extension plus a matching local web workbench.
 
@@ -11,6 +11,8 @@
 - `Campus Copilot for UW` as the school-specific browser extension surface
 - one local web workbench over the same read-only workspace
 - manual sync, structured export, and cited AI after structure
+- shipped read-only planning/admin surfaces for `MyPlan`, `DARS`, `Transcript`, `Financial aid`, `Accounts`, `Tuition detail`, `Profile`, and `Time Schedule`
+- current shipped `courses.cs.washington.edu` (`CS only`) merge surfaces on the same course/work-item/resource desk
 - a student-first product story before any builder or launch appendix
 
 ## Public Proof
@@ -22,6 +24,9 @@ Extension proof: the current student-facing sidepanel with explicit `Export` and
 
 ![Campus Copilot Ask AI evidence-first overview](docs/assets/ask-ai-evidence-first.png)
 Ask AI proof: the AI lane still starts from the same desk, and empty desks route students back to workspace or export before a blank chat pretends to know enough.
+
+![Campus Copilot Ask AI answer proof](docs/assets/ask-ai-answer-proof.png)
+Ask AI answer proof: the answer card still stays on the same desk, with citations/provenance visible instead of pretending the chat lane became a second source of truth.
 
 Standalone web workbench proof:
 
@@ -96,6 +101,8 @@ Today the repo already includes:
 
 - a browser extension for `Canvas`, `Gradescope`, `EdStem`, and `MyUW`
 - one local desk that keeps imported course and admin facts together
+- shipped read-only planning/admin detail lanes for `MyPlan`, `DARS`, `Transcript`, `Financial aid`, `Accounts`, `Tuition detail`, `Profile`, and `Time Schedule`
+- current shipped `Course Websites` (`CS only`) merge and authority surfaces inside the same shared workspace
 - student-first extension surfaces with explicit `Assistant`, `Export`, and `Trust center` modes
 - a read-only web workbench over the same local desk
 - export presets for current view, weekly assignments, recent updates, deadlines, focus queue, weekly load, and change journal

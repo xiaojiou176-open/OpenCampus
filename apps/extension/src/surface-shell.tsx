@@ -1035,8 +1035,8 @@ export function SurfaceShell({ surface }: { surface: SurfaceKind }) {
                       <p className="surface__meta-label">{modeCopy.authorization.currentReads}</p>
                       <p className="surface__meta">
                         {uiLanguage === 'zh-CN'
-                          ? 'Canvas、Gradescope、EdStem、MyUW 的结构化桌面事实，以及当前只读的规划 / 行政支线，例如 MyPlan / DARS 计划脉冲、Time Schedule 规划上下文、以及 MyUW 的先审阅细节摘要。'
-                          : 'Canvas, Gradescope, EdStem, and MyUW structured workspace facts, plus the current read-only planning/admin lanes such as MyPlan Planning Pulse, Time Schedule planning context, and review-first MyUW detail summaries.'}
+                          ? 'Canvas、Gradescope、EdStem、MyUW 的结构化桌面事实，以及当前已 shipped 的只读规划 / 行政面，例如 MyPlan / DARS 计划脉冲、Time Schedule 规划上下文、以及 MyUW 的细节审阅卡。'
+                          : 'Canvas, Gradescope, EdStem, and MyUW structured workspace facts, plus the current shipped read-only planning/admin surfaces such as MyPlan Planning Pulse, Time Schedule planning context, and MyUW detail-review cards.'}
                       </p>
                       <p className="surface__meta-label">{modeCopy.authorization.plannedReads}</p>
                       <div className="surface__pill-row">
@@ -1044,7 +1044,7 @@ export function SurfaceShell({ surface }: { surface: SurfaceKind }) {
                           {uiLanguage === 'zh-CN' ? 'MyPlan / DARS 计划脉冲' : 'MyPlan / DARS Planning Pulse'}
                         </span>
                         <span className="surface__badge surface__badge--success">
-                          {uiLanguage === 'zh-CN' ? 'MyUW 先审阅摘要' : 'MyUW review-first summaries'}
+                          {uiLanguage === 'zh-CN' ? 'MyUW 细节审阅卡' : 'MyUW detail-review cards'}
                         </span>
                         <span className="surface__badge surface__badge--warning">
                           {uiLanguage === 'zh-CN' ? 'Canvas 更深页面仍在补齐' : 'Canvas deeper pages still in progress'}

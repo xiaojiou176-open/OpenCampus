@@ -107,27 +107,90 @@ registry:
     validation_expectation: optional local smoke, not required CI
     public_safe_wording: Provider round-trip is an environment-dependent validation lane, not a default merge gate.
 
-planned_readonly_expansion:
+current_shipped_readonly_expansion:
   - site: myplan
-    primary_path: to be determined per live proof; prefer official/public planning surfaces before session-backed or DOM fallback
-    boundary_classes: []
+    primary_path: authenticated myplan.uw.edu/plan plus audit capture merged into the shared Planning Pulse substrate
+    boundary_classes:
+      - session-backed
+      - state-fallback
+      - dom-fallback
     current_sensitivity: Medium
-    validation_expectation: a shared planning substrate plus read-only extension/web planning-summary adoption now exist repo-side, but manual live validation and stronger product claims are still required.
-    public_safe_wording: MyPlan is a read-only academic-planning expansion lane with a shared planning substrate and read-only workbench summary landed repo-side, and it must not be described as registration automation, upstream MyPlan parity, or unrestricted current support.
+    validation_expectation: deterministic adapter/runtime tests plus manual live validation on the repo-owned browser lane when current-session proof matters
+    public_safe_wording: MyPlan is a shipped read-only planning runtime lane on the shared Planning Pulse substrate, and it must not be described as registration automation or full upstream MyPlan parity.
 
   - site: dars
-    primary_path: to be determined per live proof; prefer official/public degree-audit surfaces before session-backed or DOM fallback
-    boundary_classes: []
+    primary_path: authenticated myplan.uw.edu/audit capture merged into the shared Planning Pulse substrate
+    boundary_classes:
+      - session-backed
+      - dom-fallback
     current_sensitivity: High
-    validation_expectation: contract design first, then deterministic adapter tests plus manual live validation
-    public_safe_wording: DARS is a planned read-only degree-audit observation lane and must not be described as a current shipped integration.
+    validation_expectation: deterministic adapter/runtime tests plus manual live validation on the repo-owned browser lane when current-session proof matters
+    public_safe_wording: DARS is a shipped read-only degree-audit carrier on the shared planning substrate, and it must stay export-first / AI-caution rather than being marketed as unrestricted record access.
+
+  - site: transcript
+    primary_path: current transcript page carrier on the admin high-sensitivity substrate
+    boundary_classes:
+      - session-backed
+      - dom-fallback
+    current_sensitivity: High
+    validation_expectation: deterministic extractor/runtime tests plus manual live validation from a matching admin tab when current-session proof matters
+    public_safe_wording: Transcript detail now lands as a shipped read-only review-ready detail lane, while direct AI reading and full historical normalization remain outside the current product path.
+
+  - site: financial-aid
+    primary_path: current financial-aid status page carrier on the admin high-sensitivity substrate
+    boundary_classes:
+      - session-backed
+      - dom-fallback
+    current_sensitivity: High
+    validation_expectation: deterministic extractor/runtime tests plus manual live validation from a matching admin tab when current-session proof matters
+    public_safe_wording: Financial-aid detail now lands as a shipped read-only review-ready detail lane, while document/checklist ingestion and direct AI reading remain outside the current product path.
+
+  - site: profile
+    primary_path: current profile page carrier on the admin high-sensitivity substrate
+    boundary_classes:
+      - session-backed
+      - dom-fallback
+    current_sensitivity: High
+    validation_expectation: deterministic extractor/runtime tests plus manual live validation from a matching admin tab when current-session proof matters
+    public_safe_wording: Profile detail now lands as a shipped read-only review-ready detail lane, while deeper personal-record history and direct AI reading remain outside the current product path.
+
+  - site: accounts
+    primary_path: current MyUW accounts page carrier on the admin high-sensitivity substrate
+    boundary_classes:
+      - session-backed
+      - dom-fallback
+    current_sensitivity: High
+    validation_expectation: deterministic extractor/runtime tests plus manual live validation from a matching admin tab when current-session proof matters
+    public_safe_wording: Accounts detail now lands as a shipped read-only review-ready detail lane, while billing actions, account mutations, and direct AI reading remain outside the current product path.
+
+  - site: tuition-detail
+    primary_path: current tuition statement page carrier on the admin high-sensitivity substrate
+    boundary_classes:
+      - session-backed
+      - dom-fallback
+    current_sensitivity: High
+    validation_expectation: deterministic extractor/runtime tests plus manual live validation from a matching admin tab when current-session proof matters
+    public_safe_wording: Tuition detail now lands as a shipped read-only review-ready detail lane, while broader statement history, billing actions, and direct AI reading remain outside the current product path.
 
   - site: time-schedule
-    primary_path: to be determined per live proof; prefer official/public schedule surfaces before session-backed or DOM fallback
-    boundary_classes: []
+    primary_path: public course offerings plus authenticated full-schedule corroboration and SLN detail companion folded back into the shared planning lane
+    boundary_classes:
+      - official
+      - session-backed
+      - dom-fallback
     current_sensitivity: Medium
-    validation_expectation: a repo-side shared runtime landing now exists on the public course-offerings carrier, and broader surface/documentation adoption plus manual live validation are still required.
-    public_safe_wording: Time Schedule is a read-only catalog/schedule lane with a shared runtime landing on the public course-offerings carrier, and it must not be described as registration automation, broader registration support, or full upstream-site parity.
+    validation_expectation: deterministic adapter/runtime tests plus manual live validation when current authenticated schedule proof matters
+    public_safe_wording: Time Schedule is a shipped read-only planning runtime lane and must not be described as registration automation, watcher support, or full upstream-site parity.
+
+  - site: course-websites
+    primary_path: cumulative courses.cs.washington.edu page-family capture on the shared Course / Assignment / Event / Resource contracts
+    boundary_classes:
+      - dom-fallback
+    current_sensitivity: Medium
+    validation_expectation: deterministic merge/export/UI tests plus manual live validation when current course-site proof matters
+    public_safe_wording: Course websites are a shipped read-only CS-only canonical-merge lane and must not be described as unrestricted raw-material ingestion or all-school parity.
+
+planned_readonly_expansion:
 
   - site: dawgpath
     primary_path: to be determined per live proof; prefer official/public program-path surfaces before session-backed or DOM fallback

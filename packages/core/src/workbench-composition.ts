@@ -251,7 +251,7 @@ function buildPlanningSubstrateToolPayload(planningSubstrates: WorkbenchView['pl
         'Planning Pulse has no current MyPlan/DARS capture in this workbench view yet, so planning guidance still needs a fresh manual capture.',
       exactMissingSlice: 'No shared MyPlan/DARS planning substrate is present in the current workbench view.',
       operatorNotes: [
-        'Planning Pulse is a shared planning summary lane, not MyPlan parity or registration automation.',
+        'Planning Pulse is a shipped read-only planning runtime lane, not MyPlan parity or registration automation.',
         'Absent planning capture should be treated as missing evidence, not as an all-clear state.',
       ],
       records: [],
@@ -272,7 +272,7 @@ function buildPlanningSubstrateToolPayload(planningSubstrates: WorkbenchView['pl
   if (hasPlanCapture && hasAuditCapture) {
     coverageStatus = 'plan_and_audit';
     exactMissingSlice =
-      'Current Planning Pulse capture includes both plan context and audit-summary context and now behaves like a review-first summary lane, but it still stays read-only and detail/runtime-lane pending.';
+      'Current Planning Pulse capture includes both plan context and audit-summary context and now behaves like a shipped read-only planning runtime lane.';
   } else if (hasPlanCapture) {
     coverageStatus = 'plan_only';
     exactMissingSlice =
@@ -312,8 +312,8 @@ function buildPlanningSubstrateToolPayload(planningSubstrates: WorkbenchView['pl
     },
     operatorNotes: [
       ...(primaryPlanning.currentStage ? [`Current stage: ${primaryPlanning.currentStage}.`] : []),
-      'Planning Pulse stays a shared planning summary lane, not proof of enrollment entitlement or registration execution state.',
-      'Requirement and degree-progress signals now live on a review-first summary lane until a stronger standalone detail/runtime lane is promoted.',
+      'Planning Pulse stays a shipped read-only planning runtime lane, not proof of enrollment entitlement or registration execution state.',
+      'Requirement and degree-progress signals now live on a shipped read-only planning runtime lane while export/AI policy remains stricter than read/export.',
       ...(additionalSources.length > 0 ? [`Additional planning carriers: ${additionalSources.join(', ')}.`] : []),
       ...(hardDeferredMoves.length > 0
         ? [`Hard deferred moves: ${hardDeferredMoves.join(', ')}.`]

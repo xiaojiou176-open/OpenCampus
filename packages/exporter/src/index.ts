@@ -728,8 +728,8 @@ function buildDefaultProvenance(input: {
       sourceType: 'derived_read_model',
       label: 'Administrative summary surface',
       detail: hasAdministrativeCarrierPlaceholders(input.normalized.administrativeSummaries)
-        ? 'High-sensitivity academic and administrative records stay review-first and export-first. Some rows are still blocker placeholders, so their presence does not mean every family has a summary-ready lane yet.'
-        : 'High-sensitivity academic and administrative records now flow through summary-ready review surfaces and stay export-first until a stronger detail/runtime lane is promoted.',
+        ? 'High-sensitivity academic and administrative records stay export-first with review-ready detail posture. Some rows are still blocker placeholders, so their presence does not mean every family has a shipped detail lane yet.'
+        : 'High-sensitivity academic and administrative records now flow through shipped review-ready detail surfaces and stay export-first because AI remains stricter than read/export.',
       readOnly: true,
     });
   }
@@ -739,7 +739,7 @@ function buildDefaultProvenance(input: {
       sourceType: 'derived_read_model',
       label: 'Planning Pulse shared lane',
       detail:
-        'The current view export now includes the latest read-only planning substrate card body instead of only mentioning MyPlan or Time Schedule carriers in provenance.',
+        'The current view export now includes the latest shipped read-only planning substrate card body instead of only mentioning MyPlan or Time Schedule carriers in provenance.',
       readOnly: true,
     });
   }
@@ -774,7 +774,7 @@ function buildDefaultProvenance(input: {
         sourceType: 'session_interface',
         label: 'MyUW student-status carrier',
         detail:
-          'Notice and schedule signals can promote into the decision desk while transcript, finaid, accounts, profile, and statement-backed tuition surfaces stay review-first, export-first, and AI-blocked by default.',
+          'Notice and schedule signals can promote into the decision desk while transcript, finaid, accounts, profile, and statement-backed tuition surfaces now land as shipped review-ready detail lanes and stay export-first / AI-blocked by default.',
         readOnly: true,
       });
       break;
@@ -782,7 +782,7 @@ function buildDefaultProvenance(input: {
       entries.push({
         sourceType: 'page_state',
         label: 'MyPlan planning substrate capture',
-        detail: 'Current MyPlan depth is a review-first summary lane: comparison-oriented, read-only, and still awaiting stronger live/runtime promotion.',
+        detail: 'Current MyPlan depth is a shipped read-only planning runtime lane: comparison-oriented, read-only, and still not registration automation or full standalone MyPlan parity.',
         readOnly: true,
       });
       break;
@@ -798,7 +798,7 @@ function buildDefaultProvenance(input: {
       entries.push({
         sourceType: 'page_state',
         label: 'Course website DOM carrier',
-        detail: 'Course websites currently contribute a scope-limited runtime lane for metadata and schedule context, not default AI-readable raw materials.',
+        detail: 'Course websites now contribute a shipped CS-only canonical-merge lane for metadata and schedule context, not default AI-readable raw materials.',
         readOnly: true,
       });
       break;

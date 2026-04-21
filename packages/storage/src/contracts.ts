@@ -247,8 +247,8 @@ export const WorkbenchViewSchema = z
     grades: z.array(GradeSchema),
     events: z.array(EventSchema),
     alerts: z.array(AlertSchema),
-    // Planning substrates stay a limited read-only summary lane on the shared workbench,
-    // not a promotion to site-parity or registration semantics.
+    // Planning substrates are shipped read-only planning runtime lanes on the shared
+    // workbench, not a promotion to site-parity or registration semantics.
     planningSubstrates: z.array(z.lazy(() => PlanningSubstrateOwnerSchema)).default([]),
     courseClusters: z.array(z.lazy(() => CourseClusterSchema)).default([]),
     workItemClusters: z.array(z.lazy(() => WorkItemClusterSchema)).default([]),
