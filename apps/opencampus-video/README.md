@@ -8,6 +8,7 @@ Current goal:
 - keep the public narrative aligned with `OpenCampus` first
 - show `Campus Copilot` as the first shipped workspace
 - use real repo proof assets instead of generic motion filler
+- keep the Ask AI lane visibly evidence-first, not chat-shell-first
 
 ## Commands
 
@@ -46,7 +47,7 @@ pnpm --filter @campus-copilot/opencampus-video lint
 - `OpenCampusWalkthrough`
 - `1280x720`
 - `30 fps`
-- `24 seconds`
+- `29 seconds`
 
 The current cut is a truthful walkthrough shell, not a final cinematic launch
 asset. It is designed to stay editable while the repo's public surface keeps

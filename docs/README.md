@@ -54,7 +54,7 @@ Use this route when you need stable repo-local proof without turning the docs hu
 1. [`site-capability-matrix.md`](site-capability-matrix.md)
 2. [`07-security-privacy-compliance.md`](07-security-privacy-compliance.md)
 3. [`verification-matrix.md`](verification-matrix.md) for the deeper maintainer/operator verification registry
-4. [`storefront-assets.md`](storefront-assets.md) as the narrower proof appendix
+4. [`storefront-assets.md`](storefront-assets.md) as the narrower proof appendix for the extension shell, Ask AI, and web workbench assets
 5. [`../DISTRIBUTION.md`](../DISTRIBUTION.md)
 
 Keep the split honest:
