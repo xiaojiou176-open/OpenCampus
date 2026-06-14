@@ -35,6 +35,6 @@
     "test": "node --test ./src/server.test.mjs ./src/bin.test.mjs"
   },
   "devDependencies": {
-    "esbuild": "^0.28.0"
+    "esbuild": "^0.28.1"
   }
 }
