@@ -98,15 +98,15 @@
     "test": "pnpm test:workspaces && pnpm test:repo"
   },
   "devDependencies": {
-    "@playwright/test": "^1.59.1",
-    "@types/node": "^25.6.0",
-    "@types/react": "^19.2.14",
+    "@playwright/test": "^1.62.0",
+    "@types/node": "^26.1.2",
+    "@types/react": "^19.2.17",
     "@types/react-dom": "^19.1.9",
-    "@vitest/coverage-v8": "^4.1.5",
+    "@vitest/coverage-v8": "^4.1.10",
     "fake-indexeddb": "^6.1.0",
-    "msw": "^2.13.4",
-    "typescript": "^6.0.3",
-    "vitest": "^4.1.5"
+    "msw": "^2.15.0",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
   },
   "pnpm": {
     "overrides": {
