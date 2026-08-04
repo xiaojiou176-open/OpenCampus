@@ -34,7 +34,7 @@
     "@campus-copilot/exporter": "workspace:*",
     "@campus-copilot/schema": "workspace:*",
     "@campus-copilot/storage": "workspace:*",
-    "esbuild": "^0.28.0",
+    "esbuild": "^0.28.1",
     "fake-indexeddb": "^6.1.0"
   }
 }
