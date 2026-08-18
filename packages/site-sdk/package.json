@@ -33,6 +33,6 @@
     "@campus-copilot/schema": "workspace:*",
     "@campus-copilot/storage": "workspace:*",
     "@campus-copilot/workspace-sdk": "workspace:*",
-    "esbuild": "^0.28.0"
+    "esbuild": "^0.28.2"
   }
 }
